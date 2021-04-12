@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31112.23
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "libGis", "libGis\libGis.csproj", "{5BB1FB33-A634-46E1-8055-072946E5A26B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5BB1FB33-A634-46E1-8055-072946E5A26B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BB1FB33-A634-46E1-8055-072946E5A26B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BB1FB33-A634-46E1-8055-072946E5A26B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BB1FB33-A634-46E1-8055-072946E5A26B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {96E43554-F5B3-41B6-B657-1CCF8C298B38}
+	EndGlobalSection
+EndGlobal
