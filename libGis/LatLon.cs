@@ -241,4 +241,17 @@ namespace libGis
         }
 
     }
+
+    public class LatLonZ : LatLon
+    {
+        public double alt;
+
+        public LatLonZ(double lat, double lon, double alt)
+        {
+            this.lat = lat;
+            this.lon = lon;
+            this.alt = alt;
+        }
+
+    }
 }
