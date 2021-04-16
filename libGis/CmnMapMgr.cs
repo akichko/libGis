@@ -48,7 +48,55 @@ namespace libGis
 
 
 
-        public int LoadTile(uint tileId, bool multiContents = true, UInt16 reqType = 0xFFFF, UInt16 reqMaxSubType = 0xFFFF)
+        //public int LoadTile(uint tileId, bool multiContents = true, UInt16 reqType = 0xFFFF, UInt16 reqMaxSubType = 0xFFFF)
+        //{
+        //    if (!IsConnected) return -1;
+
+        //    CmnTile tmpTile;
+        //    bool isNew = false;
+
+        //    if (tileDic.ContainsKey(tileId))
+        //    {
+        //        tmpTile = tileDic[tileId];  
+        //    }
+        //    else
+        //    {
+        //        tmpTile = mal.CreateTile(tileId);
+        //        isNew = true;
+        //    }
+
+        //    List<UInt16> mapObjTypeList;
+        //    if (multiContents)
+        //        mapObjTypeList = mal.GetMapContentTypeList();
+        //    else
+        //    {
+        //        mapObjTypeList = new List<UInt16>();
+        //        mapObjTypeList.Add(reqType);
+        //    }
+
+        //    foreach (UInt16 mapObjType in mapObjTypeList)
+        //    {
+        //        if ((reqType & mapObjType) == mapObjType)
+        //        {
+        //            //既存データチェック
+        //            CmnObjGroup currentMapContents = tmpTile.GetObjGroup(mapObjType);
+        //            if (currentMapContents != null && currentMapContents.loadedSubType >= reqMaxSubType)
+        //            {
+        //                continue;
+        //            }
+
+        //            tmpTile.UpdateObjGroup(mapObjType, mal.LoadObjGroup(tileId, mapObjType, reqMaxSubType));
+        //        }
+        //    }
+
+        //    if (isNew)
+        //        tileDic.Add(tileId, tmpTile);
+
+        //    return 0;
+
+        //}
+
+        public int LoadTile(uint tileId, UInt16 reqType = 0xFFFF, UInt16 reqMaxSubType = 0xFFFF)
         {
             if (!IsConnected) return -1;
 
@@ -57,37 +105,54 @@ namespace libGis
 
             if (tileDic.ContainsKey(tileId))
             {
-                tmpTile = tileDic[tileId];  
+                tmpTile = tileDic[tileId];
+
+                //更新必要有無チェック
+                //タイルデータなし、空ObjGroupあり、サブタイプ追加あり
+
+                //List<UInt16> mapObjTypeList;
+                //mapObjTypeList = mal.GetMapContentTypeList();
+
+                //var list = mal.GetMapContentTypeList()
+                //    .Where(x => (reqType & x) == x)
+                //    .Where(x => { //必要→true
+                //        CmnObjGroup tmpObjGr = tmpTile.GetObjGroup(x);
+                //        if (tmpObjGr == null)
+                //            return true;
+                //        if (tmpObjGr.loadedSubType < reqMaxSubType)
+                //            return true;
+                //        return false;
+                //    }).FirstOrDefault();
+
+
+                //未読み込み（NULL）のObgGroupがあるか
+                int numObjGrToBeRead = mal.GetMapContentTypeList()
+                    .Where(x => (reqType & x) == x)
+                    .Select(x => tmpTile.GetObjGroup(x))
+                    .Count(x => x == null || x.loadedSubType < reqMaxSubType);
+
+
+                if (numObjGrToBeRead == 0)
+                    return 0; //更新不要
+
             }
+            //タイルがなければ作成
             else
             {
                 tmpTile = mal.CreateTile(tileId);
                 isNew = true;
             }
 
-            List<UInt16> mapObjTypeList;
-            if (multiContents)
-                mapObjTypeList = mal.GetMapContentTypeList();
-            else
-            {
-                mapObjTypeList = new List<UInt16>();
-                mapObjTypeList.Add(reqType);
-            }
 
-            foreach (UInt16 mapObjType in mapObjTypeList)
-            {
-                if ((reqType & mapObjType) == mapObjType)
-                {
-                    //既存データチェック
-                    CmnObjGroup currentMapContents = tmpTile.GetObjGroup(mapObjType);
-                    if (currentMapContents != null && currentMapContents.loadedSubType >= reqMaxSubType)
-                    {
-                        continue;
-                    }
-                    tmpTile.UpdateObjGroup(mapObjType, mal.LoadObjGroup(tileId, mapObjType, reqMaxSubType));
+            //必要となった場合
 
-                }
-            }
+
+            //データ読み込み
+            List<CmnObjGroup> tmpObjGrList = mal.LoadObjGroupList(tileId, reqType, reqMaxSubType);
+
+            //タイル更新
+            tmpTile.UpdateObjGroupList(tmpObjGrList);
+
 
             if (isNew)
                 tileDic.Add(tileId, tmpTile);
@@ -95,6 +160,7 @@ namespace libGis
             return 0;
 
         }
+
 
 
         public bool UnloadTile(uint tileId)
@@ -180,7 +246,8 @@ namespace libGis
 
             CmnObjHdlDistance nearestObj = tileList
                 .Select(x => x?.GetNearestObj(latlon, objType, maxSubType))
-                .OrderBy(x => x?.distance)
+                .Where(x => x != null)
+                .OrderBy(x => x.distance)
                 .FirstOrDefault();
 
             if (nearestObj == null)
@@ -216,7 +283,10 @@ namespace libGis
 
         CmnTile CreateTile(uint tileId);
 
-       // CmnTile LoadTile(uint tileId, UInt16 type = 0xFFFF, UInt16 subType = 0xFFFF);
+        //  List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt16 type = 0xFFFF, UInt16 subType = 0xFFFF);
+
+        List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt16 type = 0xFFFF, UInt16 subType = 0xFFFF);
+
         CmnObjGroup LoadObjGroup(uint tileId, UInt16 type, UInt16 subType = 0xFFFF);
     }
 

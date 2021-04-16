@@ -244,13 +244,13 @@ namespace libGis
 
     public class LatLonZ : LatLon
     {
-        public double alt;
+        public double z;
 
-        public LatLonZ(double lat, double lon, double alt)
+        public LatLonZ() { }
+
+        public LatLonZ(double lat, double lon, double z) : base(lat, lon)
         {
-            this.lat = lat;
-            this.lon = lon;
-            this.alt = alt;
+            this.z = z;
         }
 
     }

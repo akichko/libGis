@@ -78,6 +78,13 @@ namespace libGis
         public Int16 offsetY;
     }
 
+    public struct TileXYL
+    {
+        public int x;
+        public int y;
+        public byte lv;
+    }
+
     /* Tileデータ *************************************************************/
     public abstract class CmnObj : IViewObj
     {
@@ -196,8 +203,9 @@ namespace libGis
         // 抽象メソッド
         abstract public CmnTile CreateTile(uint tileId);
 
-        public abstract int UpdateObjGroup(UInt16 objType, CmnObjGroup objGroup);
+        public abstract int UpdateObjGroup(CmnObjGroup objGroup);
 
+        public abstract int UpdateObjGroupList(List<CmnObjGroup> objGroup);
 
         //通常メソッド
 
