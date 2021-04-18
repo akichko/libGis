@@ -65,27 +65,27 @@ namespace libGis
         //        isNew = true;
         //    }
 
-        //    List<UInt16> mapObjTypeList;
+        //    List<UInt16> objTypeList;
         //    if (multiContents)
-        //        mapObjTypeList = mal.GetMapContentTypeList();
+        //        objTypeList = mal.GetMapContentTypeList();
         //    else
         //    {
-        //        mapObjTypeList = new List<UInt16>();
-        //        mapObjTypeList.Add(reqType);
+        //        objTypeList = new List<UInt16>();
+        //        objTypeList.Add(reqType);
         //    }
 
-        //    foreach (UInt16 mapObjType in mapObjTypeList)
+        //    foreach (UInt16 objType in objTypeList)
         //    {
-        //        if ((reqType & mapObjType) == mapObjType)
+        //        if ((reqType & objType) == objType)
         //        {
         //            //既存データチェック
-        //            CmnObjGroup currentMapContents = tmpTile.GetObjGroup(mapObjType);
+        //            CmnObjGroup currentMapContents = tmpTile.GetObjGroup(objType);
         //            if (currentMapContents != null && currentMapContents.loadedSubType >= reqMaxSubType)
         //            {
         //                continue;
         //            }
 
-        //            tmpTile.UpdateObjGroup(mapObjType, mal.LoadObjGroup(tileId, mapObjType, reqMaxSubType));
+        //            tmpTile.UpdateObjGroup(objType, mal.LoadObjGroup(tileId, objType, reqMaxSubType));
         //        }
         //    }
 
@@ -108,22 +108,6 @@ namespace libGis
                 tmpTile = tileDic[tileId];
 
                 //更新必要有無チェック
-                //タイルデータなし、空ObjGroupあり、サブタイプ追加あり
-
-                //List<UInt16> mapObjTypeList;
-                //mapObjTypeList = mal.GetMapContentTypeList();
-
-                //var list = mal.GetMapContentTypeList()
-                //    .Where(x => (reqType & x) == x)
-                //    .Where(x => { //必要→true
-                //        CmnObjGroup tmpObjGr = tmpTile.GetObjGroup(x);
-                //        if (tmpObjGr == null)
-                //            return true;
-                //        if (tmpObjGr.loadedSubType < reqMaxSubType)
-                //            return true;
-                //        return false;
-                //    }).FirstOrDefault();
-
 
                 //未読み込み（NULL）のObgGroupがあるか
                 int numObjGrToBeRead = mal.GetMapContentTypeList()
@@ -209,42 +193,68 @@ namespace libGis
 
         }
 
+        public List<CmnTile> GetLoadedTileList()
+        {
+            return tileDic.Select(x => x.Value).ToList();
+        }
+
+        public List<uint> GetMapTileIdList()
+        {
+            if (!IsConnected)
+                return null;
+            return mal.GetMapTileIdList();
+        }
 
         //オブジェクト検索メソッド ***********************************************
 
         public CmnObjHandle SearchObj(uint tileId, UInt16 objType, UInt64 objId)
         {
-            CmnTile tmpTile = SearchTile(tileId);
-            if (tmpTile == null)
-                return null;
-            CmnObj tmpObj = tmpTile.GetObj(objType, objId);
-            if (tmpObj == null)
-                return null;
+            return SearchTile(tileId)?.GetObjHandle(objType, objId);
 
-            return new CmnObjHandle(tmpTile, tmpObj);
+            //CmnTile tmpTile = SearchTile(tileId);
+            //if (tmpTile == null)
+            //    return null;
+            //CmnObj tmpObj = tmpTile.GetObj(objType, objId);
+            //if (tmpObj == null)
+            //    return null;
+
+            //return new CmnObjHandle(tmpTile, tmpObj);
 
         }
 
         public CmnObjHandle SearchObj(uint tileId, UInt16 objType, UInt16 objIndex)
         {
-            CmnTile tmpTile = SearchTile(tileId);
-            if (tmpTile == null)
-                return null;
-            CmnObj tmpObj = tmpTile.GetObj(objType, objIndex);
-            if (tmpObj == null)
-                return null;
+            return SearchTile(tileId)?.GetObjHandle(objType, objIndex);
 
-            return new CmnObjHandle(tmpTile, tmpObj);
+            //CmnTile tmpTile = SearchTile(tileId);
+            //if (tmpTile == null)
+            //    return null;
+            //CmnObj tmpObj = tmpTile.GetObj(objType, objIndex);
+            //if (tmpObj == null)
+            //    return null;
+
+            //return new CmnObjHandle(tmpTile, tmpObj);
 
         }
 
-        public CmnObjHandle SearchObj(LatLon latlon, bool multiContents = true, UInt16 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
+        public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt16 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
         {
-            uint tileId = tileApi.CalcTileId(latlon);
+            List<CmnTile> searchTileList;
+            
+            //seachRange = Max -> 全タイルから検索
+            if (searchRange == int.MaxValue)
+            {
+                searchTileList = GetLoadedTileList();
+            }
+            else
+            {
+                uint tileId = tileApi.CalcTileId(latlon);
 
-            List<CmnTile> tileList = SearchTiles(tileId, 1, 1);
+                searchTileList = SearchTiles(tileId, searchRange, searchRange);
 
-            CmnObjHdlDistance nearestObj = tileList
+            }
+
+            CmnObjHdlDistance nearestObj = searchTileList
                 .Select(x => x?.GetNearestObj(latlon, objType, maxSubType))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
@@ -257,15 +267,98 @@ namespace libGis
             
         }
 
-        public List<uint> GetMapTileIdList()
+        public CmnObjHandle SearchObj(CmnObjRef objRef)
         {
-            if (!IsConnected) return null;
-            return mal.GetMapTileIdList();
+            if (objRef == null)
+                return null;
+
+            //Tile <- offset未対応
+            CmnTile tile;
+            if (objRef.tile != null)
+                tile = objRef.tile;
+            else
+                tile = SearchTile(objRef.tileId);
+
+            if (tile == null)
+                return null;
+
+            //Obj
+            if (objRef.obj != null)
+                return new CmnObjHandle(tile, objRef.obj);
+            else if (objRef.objIndex != 0xffff)
+                return tile.GetObjHandle(objRef.objType, objRef.objIndex);
+            else
+                return tile.GetObjHandle(objRef.objType, objRef.objId);
+
         }
 
+
+        //関連オブジェクト取得 ***********************************************
+
+        public virtual List<CmnObjHdlRef> SearchObjHandle(CmnObjRef objRef)
+        {
+            List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
+
+            if (objRef == null)
+                return retList;
+
+            CmnObjHandle objHdl = SearchObj(objRef); //ハンドル
+            if (objHdl == null)
+                return retList;
+
+            if(objRef.final == true)
+            {
+                retList.Add(new CmnObjHdlRef(objHdl, objRef.refType));
+                return retList;
+            }
+
+
+            List<CmnObjHdlRef> tmpObjRefList = objHdl.obj.GetObjRefHdlList(objRef.refType, objHdl.tile); //Objの参照先一覧（種別指定）
+
+            foreach (var tmpObjRef in tmpObjRefList)
+            {
+                if (tmpObjRef.obj != null)
+                {
+                    retList.Add(tmpObjRef);
+                }
+                else if (tmpObjRef.nextRef != null)
+                {
+                    retList.AddRange(SearchObjHandle(tmpObjRef.nextRef));
+                }
+            }
+
+            return retList;
+        }
+
+        //必要に応じてオーバーライド
+        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl)
+        {
+            List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
+
+
+            List<CmnObjRef> tmpObjRefList = objHdl.obj.GetObjAllRefList(objHdl.tile); //Objの参照先一覧
+            
+
+            foreach (var tmpObjRef in tmpObjRefList)
+            {
+                CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, null, tmpObjRef.refType, tmpObjRef);
+
+                retList.AddRange(SearchObjHandle(objHdlRef.nextRef));
+                
+            }
+
+            return retList;
+
+
+            //return cmnObjHdl.obj.GetObjAllRefList(cmnObjHdl.tile)
+            //    .Select(x => CmnObjHdlRef.GenCmnObjHdlRef(SearchObjHandle(x), x.refType))
+            //    .Where(x=>x!=null)
+            //    .ToList();
+        }
+
+
+
     }
-
-
 
 
 

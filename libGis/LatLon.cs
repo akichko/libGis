@@ -94,6 +94,11 @@ namespace libGis
 
         }
 
+        public new string ToString()
+        {
+            return $"{lon:F7}_{lat:F7}";
+        }
+
 
         //静的メソッド
 
@@ -193,7 +198,7 @@ namespace libGis
             return Math.Sqrt((f1 * f1) / r2);
         }
 
-        public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)
+        public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)  //開発中
         {
             if (polyline == null || polyline.Length <= 1)
                 return null;
@@ -226,21 +231,34 @@ namespace libGis
 
         }
 
-        public class PolyLinePos
+        public static LatLon Parse(string s)
         {
-            LatLon latLon;
-            float index;
-            double shapeOffset;
+            if (s == null)
+                return null;
 
-            public PolyLinePos(LatLon latlon, float index, double shapeOffset)
-            {
-                this.latLon = latlon;
-                this.index = index;
-                this.shapeOffset = shapeOffset;
-            }
+            //エラー処理いつか作る
+            string[] latlonStr = s.Split('_');
+            return new LatLon(double.Parse(latlonStr[1]), double.Parse(latlonStr[0]));
+
         }
 
     }
+
+
+    public class PolyLinePos  //開発中
+    {
+        LatLon latLon; //最近傍点
+        float index; //形状点番号
+        double shapeOffset; //始点からの距離
+
+        public PolyLinePos(LatLon latlon, float index, double shapeOffset)
+        {
+            this.latLon = latlon;
+            this.index = index;
+            this.shapeOffset = shapeOffset;
+        }
+    }
+
 
     public class LatLonZ : LatLon
     {
