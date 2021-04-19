@@ -535,6 +535,7 @@ namespace libGis
         public CmnTile tile;
         public CmnObj obj;
 
+        public CmnObjHandle() { }
         public CmnObjHandle(CmnTile tile, CmnObj obj)
         {
             this.tile = tile;
@@ -576,38 +577,49 @@ namespace libGis
 
     public class CmnObjHdlRef : CmnObjHandle //参照属性拡張
     {
-        public int refType;
+        //public int refType; //最終参照
         public CmnObjRef nextRef; //NULLになるまで、データ参照を再帰的に続ける必要がある
 
-        public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType) : base(tile, obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, CmnObjRef nextRef) : base(objHdl?.tile, objHdl?.obj)
         {
-            this.refType = refType;
+            this.nextRef = nextRef;
         }
 
-        public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType, CmnObjRef objRef) : base(tile, obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, int refType, UInt16 objType) : base(objHdl?.tile, objHdl?.obj)
         {
-            this.refType = refType;
-            this.nextRef = objRef;
-        }
 
-        public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType, UInt16 objType) : base(tile, obj)
-        {
-            this.refType = refType;
-            this.nextRef = new CmnObjRef(refType, objType);
+            this.nextRef = new CmnObjRef(refType, new CmnSearchKey(objType));
         }
 
         public CmnObjHdlRef(CmnObjHandle objHdl, int refType) : base(objHdl?.tile, objHdl?.obj)
         {
-            this.refType = refType;
-        }
-        public static CmnObjHdlRef GenCmnObjHdlRef(CmnObjHandle objHdl, int refType)
-        {
-            if (objHdl == null)
-                return null;
 
-            return new CmnObjHdlRef(objHdl, refType);
-
+            this.nextRef = new CmnObjRef(refType, null);
         }
+        //public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType, CmnObjRef objRef) : base(tile, obj)
+        //{
+        //    this.nextRef.refType = refType;
+        //    this.nextRef = objRef;
+        //}
+
+        //public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType, UInt16 objType) : base(tile, obj)
+        //{
+        //    this.nextRef.refType = refType;
+        //    this.nextRef = new CmnObjRef(refType, objType);
+        //}
+
+        //public CmnObjHdlRef(CmnObjHandle objHdl, int refType) : base(objHdl?.tile, objHdl?.obj)
+        //{
+        //    this.nextRef.refType = refType;
+        //}
+        //public static CmnObjHdlRef GenCmnObjHdlRef(CmnObjHandle objHdl, int refType)
+        //{
+        //    if (objHdl == null)
+        //        return null;
+
+        //    return new CmnObjHdlRef(objHdl, refType);
+
+        //}
     }
 
 
@@ -628,9 +640,17 @@ namespace libGis
         //public UInt64 objId = 0xffffffffffffffff;
         //public UInt16 objIndex = 0xffff;
 
-        public CmnObjRef(int refType, ushort objType)
+        public CmnObjRef(int refType, CmnSearchKey key, bool final = true)
         {
             this.refType = refType;
+            this.final = final;
+            this.key = key;
+        }
+
+        public CmnObjRef(int refType, ushort objType, bool final = true)
+        {
+            this.refType = refType;
+            this.final = final;
             this.key = new CmnSearchKey(objType);
         }
     }

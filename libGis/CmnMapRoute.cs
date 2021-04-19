@@ -180,20 +180,6 @@ namespace libGis
             return 0;
         }
 
-        //public CostRecord GetCostRecord(CostRecord currentInfo, CmnTile tile, CmnObj obj, int linkDirection)
-        //{
-        //    if (currentInfo != null && currentInfo.tileCostInfo.tileId == tileId)
-        //    {
-        //        return currentInfo.tileCostInfo.costInfo[linkIndex][linkDirection];
-        //    }
-
-        //    if (!dicTileCostInfo.ContainsKey(tile.tileId))
-        //        return null;
-
-        //    return dicTileCostInfo[tile.tileId].costInfo[linkIndex][linkDirection];
-
-        //}
-
 
         /****** 設定 ******************************************************************************/
 
@@ -306,166 +292,173 @@ namespace libGis
 
         }
 
-        //public CostRecord GetLinkCostInfo(CostRecord currentInfo, CmnObjHdlDir linkRef)
-        //{
-        //    return GetLinkCostInfo(currentInfo, linkRef.tile.tileId, linkRef.obj.index, linkRef.direction);
-        //}
+        public CostRecord GetLinkCostInfo(CostRecord currentInfo, CmnDirObjHandle linkRef)
+        {
+            return GetLinkCostInfo(currentInfo, linkRef.tile.tileId, linkRef.obj.Index, linkRef.direction);
+        }
 
 
-        //public void FastDelete(List<CostRecord> list, int index)
-        //{
-        //    list[index] = list[list.Count - 1];
-        //    list.RemoveAt(list.Count - 1);
-        //}
 
 
         /****** 経路計算メイン ******************************************************************************/
 
-        //public int CalcRouteStep()
-        //{
-        //    //計算対象選定　処理未完了＆コスト最小を探す
-        //    int minIndex = unprocessed.GetMinCostIndex();
+        public int CalcRouteStep()
+        {
+            //計算対象選定　処理未完了＆コスト最小を探す
+            int minIndex = unprocessed.GetMinCostIndex();
 
-        //    if (minIndex < 0)
-        //    {
-        //        Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
-        //        return -1;
-        //    }
+            if (minIndex < 0)
+            {
+                Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
+                return -1;
+            }
 
-        //    CostRecord currentCostInfo = unprocessed.GetCostRecord(minIndex);
+            CostRecord currentCostInfo = unprocessed.GetCostRecord(minIndex);
 
-        //    if (currentCostInfo == null)
-        //    {
-        //        Console.WriteLine("Fatal Error");
-        //        return -1;
+            if (currentCostInfo == null)
+            {
+                Console.WriteLine("Fatal Error");
+                return -1;
 
-        //    }
-        //    if (currentCostInfo.isGoal)
-        //    {
-        //        Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] Goal Found ! (CalcCount = {logCalcCount}, totalCost = {currentCostInfo.totalCost})");
-        //        currentCostInfo.status = 2;
-        //        return -1;
-        //    }
+            }
+            if (currentCostInfo.isGoal)
+            {
+                Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] Goal Found ! (CalcCount = {logCalcCount}, totalCost = {currentCostInfo.totalCost})");
+                currentCostInfo.status = 2;
+                return -1;
+            }
 
-        //    if (currentCostInfo.status == 2)
-        //    {
-        //        unprocessed.Delete(minIndex);
-        //        return 0;
-        //    }
+            if (currentCostInfo.status == 2)
+            {
+                unprocessed.Delete(minIndex);
+                return 0;
+            }
 
-        //    CmnObjHandle currentLinkHdl = currentCostInfo.LinkHdl;
+            CmnObjHandle currentLinkHdl = currentCostInfo.LinkHdl;
 
-        //    //不足タイルがあれば読み込み
+            List<CmnDirObjHandle> connectLinkList;
 
+            //暫定
+            connectLinkList = null;
 
+            //接続リンク取得
+            while (true)
+            {
+                //接続リンク取得
+                //向き
+                mapMgr.SearchRefObject(currentLinkHdl, (int)(ECmnMapRefType.NextLink));
+                mapMgr.SearchRefObject(currentLinkHdl, (int)(ECmnMapRefType.BackLink));
 
-        //    if (baseNodeHdl.mapNode == null && baseNodeHdl.tileId != 0)
-        //    {
-        //        //タイル追加読み込み
-        //        AddTileInfo(baseNodeHdl.tileId);
+                //不足タイルがあれば読み込み
 
-        //        //ハンドル再取得
-        //        baseNodeHdl = mapMgr.GetEdgeNode(currentLinkHdl.tile, currentLinkHdl.mapLink, currentCostInfo.linkDirection, false);
-        //    }
+                //成功
+                break;
+            }
 
-
-        //    //接続リンク取得
-        //    //向き
-        //    List<CmnObjHdlDir> connectLinkList;
-        //    mapMgr.SearchRefObject(currentLinkHdl, (int)(ECmnMapRefType.NextLink));
-        //    mapMgr.SearchRefObject(currentLinkHdl, (int)(ECmnMapRefType.BackLink));
-
-        //    //不足があれば追加タイル読み込み。ループ
-
-        //   connectLinkList = mapMgr.GetConnectLinks(currentLinkHdl, currentCostInfo.linkDirection, true, true);
-
-        //    List<DLinkHandle> connectLinkListTest = mapMgr.GetConnectLinks(baseNodeHdl, false);
-        //    foreach (DLinkHandle a in connectLinkListTest.Where(x => x.mapLink == null))
-        //    {
-        //        //タイル追加読み込み
-        //        AddTileInfo(a.tileId);
-        //    }
-
-        //    connectLinkList = mapMgr.GetConnectLinks(currentLinkHdl, currentCostInfo.linkDirection, true, true);
+            //不足タイルがあれば読み込み
 
 
-        //    //接続リンクとコスト参照
-        //    foreach (CmnObjHdlDir nextLinkRef in connectLinkList)
-        //    {
-        //        if (nextLinkRef.obj == currentLinkHdl.obj
-        //            || nextLinkRef.obj.SubType > currentCostInfo.tileCostInfo.maxUsableRoadType)
-        //            continue;
-        //        //.Where(x => x.mapLink != currentLinkHdl.mapLink && x.mapLink.roadType <= currentCostInfo.tileCostInfo.maxUsableRoadType) )
+
+            //if (baseNodeHdl.mapNode == null && baseNodeHdl.tileId != 0)
+            //{
+            //    //タイル追加読み込み
+            //    AddTileInfo(baseNodeHdl.tileId);
+
+            //    //ハンドル再取得
+            //    baseNodeHdl = mapMgr.GetEdgeNode(currentLinkHdl.tile, currentLinkHdl.mapLink, currentCostInfo.linkDirection, false);
+            //}
 
 
-        //        if (nextLinkRef.obj.SubType >= 6
-        //            && currentLinkHdl.obj.SubType < nextLinkRef.obj.SubType
-        //            && currentCostInfo.tileCostInfo.DistFromDestTile > 8000)
-        //            continue;
+            //不足があれば追加タイル読み込み。ループ
 
-        //        //int nextLinkTileId = nextLinkRef.tile.tileId;
-        //        //int nextLinkIndex = nextLinkRef.mapLink.index;
-        //        //int nextLinkDirection = nextLinkRef.direction;
-        //        //CostRecord nextCostInfo = GetLinkCostInfo(currentCostInfo, nextLinkTileId, nextLinkIndex, nextLinkDirection);
+            //connectLinkList = mapMgr.GetConnectLinks(currentLinkHdl, currentCostInfo.linkDirection, true, true);
 
-        //        CostRecord nextCostInfo = GetLinkCostInfo(currentCostInfo, nextLinkRef);
+            //List<DLinkHandle> connectLinkListTest = mapMgr.GetConnectLinks(baseNodeHdl, false);
+            //foreach (DLinkHandle a in connectLinkListTest.Where(x => x.mapLink == null))
+            //{
+            //    //タイル追加読み込み
+            //    AddTileInfo(a.tileId);
+            //}
 
-        //        int nextTotalCost;
-
-        //        //ゴールフラグの場合は、残コストを足す。足すけど保存NG？ゴール側statusを見るべき？
-        //        if (nextCostInfo.isGoal)
-        //        {
-        //            nextTotalCost = currentCostInfo.totalCost + nextCostInfo.remainCost;
-        //        }
-        //        else
-        //        {
-        //            nextTotalCost = currentCostInfo.totalCost + nextLinkRef.obj.linkCost;
-        //        }
-        //        //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
-        //        if (nextCostInfo.status == 0 || nextTotalCost < nextCostInfo.totalCost)
-        //        {
-        //            //nextCostInfo.linkDirection = nextLinkRef.direction;
-        //            nextCostInfo.totalCost = nextTotalCost;
-        //            nextCostInfo.status = 1;
-        //            //nextCostInfo.tileCostInfo.status = 1;
-        //            nextCostInfo.back = currentCostInfo;
-        //            unprocessed.Add(nextCostInfo);
-        //        }
-
-        //    }
-
-        //    //リンクの探索ステータス更新
-        //    currentCostInfo.status = 2;
-        //    unprocessed.Delete(minIndex);
-
-        //    return 0;
-        //}
+            //connectLinkList = mapMgr.GetConnectLinks(currentLinkHdl, currentCostInfo.linkDirection, true, true);
 
 
-        //public int CalcRoute()
-        //{
-        //    int ret;
+            //接続リンクとコスト参照
+            foreach (CmnDirObjHandle nextLinkRef in connectLinkList)
+            {
+                //探索除外：　Uターンリンク、タイルに応じた使用可能道路種別でない、スタート付近で道路種別が下がる移動
 
-        //    int pastTickCount = Environment.TickCount;
-        //    int nowTickCount;
-        //    //計算
-        //    while (true)
-        //    {
-        //        ret = CalcRouteStep();
+                if (nextLinkRef.obj == currentLinkHdl.obj
+                    || nextLinkRef.obj.SubType > currentCostInfo.tileCostInfo.maxUsableRoadType)
+                    continue;
+                //.Where(x => x.mapLink != currentLinkHdl.mapLink && x.mapLink.roadType <= currentCostInfo.tileCostInfo.maxUsableRoadType) )
 
-        //        nowTickCount = Environment.TickCount;
-        //        logTickCountList[logCalcCount] = nowTickCount - pastTickCount;
-        //        pastTickCount = nowTickCount;
-        //        logUnprocessedCount[logCalcCount] = unprocessed.numElement;
-        //        if (unprocessed.numElement > logMaxQueue)
-        //            logMaxQueue = unprocessed.numElement;
-        //        logCalcCount++;
 
-        //        if (ret != 0) break;
-        //    }
+                if (nextLinkRef.obj.SubType >= 6
+                    && currentLinkHdl.obj.SubType < nextLinkRef.obj.SubType
+                    && currentCostInfo.tileCostInfo.DistFromDestTile > 8000)
+                    continue;
 
-        //    return 0;
-        //}
+
+                CostRecord nextCostInfo = GetLinkCostInfo(currentCostInfo, nextLinkRef);
+
+                int nextTotalCost;
+
+                //ゴールフラグの場合は、残コストを足す。足すけど保存NG？ゴール側statusを見るべき？
+                if (nextCostInfo.isGoal)
+                {
+                    nextTotalCost = currentCostInfo.totalCost + nextCostInfo.remainCost;
+                }
+                else
+                {
+                    //コスト
+                    nextTotalCost = 0;
+                   // nextTotalCost = currentCostInfo.totalCost + nextLinkRef.obj.linkCost;
+                }
+                //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
+                if (nextCostInfo.status == 0 || nextTotalCost < nextCostInfo.totalCost)
+                {
+                    nextCostInfo.totalCost = nextTotalCost;
+                    nextCostInfo.status = 1;
+                    //nextCostInfo.tileCostInfo.status = 1;
+                    nextCostInfo.back = currentCostInfo;
+                    unprocessed.Add(nextCostInfo);
+                }
+
+            }
+
+            //リンクの探索ステータス更新
+            currentCostInfo.status = 2;
+            unprocessed.Delete(minIndex);
+
+            return 0;
+        }
+
+
+        public int CalcRoute()
+        {
+            int ret;
+
+            int pastTickCount = Environment.TickCount;
+            int nowTickCount;
+            //計算
+            while (true)
+            {
+                ret = CalcRouteStep();
+
+                nowTickCount = Environment.TickCount;
+                logTickCountList[logCalcCount] = nowTickCount - pastTickCount;
+                pastTickCount = nowTickCount;
+                logUnprocessedCount[logCalcCount] = unprocessed.numElement;
+                if (unprocessed.numElement > logMaxQueue)
+                    logMaxQueue = unprocessed.numElement;
+                logCalcCount++;
+
+                if (ret != 0) break;
+            }
+
+            return 0;
+        }
 
 
         /****** 計算結果出力 ******************************************************************************/

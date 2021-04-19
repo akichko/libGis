@@ -361,9 +361,9 @@ namespace libGis
 
             foreach (var tmpRefHdl in tmpRefHdlList)
             {
-                CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, null, tmpRefHdl.refType, tmpRefHdl.nextRef);
+                CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpRefHdl.nextRef);
 
-                retList.AddRange(SearchObjHandle(objHdlRef.nextRef));
+                retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));
 
             }
 
@@ -373,7 +373,7 @@ namespace libGis
 
 
 
-        public virtual List<CmnObjHdlRef> SearchObjHandle(CmnObjRef objRef)
+        public virtual List<CmnObjHdlRef> SearchObjHandleRef(CmnObjRef objRef)
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
@@ -402,7 +402,7 @@ namespace libGis
                 }
                 else if (tmpObjRef.nextRef != null)
                 {
-                    retList.AddRange(SearchObjHandle(tmpObjRef.nextRef));
+                    retList.AddRange(SearchObjHandleRef(tmpObjRef.nextRef));
                 }
             }
 
@@ -420,9 +420,9 @@ namespace libGis
 
             foreach (var tmpObjRef in tmpObjRefList)
             {
-                CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, null, tmpObjRef.refType, tmpObjRef);
+                CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpObjRef);
 
-                retList.AddRange(SearchObjHandle(objHdlRef.nextRef));
+                retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));
                 
             }
 
