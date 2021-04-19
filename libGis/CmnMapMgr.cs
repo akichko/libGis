@@ -319,52 +319,47 @@ namespace libGis
                 return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objIndex);
             else
                 return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId);
-
         }
 
 
-        //public CmnDirObjHandle SearchDirObj(CmnSeachKey cmnSearchKey)
-        //{
-        //    if (cmnSearchKey == null)
-        //        return null;
+        /* 関連オブジェクト検索 *************************************************************/
 
-        //    //Tile <- offset未対応
-        //    CmnTile tile;
-        //    if (cmnSearchKey.tile != null)
-        //        tile = cmnSearchKey.tile;
-        //    else
-        //        tile = SearchTile(cmnSearchKey.tileId);
-
-        //    if (tile == null)
-        //        return null;
-
-        //    //Obj
-        //    if (cmnSearchKey.obj != null)
-        //        return new CmnObjHandle(tile, cmnSearchKey.obj);
-        //    else if (cmnSearchKey.objIndex != 0xffff)
-        //        return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objIndex);
-        //    else
-        //        return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId);
-
-        //}
-
-
-        //関連オブジェクト取得 ***********************************************
-
-        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, int refType)
+        //関連オブジェクト取得（参照種別指定）
+        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, int refType, byte objDirection)
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
-
-            List<CmnObjHdlRef> tmpRefHdlList = objHdl.obj.GetObjRefHdlList(refType, objHdl.tile); //Objの参照先一覧
-
+            List<CmnObjHdlRef> tmpRefHdlList = objHdl.obj.GetObjRefHdlList(refType, objHdl.tile, objDirection); //Objの参照先一覧
 
             foreach (var tmpRefHdl in tmpRefHdlList)
             {
                 CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpRefHdl.nextRef);
 
                 retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));
+            }
 
+            return retList;
+        }
+
+        //ラッパー
+        public virtual List<CmnObjHdlRef> SearchRefObject(CmnDirObjHandle objDHdl, int refType)
+        {
+            return SearchRefObject((CmnObjHandle)objDHdl, refType, objDHdl.direction);
+        }
+
+
+        //関連オブジェクト取得（全て）。必要に応じてオーバーライド
+        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, byte direction = 1)
+        {
+            List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
+
+            List<CmnObjRef> tmpObjRefList = objHdl.obj.GetObjAllRefList(objHdl.tile, direction); //Objの参照先一覧
+            
+            foreach (var tmpObjRef in tmpObjRefList)
+            {
+                CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpObjRef);
+
+                retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));                
             }
 
             return retList;
@@ -372,70 +367,50 @@ namespace libGis
         }
 
 
-
-        public virtual List<CmnObjHdlRef> SearchObjHandleRef(CmnObjRef objRef)
+        //再帰検索する内部関数
+        private List<CmnObjHdlRef> SearchObjHandleRef(CmnObjRef objRef)
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
-            if (objRef == null)
-                return retList;
+            if (objRef == null || objRef.key == null)
+                return retList; //異常
 
             //CmnObjHandle objHdl = SearchObj(objRef); //ハンドル
-            CmnObjHandle objHdl = SearchObj(objRef.key); //ハンドル
+            CmnObjHandle objHdl = SearchObj(objRef.key); //キー⇒ハンドル
             if (objHdl == null)
+            {
+                CmnObjHdlRef ret = new CmnObjHdlRef(null, objRef, true);
+                retList.Add(ret);
                 return retList;
 
-            if(objRef.final == true)
+            }
+
+            if (objRef.final == true)
             {
                 retList.Add(new CmnObjHdlRef(objHdl, objRef.refType));
                 return retList;
             }
 
 
-            List<CmnObjHdlRef> tmpObjRefList = objHdl.obj.GetObjRefHdlList(objRef.refType, objHdl.tile); //Objの参照先一覧（種別指定）
+            List<CmnObjHdlRef> tmpObjHdlRefList = objHdl.obj.GetObjRefHdlList(objRef.refType, objHdl.tile, objRef.key.objDirection); //Objの参照先一覧（種別指定）
 
-            foreach (var tmpObjRef in tmpObjRefList)
+            foreach (var tmpObjHdlRef in tmpObjHdlRefList)
             {
-                if (tmpObjRef.obj != null)
-                {
-                    retList.Add(tmpObjRef);
+                //ハンドルありor検索失敗
+                if (tmpObjHdlRef.objHdl != null || tmpObjHdlRef.noData)
+                { 
+                    retList.Add(tmpObjHdlRef);
                 }
-                else if (tmpObjRef.nextRef != null)
+                //検索情報あり
+                else if (tmpObjHdlRef.nextRef != null)
                 {
-                    retList.AddRange(SearchObjHandleRef(tmpObjRef.nextRef));
+                    //追加検索
+                    retList.AddRange(SearchObjHandleRef(tmpObjHdlRef.nextRef));
                 }
             }
 
             return retList;
         }
-
-        //必要に応じてオーバーライド
-        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl)
-        {
-            List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
-
-
-            List<CmnObjRef> tmpObjRefList = objHdl.obj.GetObjAllRefList(objHdl.tile); //Objの参照先一覧
-            
-
-            foreach (var tmpObjRef in tmpObjRefList)
-            {
-                CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpObjRef);
-
-                retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));
-                
-            }
-
-            return retList;
-
-
-            //return cmnObjHdl.obj.GetObjAllRefList(cmnObjHdl.tile)
-            //    .Select(x => CmnObjHdlRef.GenCmnObjHdlRef(SearchObjHandle(x), x.refType))
-            //    .Where(x=>x!=null)
-            //    .ToList();
-        }
-
-
 
     }
 

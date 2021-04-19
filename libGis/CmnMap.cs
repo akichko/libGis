@@ -155,12 +155,14 @@ namespace libGis
 
         public virtual UInt16 Index { get { return 0xffff; } set { return; } }
 
+        public virtual int Length {  get { return (int)LatLon.CalcLength(Geometry); } }
+
         //抽象メソッド
         public virtual List<CmnObjRef> GetObjAllRefList() { return null; }
 
-        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile) { return null; }
+        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 1) { return null; }
 
-        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile) { return null; }
+        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) { return null; }
 
 
         //仮想メソッド
@@ -190,7 +192,7 @@ namespace libGis
 
         //描画用
 
-        public virtual List<AttrItemInfo> GetAttributeListItem() { return null; }
+        public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile) { return null; }
 
 
         public virtual int DrawData(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
@@ -535,7 +537,7 @@ namespace libGis
         public CmnTile tile;
         public CmnObj obj;
 
-        public CmnObjHandle() { }
+        //public CmnObjHandle() { }
         public CmnObjHandle(CmnTile tile, CmnObj obj)
         {
             this.tile = tile;
@@ -575,27 +577,35 @@ namespace libGis
 
     }
 
-    public class CmnObjHdlRef : CmnObjHandle //参照属性拡張
+    public class CmnObjHdlRef// : CmnObjHandle //参照属性拡張
     {
-        //public int refType; //最終参照
+        public CmnObjHandle objHdl;
+        public bool isDirObjHandle = false; //trueの場合、CmnDirObjHandle
+        public int objRefType;
         public CmnObjRef nextRef; //NULLになるまで、データ参照を再帰的に続ける必要がある
+        public bool noData = false; //検索結果がない場合、最終のRef情報を返却
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, CmnObjRef nextRef) : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, CmnObjRef nextRef, bool noData = false)// : base(objHdl?.tile, objHdl?.obj)
         {
+            this.objHdl = objHdl;
             this.nextRef = nextRef;
+            this.noData = noData;
         }
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, int refType, UInt16 objType) : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, int refType, UInt16 objType)// : base(objHdl?.tile, objHdl?.obj)
         {
-
+            this.objHdl = objHdl;
+            this.objRefType = refType;
             this.nextRef = new CmnObjRef(refType, new CmnSearchKey(objType));
         }
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, int refType) : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, int refType)// : base(objHdl?.tile, objHdl?.obj)
         {
-
+            this.objHdl = objHdl;
+            this.objRefType = refType;
             this.nextRef = new CmnObjRef(refType, null);
         }
+
         //public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType, CmnObjRef objRef) : base(tile, obj)
         //{
         //    this.nextRef.refType = refType;
@@ -627,18 +637,8 @@ namespace libGis
     {
         //参照種別。最終目的。リンクでも前後や対向車線などを区別する
         public int refType;
-        public bool final = true; //参照先が最終
-
-        //直近の参照（何度かデータを経由する場合）
         public CmnSearchKey key;
-
-        //public UInt16 objType;
-        //public CmnTile tile;
-        //public uint tileId = 0xffffffff;
-        //public TileXY tileOFfset;
-        //public CmnObj obj;
-        //public UInt64 objId = 0xffffffffffffffff;
-        //public UInt16 objIndex = 0xffff;
+        public bool final = true; //参照先が最終
 
         public CmnObjRef(int refType, CmnSearchKey key, bool final = true)
         {
@@ -654,6 +654,7 @@ namespace libGis
             this.key = new CmnSearchKey(objType);
         }
     }
+
     //public class CmnDLinkHandle
     //{
     //    public CmnTile tile;
@@ -687,13 +688,6 @@ namespace libGis
 
 
 
-    public class CmnAttrRef
-    {
-        public int refType;
-        public bool final = true;
-        public CmnSearchKey key;
-    }
-
     public class CmnSearchKey
     {
         public UInt16 objType;
@@ -703,6 +697,7 @@ namespace libGis
         public CmnObj obj;
         public UInt64 objId = 0xffffffffffffffff;
         public UInt16 objIndex = 0xffff;
+        public byte objDirection = 0xff;
 
         public CmnSearchKey(ushort objType)
         {
@@ -760,9 +755,24 @@ namespace libGis
         
         //public CmnObj DrawData(CbGetObjFunc cbDrawFund);
 
-        List<AttrItemInfo> GetAttributeListItem();
+        List<AttrItemInfo> GetAttributeListItem(CmnTile tile);
 
         
+    }
+
+    //ビューワ属性表示用
+    public class AttrTag
+    {
+        public int refType;
+        public CmnSearchKey searchKey;
+        public LatLon latlon;
+
+        public AttrTag(int refType, CmnSearchKey key, LatLon latlon)
+        {
+            this.refType = refType;
+            this.searchKey = key;
+            this.latlon = latlon;
+        }
     }
 
     /* コード ****************************************************************/
@@ -774,6 +784,17 @@ namespace libGis
         NorthWest,
         NorthEast,
         Center
+    }
+
+
+    public enum ECmnMapContentType
+    {
+        Link = 0x0001,
+        Node = 0x0002,
+        LinkGeometry = 0x0004,
+        LinkAttribute = 0x0008,
+        All = 0xffff
+
     }
 
 

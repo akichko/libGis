@@ -37,6 +37,11 @@ namespace libGis
             //get { return tileCostInfo.tile.GetMapLink(linkIndex); }
             get { return new CmnObjHandle(tileCostInfo.tile, tileCostInfo.linkArray[linkIndex]); }
         }
+
+        public CmnDirObjHandle DLinkHdl
+        {
+            get { return new CmnDirObjHandle(tileCostInfo.tile, tileCostInfo.linkArray[linkIndex], linkDirection); }
+        }
     }
 
     public class TileCostInfo
@@ -152,6 +157,10 @@ namespace libGis
 
         CmnMapMgr mapMgr;
 
+        //汎用種別
+        ushort linkObjType = (ushort)ECmnMapContentType.Link;
+        ushort nextLinkRefType = (ushort)ECmnMapRefType.NextLink;
+        ushort backLinkRefType = (ushort)ECmnMapRefType.BackLink;
 
         //性能測定用
         public int[] logTickCountList;
@@ -175,10 +184,7 @@ namespace libGis
 
         /****** データアクセス ******************************************************************************/
 
-        public ushort GetObjIndex()
-        {
-            return 0;
-        }
+     
 
 
         /****** 設定 ******************************************************************************/
@@ -249,24 +255,24 @@ namespace libGis
         //    return 0;
         //}
 
-        //public int AddTileInfo(uint tileId)
-        //{
-        //    if (!dicTileCostInfo.ContainsKey(tileId))
-        //        return 0;
+        public int AddTileInfo(uint tileId)
+        {
+            if (!dicTileCostInfo.ContainsKey(tileId))
+                return 0;
 
-        //    TileCostInfo tmpTileCostInfo = dicTileCostInfo[tileId];
-        //    if (tmpTileCostInfo.tile != null)
-        //        return 0;
+            TileCostInfo tmpTileCostInfo = dicTileCostInfo[tileId];
+            if (tmpTileCostInfo.tile != null)
+                return 0;
 
-        //    mapMgr.LoadTile(tileId, (ushort)(SpMapContentType.Link | SpMapContentType.Node), tmpTileCostInfo.maxUsableRoadType);
-        //    CmnTile tmpTile = mapMgr.SearchTile(tileId);
+            mapMgr.LoadTile(tileId, linkObjType, tmpTileCostInfo.maxUsableRoadType);
+            CmnTile tmpTile = mapMgr.SearchTile(tileId);
 
-        //    tmpTileCostInfo.SetTileCostInfo(tmpTile);
-        //    Console.Write($"\r {dicTileCostInfo.Count()} tiles read");
+            tmpTileCostInfo.SetTileCostInfo(tmpTile, linkObjType);
+            Console.Write($"\r {dicTileCostInfo.Count()} tiles read");
 
 
-        //    return 0;
-        //}
+            return 0;
+        }
 
         /****** 経路計算用 ******************************************************************************/
 
@@ -307,7 +313,7 @@ namespace libGis
             //計算対象選定　処理未完了＆コスト最小を探す
             int minIndex = unprocessed.GetMinCostIndex();
 
-            if (minIndex < 0)
+            if (minIndex < 0) //探索失敗
             {
                 Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
                 return -1;
@@ -315,72 +321,46 @@ namespace libGis
 
             CostRecord currentCostInfo = unprocessed.GetCostRecord(minIndex);
 
-            if (currentCostInfo == null)
+            if (currentCostInfo == null) //異常
             {
                 Console.WriteLine("Fatal Error");
                 return -1;
-
             }
-            if (currentCostInfo.isGoal)
+            if (currentCostInfo.isGoal) //探索成功
             {
-                Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] Goal Found ! (CalcCount = {logCalcCount}, totalCost = {currentCostInfo.totalCost})");
+                Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] Goal Found !! (CalcCount = {logCalcCount}, totalCost = {currentCostInfo.totalCost})");
                 currentCostInfo.status = 2;
                 return -1;
             }
-
-            if (currentCostInfo.status == 2)
+            if (currentCostInfo.status == 2) //処理済みデータ
             {
                 unprocessed.Delete(minIndex);
                 return 0;
             }
 
-            CmnObjHandle currentLinkHdl = currentCostInfo.LinkHdl;
+            CmnDirObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
 
-            List<CmnDirObjHandle> connectLinkList;
-
-            //暫定
-            connectLinkList = null;
-
+            List<CmnDirObjHandle> connectLinkList = null;
+            List<CmnObjHdlRef> objHdlRefList;
             //接続リンク取得
             while (true)
             {
-                //接続リンク取得
-                //向き
-                mapMgr.SearchRefObject(currentLinkHdl, (int)(ECmnMapRefType.NextLink));
-                mapMgr.SearchRefObject(currentLinkHdl, (int)(ECmnMapRefType.BackLink));
+                //接続リンク。向きは自動判別
+                objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, (int)(ECmnMapRefType.NextLink));
 
                 //不足タイルがあれば読み込み
+                //初期設定の読み込み可能範囲内タイル
+                List<uint> noDataTileIdList = objHdlRefList
+                    .Where(x => x.noData)
+                    .Select(x => x.nextRef.key.tileId)
+                    .Where(x => x != 0xffffffff)
+                    .ToList();
 
-                //成功
-                break;
+                if(noDataTileIdList.Count > 0)
+                    noDataTileIdList.ForEach(x => AddTileInfo(x));
+                else
+                    break;
             }
-
-            //不足タイルがあれば読み込み
-
-
-
-            //if (baseNodeHdl.mapNode == null && baseNodeHdl.tileId != 0)
-            //{
-            //    //タイル追加読み込み
-            //    AddTileInfo(baseNodeHdl.tileId);
-
-            //    //ハンドル再取得
-            //    baseNodeHdl = mapMgr.GetEdgeNode(currentLinkHdl.tile, currentLinkHdl.mapLink, currentCostInfo.linkDirection, false);
-            //}
-
-
-            //不足があれば追加タイル読み込み。ループ
-
-            //connectLinkList = mapMgr.GetConnectLinks(currentLinkHdl, currentCostInfo.linkDirection, true, true);
-
-            //List<DLinkHandle> connectLinkListTest = mapMgr.GetConnectLinks(baseNodeHdl, false);
-            //foreach (DLinkHandle a in connectLinkListTest.Where(x => x.mapLink == null))
-            //{
-            //    //タイル追加読み込み
-            //    AddTileInfo(a.tileId);
-            //}
-
-            //connectLinkList = mapMgr.GetConnectLinks(currentLinkHdl, currentCostInfo.linkDirection, true, true);
 
 
             //接続リンクとコスト参照
@@ -388,14 +368,14 @@ namespace libGis
             {
                 //探索除外：　Uターンリンク、タイルに応じた使用可能道路種別でない、スタート付近で道路種別が下がる移動
 
-                if (nextLinkRef.obj == currentLinkHdl.obj
+                if (nextLinkRef.obj == currentDLinkHdl.obj
                     || nextLinkRef.obj.SubType > currentCostInfo.tileCostInfo.maxUsableRoadType)
                     continue;
                 //.Where(x => x.mapLink != currentLinkHdl.mapLink && x.mapLink.roadType <= currentCostInfo.tileCostInfo.maxUsableRoadType) )
 
 
                 if (nextLinkRef.obj.SubType >= 6
-                    && currentLinkHdl.obj.SubType < nextLinkRef.obj.SubType
+                    && currentDLinkHdl.obj.SubType < nextLinkRef.obj.SubType
                     && currentCostInfo.tileCostInfo.DistFromDestTile > 8000)
                     continue;
 
@@ -411,9 +391,8 @@ namespace libGis
                 }
                 else
                 {
-                    //コスト
-                    nextTotalCost = 0;
-                   // nextTotalCost = currentCostInfo.totalCost + nextLinkRef.obj.linkCost;
+                    //コストは暫定でリンク長
+                   nextTotalCost = currentCostInfo.totalCost + nextLinkRef.obj.Length;
                 }
                 //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
                 if (nextCostInfo.status == 0 || nextTotalCost < nextCostInfo.totalCost)
@@ -524,10 +503,4 @@ namespace libGis
 
     }
 
-
-
-
-    class CmnMapRoute
-    {
-    }
 }
