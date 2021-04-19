@@ -47,6 +47,62 @@ namespace libGis
         }
 
 
+        //データ操作メソッド *****************************************************
+
+        public abstract CmnTile CreateTile(uint tileId);
+
+        public int LoadTile(uint tileId, UInt16 reqType = 0xFFFF, UInt16 reqMaxSubType = 0xFFFF)
+        {
+            if (!IsConnected) return -1;
+
+            CmnTile tmpTile;
+            bool isNew = false;
+
+            if (tileDic.ContainsKey(tileId))
+            {
+                tmpTile = tileDic[tileId];
+
+                //更新必要有無チェック
+
+                //未読み込み（NULL）のObgGroupがあるか
+                int numObjGrToBeRead = mal.GetMapContentTypeList()
+                    .Where(x => (reqType & x) == x)
+                    .Select(x => tmpTile.GetObjGroup(x))
+                    .Count(x => x == null || x.loadedSubType < reqMaxSubType);
+
+
+                if (numObjGrToBeRead == 0)
+                    return 0; //更新不要
+
+            }
+            //タイルがなければ作成
+            else
+            {
+                tmpTile = CreateTile(tileId);
+                isNew = true;
+            }
+
+
+            //必要となった場合
+
+
+            //データ読み込み
+            List<CmnObjGroup> tmpObjGrList = mal.LoadObjGroupList(tileId, reqType, reqMaxSubType);
+
+            //インデックス付与（仮）
+            tmpObjGrList.ForEach(x => x.SetIndex());
+
+            //タイル更新
+            tmpTile.UpdateObjGroupList(tmpObjGrList);
+
+
+            if (isNew)
+                tileDic.Add(tileId, tmpTile);
+
+            return 0;
+
+        }
+
 
         //public int LoadTile(uint tileId, bool multiContents = true, UInt16 reqType = 0xFFFF, UInt16 reqMaxSubType = 0xFFFF)
         //{
@@ -95,57 +151,6 @@ namespace libGis
         //    return 0;
 
         //}
-
-        public int LoadTile(uint tileId, UInt16 reqType = 0xFFFF, UInt16 reqMaxSubType = 0xFFFF)
-        {
-            if (!IsConnected) return -1;
-
-            CmnTile tmpTile;
-            bool isNew = false;
-
-            if (tileDic.ContainsKey(tileId))
-            {
-                tmpTile = tileDic[tileId];
-
-                //更新必要有無チェック
-
-                //未読み込み（NULL）のObgGroupがあるか
-                int numObjGrToBeRead = mal.GetMapContentTypeList()
-                    .Where(x => (reqType & x) == x)
-                    .Select(x => tmpTile.GetObjGroup(x))
-                    .Count(x => x == null || x.loadedSubType < reqMaxSubType);
-
-
-                if (numObjGrToBeRead == 0)
-                    return 0; //更新不要
-
-            }
-            //タイルがなければ作成
-            else
-            {
-                tmpTile = mal.CreateTile(tileId);
-                isNew = true;
-            }
-
-
-            //必要となった場合
-
-
-            //データ読み込み
-            List<CmnObjGroup> tmpObjGrList = mal.LoadObjGroupList(tileId, reqType, reqMaxSubType);
-
-            //タイル更新
-            tmpTile.UpdateObjGroupList(tmpObjGrList);
-
-
-            if (isNew)
-                tileDic.Add(tileId, tmpTile);
-
-            return 0;
-
-        }
-
-
 
         public bool UnloadTile(uint tileId)
         {
@@ -267,33 +272,106 @@ namespace libGis
             
         }
 
-        public CmnObjHandle SearchObj(CmnObjRef objRef)
+        //public CmnObjHandle SearchObj(CmnObjRef objRef)
+        //{
+        //    if (objRef == null)
+        //        return null;
+
+        //    //Tile <- offset未対応
+        //    CmnTile tile;
+        //    if (objRef.tile != null)
+        //        tile = objRef.tile;
+        //    else
+        //        tile = SearchTile(objRef.tileId);
+
+        //    if (tile == null)
+        //        return null;
+
+        //    //Obj
+        //    if (objRef.obj != null)
+        //        return new CmnObjHandle(tile, objRef.obj);
+        //    else if (objRef.objIndex != 0xffff)
+        //        return tile.GetObjHandle(objRef.objType, objRef.objIndex);
+        //    else
+        //        return tile.GetObjHandle(objRef.objType, objRef.objId);
+
+        //}
+
+        public CmnObjHandle SearchObj(CmnSearchKey cmnSearchKey)
         {
-            if (objRef == null)
+            if (cmnSearchKey == null )
                 return null;
 
             //Tile <- offset未対応
             CmnTile tile;
-            if (objRef.tile != null)
-                tile = objRef.tile;
+            if (cmnSearchKey.tile != null)
+                tile = cmnSearchKey.tile;
             else
-                tile = SearchTile(objRef.tileId);
+                tile = SearchTile(cmnSearchKey.tileId);
 
             if (tile == null)
                 return null;
 
             //Obj
-            if (objRef.obj != null)
-                return new CmnObjHandle(tile, objRef.obj);
-            else if (objRef.objIndex != 0xffff)
-                return tile.GetObjHandle(objRef.objType, objRef.objIndex);
+            if (cmnSearchKey.obj != null)
+                return new CmnObjHandle(tile, cmnSearchKey.obj);
+            else if (cmnSearchKey.objIndex != 0xffff)
+                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objIndex);
             else
-                return tile.GetObjHandle(objRef.objType, objRef.objId);
+                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId);
 
         }
 
 
+        //public CmnDirObjHandle SearchDirObj(CmnSeachKey cmnSearchKey)
+        //{
+        //    if (cmnSearchKey == null)
+        //        return null;
+
+        //    //Tile <- offset未対応
+        //    CmnTile tile;
+        //    if (cmnSearchKey.tile != null)
+        //        tile = cmnSearchKey.tile;
+        //    else
+        //        tile = SearchTile(cmnSearchKey.tileId);
+
+        //    if (tile == null)
+        //        return null;
+
+        //    //Obj
+        //    if (cmnSearchKey.obj != null)
+        //        return new CmnObjHandle(tile, cmnSearchKey.obj);
+        //    else if (cmnSearchKey.objIndex != 0xffff)
+        //        return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objIndex);
+        //    else
+        //        return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId);
+
+        //}
+
+
         //関連オブジェクト取得 ***********************************************
+
+        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, int refType)
+        {
+            List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
+
+
+            List<CmnObjHdlRef> tmpRefHdlList = objHdl.obj.GetObjRefHdlList(refType, objHdl.tile); //Objの参照先一覧
+
+
+            foreach (var tmpRefHdl in tmpRefHdlList)
+            {
+                CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, null, tmpRefHdl.refType, tmpRefHdl.nextRef);
+
+                retList.AddRange(SearchObjHandle(objHdlRef.nextRef));
+
+            }
+
+            return retList;
+
+        }
+
+
 
         public virtual List<CmnObjHdlRef> SearchObjHandle(CmnObjRef objRef)
         {
@@ -302,7 +380,8 @@ namespace libGis
             if (objRef == null)
                 return retList;
 
-            CmnObjHandle objHdl = SearchObj(objRef); //ハンドル
+            //CmnObjHandle objHdl = SearchObj(objRef); //ハンドル
+            CmnObjHandle objHdl = SearchObj(objRef.key); //ハンドル
             if (objHdl == null)
                 return retList;
 
@@ -374,10 +453,8 @@ namespace libGis
 
         List<UInt16> GetMapContentTypeList();
 
-        CmnTile CreateTile(uint tileId);
-
-        //  List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt16 type = 0xFFFF, UInt16 subType = 0xFFFF);
-
+        //CmnTile CreateTile(uint tileId);
+                
         List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt16 type = 0xFFFF, UInt16 subType = 0xFFFF);
 
         CmnObjGroup LoadObjGroup(uint tileId, UInt16 type, UInt16 subType = 0xFFFF);

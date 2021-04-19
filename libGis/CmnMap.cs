@@ -144,11 +144,16 @@ namespace libGis
     public abstract class CmnObj : IViewObj
     {
         //抽象プロパティ
+
         public abstract UInt64 Id { get; }
+
         public abstract UInt16 Type { get; }
 
         public virtual UInt16 SubType { get { return 0xffff; } }
+
         public virtual LatLon[] Geometry { get { return null; } }
+
+        public virtual UInt16 Index { get { return 0xffff; } set { return; } }
 
         //抽象メソッド
         public virtual List<CmnObjRef> GetObjAllRefList() { return null; }
@@ -263,14 +268,29 @@ namespace libGis
 
         }
 
+        public virtual void SetIndex()
+        {
+            if (objArray == null)
+                return;
+
+            for(ushort i=0; i<objArray.Length; i++)
+            {
+                objArray[i].Index = i;
+            }
+
+        }
+
         public virtual void DrawData(CmnTile tile, CbGetObjFunc cbDrawFunc)
         {
+            if (objArray == null)
+                return;
+
             if (isDrawable)
             {
                 if (isDrawReverse)
                     objArray.Reverse().ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
-                    //Array.ForEach(objArray.Reverse().ToArray(), x => x.DrawData(cbDrawFunc));
-                    //objArray.Reverse().Select(x => x.DrawData(cbDrawFunc));
+                //Array.ForEach(objArray.Reverse().ToArray(), x => x.DrawData(cbDrawFunc));
+                //objArray.Reverse().Select(x => x.DrawData(cbDrawFunc));
                 else
                     Array.ForEach(objArray, x => x.DrawData(tile, cbDrawFunc));
 
@@ -304,6 +324,7 @@ namespace libGis
         public uint tileId { get { return tileInfo.tileId; } }
         public int X { get { return tileInfo.X; } }
         public int Y { get { return tileInfo.Y; } }
+        public int Lv { get { return tileInfo.Lv; } }
 
         //override public UInt64 Id { get { return tileInfo.tileId; } }
 
@@ -333,7 +354,7 @@ namespace libGis
 
         //通常メソッド
 
-         public virtual CmnObjGroup GetObjGroup(UInt16 objType)
+        public virtual CmnObjGroup GetObjGroup(UInt16 objType)
         {
             if (objDic.ContainsKey(objType))
                 return objDic[objType];
@@ -442,7 +463,7 @@ namespace libGis
 
             var ret = GetObjGroupList(objType)
                 ?.Select(x => x?.GetNearestObj(latlon, maxSubType)?.SetTile(this))
-                .Where(x=>x!=null)
+                .Where(x => x != null)
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();
 
@@ -526,7 +547,7 @@ namespace libGis
         }
     }
 
-    public class CmnObjHdlDistance : CmnObjHandle
+    public class CmnObjHdlDistance : CmnObjHandle //距離拡張
     {
         public double distance;
 
@@ -542,7 +563,18 @@ namespace libGis
         }
     }
 
-    public class CmnObjHdlRef : CmnObjHandle
+    public class CmnDirObjHandle : CmnObjHandle //方向拡張
+    {
+        public byte direction;
+
+        public CmnDirObjHandle(CmnTile tile, CmnObj obj, byte direction) : base(tile, obj)
+        {
+            this.direction = direction;
+        }
+
+    }
+
+    public class CmnObjHdlRef : CmnObjHandle //参照属性拡張
     {
         public int refType;
         public CmnObjRef nextRef; //NULLになるまで、データ参照を再帰的に続ける必要がある
@@ -583,21 +615,23 @@ namespace libGis
     {
         //参照種別。最終目的。リンクでも前後や対向車線などを区別する
         public int refType;
+        public bool final = true; //参照先が最終
 
         //直近の参照（何度かデータを経由する場合）
-        public UInt16 objType;
-        public CmnTile tile;
-        public uint tileId = 0xffffffff;
-        public TileXY tileOFfset;
-        public CmnObj obj;
-        public UInt64 objId = 0xffffffffffffffff;
-        public UInt16 objIndex = 0xffff;
-        public bool final = true;
+        public CmnSearchKey key;
+
+        //public UInt16 objType;
+        //public CmnTile tile;
+        //public uint tileId = 0xffffffff;
+        //public TileXY tileOFfset;
+        //public CmnObj obj;
+        //public UInt64 objId = 0xffffffffffffffff;
+        //public UInt16 objIndex = 0xffff;
 
         public CmnObjRef(int refType, ushort objType)
         {
             this.refType = refType;
-            this.objType = objType;
+            this.key = new CmnSearchKey(objType);
         }
     }
     //public class CmnDLinkHandle
@@ -630,6 +664,31 @@ namespace libGis
     //    //}
 
     //}
+
+
+
+    public class CmnAttrRef
+    {
+        public int refType;
+        public bool final = true;
+        public CmnSearchKey key;
+    }
+
+    public class CmnSearchKey
+    {
+        public UInt16 objType;
+        public CmnTile tile;
+        public uint tileId = 0xffffffff;
+        public TileXY tileOFfset;
+        public CmnObj obj;
+        public UInt64 objId = 0xffffffffffffffff;
+        public UInt16 objIndex = 0xffff;
+
+        public CmnSearchKey(ushort objType)
+        {
+            this.objType = objType;
+        }
+    }
 
 
     public struct TileObjId
@@ -695,6 +754,27 @@ namespace libGis
         NorthWest,
         NorthEast,
         Center
+    }
+
+
+    //使うかどうかは自由
+    public enum ECmnMapRefType
+    {
+        Selected,
+        RelatedLink,
+        NextLink,
+        BackLink,
+        RelatedNode,
+        StartNode,
+        EndNode,
+        RelatedLine,
+        LaneBoundary,
+        RoadBoundary,
+        NextLane,
+        BackLane,
+        RelatedObj,
+        RelatedTile,
+        LatLon
     }
 
 }
