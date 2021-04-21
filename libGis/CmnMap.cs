@@ -158,11 +158,11 @@ namespace libGis
         public virtual int Length {  get { return (int)LatLon.CalcLength(Geometry); } }
 
         //抽象メソッド
-        public virtual List<CmnObjRef> GetObjAllRefList() { return null; }
+        public virtual List<CmnObjRef> GetObjAllRefList() { return new List<CmnObjRef>(); }
 
-        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 1) { return null; }
+        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 1) { return new List<CmnObjRef>(); }
 
-        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) { return null; }
+        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) { return  new List<CmnObjHdlRef>(); }
 
 
         //仮想メソッド
@@ -192,7 +192,7 @@ namespace libGis
 
         //描画用
 
-        public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile) { return null; }
+        public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile) { return new List<AttrItemInfo>(); }
 
 
         public virtual int DrawData(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
@@ -229,8 +229,10 @@ namespace libGis
         public bool isDrawReverse = false;
         public bool isGeoSearchable = true;
         public bool isIdSearchable = true;
+        public bool isArray = true;
 
         public CmnObj[] objArray;
+        public List<CmnObj> objList;
         public UInt16 loadedSubType = 0;
 
 
@@ -239,17 +241,37 @@ namespace libGis
             if (!isIdSearchable)
                 return null;
 
-            return objArray
-                ?.Where(x => x.Id == objId)
-                .FirstOrDefault();
+            if (isArray)
+            {
+                return objArray
+                    ?.Where(x => x.Id == objId)
+                    .FirstOrDefault();
+            }
+            else
+            {
+                return objList
+                    ?.Where(x => x.Id == objId)
+                    .FirstOrDefault();
+            }
         }
 
         public virtual CmnObj GetObj(UInt16 objIndex)
         {
-            if (objArray == null || objIndex >= objArray.Length)
-                return null;
+            if (isArray)
+            {
+                if (objArray == null || objIndex >= objArray.Length)
+                    return null;
+                else
+                    return objArray[objIndex];
+            }
             else
-                return objArray[objIndex];
+            {
+                if (objList == null || objIndex >= objList.Count)
+                    return null;
+                else
+                    return objList[objIndex];
+
+            }
         }
 
         public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
@@ -257,11 +279,24 @@ namespace libGis
             if (!isGeoSearchable)
                 return null;
 
-            CmnObjHdlDistance nearestObjDistance = objArray
-                ?.Where(x => x.SubType <= maxSubType)
-                .Select(x => new CmnObjHdlDistance(null, x, x.GetDistance(latlon)))
-                .OrderBy(x => x.distance)
-                .FirstOrDefault();
+            CmnObjHdlDistance nearestObjDistance;
+
+            if (isArray)
+            {
+                nearestObjDistance = objArray
+                    ?.Where(x => x.SubType <= maxSubType)
+                    .Select(x => new CmnObjHdlDistance(null, x, x.GetDistance(latlon)))
+                    .OrderBy(x => x.distance)
+                    .FirstOrDefault();
+            }
+            else
+            {
+                nearestObjDistance = objList
+                    ?.Where(x => x.SubType <= maxSubType)
+                    .Select(x => new CmnObjHdlDistance(null, x, x.GetDistance(latlon)))
+                    .OrderBy(x => x.distance)
+                    .FirstOrDefault();
+            }
 
             if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
                 return null;
@@ -272,12 +307,25 @@ namespace libGis
 
         public virtual void SetIndex()
         {
-            if (objArray == null)
-                return;
-
-            for(ushort i=0; i<objArray.Length; i++)
+            if (isArray)
             {
-                objArray[i].Index = i;
+                if (objArray == null)
+                    return;
+
+                for (ushort i = 0; i < objArray.Length; i++)
+                {
+                    objArray[i].Index = i;
+                }
+            }
+            else
+            {
+                if (objList == null)
+                    return;
+
+                for (ushort i = 0; i < objList.Count; i++)
+                {
+                    objList[i].Index = i;
+                }
             }
 
         }
@@ -313,6 +361,19 @@ namespace libGis
                 //}
             }
         }
+
+        public virtual void AddObj(CmnObj obj)
+        {
+            if (!isArray)
+            {
+                objList.Add(obj);
+                obj.Index = (UInt16)(objList.Count - 1);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 
 
@@ -327,12 +388,22 @@ namespace libGis
         public int X { get { return tileInfo.X; } }
         public int Y { get { return tileInfo.Y; } }
         public int Lv { get { return tileInfo.Lv; } }
+        override public LatLon[] Geometry { get { return tileInfo.GetGeometry(); } }
 
         //override public UInt64 Id { get { return tileInfo.tileId; } }
 
 
         // 抽象メソッド
+
+
+        public CmnTile()
+        {
+            objDic = new Dictionary<UInt16, CmnObjGroup>();
+        }
+
         public abstract CmnTile CreateTile(uint tileId);
+
+
 
         //必要に応じてオーバーライド
         public virtual int UpdateObjGroup(CmnObjGroup objGroup) /* abstract ?? */
@@ -419,35 +490,12 @@ namespace libGis
         {
             return GetObjGroup(objType)?.GetObj(objId);
 
-            //return GetObjArray(objType)
-            //    ?.Where(x => x.Id == objId)
-            //    .FirstOrDefault();
-
-            //CmnObj[] ObjArray = GetObjs(objType);
-            //if (ObjArray == null)
-            //    return null;
-
-            //for (int i = 0; i < ObjArray.Length; i++)
-            //{
-            //    if (ObjArray[i].Id == objId)
-            //        return ObjArray[i];
-            //}
-            //return null;
         }
 
         //非推奨。GetObjHandle推奨
         public CmnObj GetObj(UInt16 objType, UInt16 objIndex)
         {
             return GetObjGroup(objType)?.GetObj(objIndex);
-
-            //CmnObj[] ObjArray = GetObjArray(objType);
-            //if (ObjArray == null)
-            //    return null;
-
-            //if (objIndex >= ObjArray.Length)
-            //    return null;
-            //else
-            //    return ObjArray[objIndex];
         }
 
         public virtual CmnObjHandle GetObjHandle(UInt16 objType, UInt64 objId)
@@ -462,7 +510,6 @@ namespace libGis
 
         public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt16 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
         {
-
             var ret = GetObjGroupList(objType)
                 ?.Select(x => x?.GetNearestObj(latlon, maxSubType)?.SetTile(this))
                 .Where(x => x != null)
@@ -470,19 +517,6 @@ namespace libGis
                 .FirstOrDefault();
 
             return ret;
-
-
-            //CmnObjHdlDistance nearestObjDistance = GetObjArray(objType)
-            //    ?.Where(x=>x.SubType <= maxSubType)
-            //    .Select(x => new CmnObjHdlDistance(this, x, x.GetDistance(latlon)))
-            //    .OrderBy(x => x.distance)
-            //    .FirstOrDefault();
-
-            //if (nearestObjDistance.distance == double.MaxValue)
-            //    return null;
-
-            //return nearestObjDistance;
-
         }
 
         //public CmnObjDistance GetNearestObj2(LatLon latlon, UInt16 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
@@ -515,6 +549,11 @@ namespace libGis
         {
             GetObjGroupList(objType).ForEach(x => x?.DrawData(this, cbDrawFunc));
             //cbDrawFunc(Type, SubType, getGeometry());
+        }
+
+        public virtual void AddObj(UInt16 objType, CmnObj obj)
+        {
+            GetObjGroup(objType)?.AddObj(obj);
         }
 
         public static bool CheckObjTypeMatch(UInt16 objType, UInt16 objTypeBits)

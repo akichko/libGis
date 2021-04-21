@@ -157,6 +157,11 @@ namespace libGis
             return tileDic.Remove(tileId);
         }
 
+        public int AddObj(uint tileId, UInt16 objType, CmnObj obj)
+        {
+            SearchTile(tileId)?.AddObj(objType, obj);
+            return 0;
+        }
 
 
         //タイル検索メソッド *****************************************************
@@ -331,7 +336,7 @@ namespace libGis
 
             List<CmnObjHdlRef> tmpRefHdlList = objHdl.obj.GetObjRefHdlList(refType, objHdl.tile, objDirection); //Objの参照先一覧
 
-            foreach (var tmpRefHdl in tmpRefHdlList)
+            foreach (var tmpRefHdl in tmpRefHdlList ?? new List<CmnObjHdlRef>() )
             {
                 CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpRefHdl.nextRef);
 
@@ -355,7 +360,7 @@ namespace libGis
 
             List<CmnObjRef> tmpObjRefList = objHdl.obj.GetObjAllRefList(objHdl.tile, direction); //Objの参照先一覧
             
-            foreach (var tmpObjRef in tmpObjRefList)
+            foreach (var tmpObjRef in tmpObjRefList ?? new List<CmnObjRef>())
             {
                 CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpObjRef);
 
@@ -377,13 +382,15 @@ namespace libGis
 
             //CmnObjHandle objHdl = SearchObj(objRef); //ハンドル
             CmnObjHandle objHdl = SearchObj(objRef.key); //キー⇒ハンドル
+            //検索失敗
             if (objHdl == null)
             {
                 CmnObjHdlRef ret = new CmnObjHdlRef(null, objRef, true);
                 retList.Add(ret);
                 return retList;
-
             }
+
+            //検索成功
 
             if (objRef.final == true)
             {
@@ -394,7 +401,7 @@ namespace libGis
 
             List<CmnObjHdlRef> tmpObjHdlRefList = objHdl.obj.GetObjRefHdlList(objRef.refType, objHdl.tile, objRef.key.objDirection); //Objの参照先一覧（種別指定）
 
-            foreach (var tmpObjHdlRef in tmpObjHdlRefList)
+            foreach (var tmpObjHdlRef in tmpObjHdlRefList ?? new List<CmnObjHdlRef>())
             {
                 //ハンドルありor検索失敗
                 if (tmpObjHdlRef.objHdl != null || tmpObjHdlRef.noData)

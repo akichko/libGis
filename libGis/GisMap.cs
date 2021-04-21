@@ -184,7 +184,7 @@ namespace libGis
 
 
         //
-        public static List<uint> CalcTileIdAround(uint tileId, int distanceX, int distanceY)
+        public static List<uint> S_CalcTileIdAround(uint tileId, int distanceX, int distanceY)
         {
             IEnumerable<int> rangeX = Enumerable.Range(GetX(tileId) - distanceX, distanceX * 2 + 1);
             IEnumerable<int> rangeY = Enumerable.Range(GetY(tileId) - distanceY, distanceY * 2 + 1);
@@ -209,7 +209,7 @@ namespace libGis
 
             if (tileIdA == tileIdB)
             {
-                return CalcTileIdAround(tileIdA, 1, 1);
+                return S_CalcTileIdAround(tileIdA, 1, 1);
             }
 
             //大き目に取る
