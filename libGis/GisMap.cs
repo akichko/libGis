@@ -25,7 +25,7 @@ namespace libGis
     //        return new GisTile(tileId);
     //    }
 
-    //    public abstract int UpdateObjGroup(UInt16 objType, CmnObjGroup objGroup);
+    //    public abstract int UpdateObjGroup(UInt32 objType, CmnObjGroup objGroup);
     //}
 
 

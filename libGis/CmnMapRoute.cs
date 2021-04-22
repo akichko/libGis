@@ -62,7 +62,7 @@ namespace libGis
             this.tileId = tileId;
         }
 
-        public int SetTileCostInfo(CmnTile tile, ushort linkObjType)
+        public int SetTileCostInfo(CmnTile tile, UInt32 linkObjType)
         {
             this.tileId = tile.tileId;
             this.tile = tile;
@@ -158,9 +158,9 @@ namespace libGis
         CmnMapMgr mapMgr;
 
         //汎用種別
-        ushort linkObjType = (ushort)ECmnMapContentType.Link;
-        ushort nextLinkRefType = (ushort)ECmnMapRefType.NextLink;
-        ushort backLinkRefType = (ushort)ECmnMapRefType.BackLink;
+        UInt32 linkObjType = (UInt32)ECmnMapContentType.Link;
+        UInt32 nextLinkRefType = (UInt32)ECmnMapRefType.NextLink;
+        UInt32 backLinkRefType = (UInt32)ECmnMapRefType.BackLink;
 
         //性能測定用
         public int[] logTickCountList;

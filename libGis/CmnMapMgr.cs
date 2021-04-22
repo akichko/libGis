@@ -51,7 +51,7 @@ namespace libGis
 
         public abstract CmnTile CreateTile(uint tileId);
 
-        public int LoadTile(uint tileId, UInt16 reqType = 0xFFFF, UInt16 reqMaxSubType = 0xFFFF)
+        public int LoadTile(uint tileId, UInt32 reqType = 0xFFFFFFFF, UInt16 reqMaxSubType = 0xFFFF)
         {
             if (!IsConnected) return -1;
 
@@ -130,7 +130,7 @@ namespace libGis
         //        objTypeList.Add(reqType);
         //    }
 
-        //    foreach (UInt16 objType in objTypeList)
+        //    foreach (UInt32 objType in objTypeList)
         //    {
         //        if ((reqType & objType) == objType)
         //        {
@@ -157,7 +157,7 @@ namespace libGis
             return tileDic.Remove(tileId);
         }
 
-        public int AddObj(uint tileId, UInt16 objType, CmnObj obj)
+        public int AddObj(uint tileId, UInt32 objType, CmnObj obj)
         {
             SearchTile(tileId)?.AddObj(objType, obj);
             return 0;
@@ -217,7 +217,7 @@ namespace libGis
 
         //オブジェクト検索メソッド ***********************************************
 
-        public CmnObjHandle SearchObj(uint tileId, UInt16 objType, UInt64 objId)
+        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt64 objId)
         {
             return SearchTile(tileId)?.GetObjHandle(objType, objId);
 
@@ -232,7 +232,7 @@ namespace libGis
 
         }
 
-        public CmnObjHandle SearchObj(uint tileId, UInt16 objType, UInt16 objIndex)
+        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt16 objIndex)
         {
             return SearchTile(tileId)?.GetObjHandle(objType, objIndex);
 
@@ -247,7 +247,7 @@ namespace libGis
 
         }
 
-        public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt16 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
+        public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt32 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
         {
             List<CmnTile> searchTileList;
             
@@ -433,13 +433,13 @@ namespace libGis
 
         List<uint> GetMapTileIdList();
 
-        List<UInt16> GetMapContentTypeList();
+        List<UInt32> GetMapContentTypeList();
 
         //CmnTile CreateTile(uint tileId);
                 
-        List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt16 type = 0xFFFF, UInt16 subType = 0xFFFF);
+        List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt32 type = 0xFFFFFFFF, UInt16 subType = 0xFFFF);
 
-        CmnObjGroup LoadObjGroup(uint tileId, UInt16 type, UInt16 subType = 0xFFFF);
+        CmnObjGroup LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
     }
 
 

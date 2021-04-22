@@ -147,7 +147,7 @@ namespace libGis
 
         public abstract UInt64 Id { get; }
 
-        public abstract UInt16 Type { get; }
+        public abstract UInt32 Type { get; }
 
         public virtual UInt16 SubType { get { return 0xffff; } }
 
@@ -249,7 +249,7 @@ namespace libGis
 
     public abstract class CmnObjGroup
     {
-        public abstract UInt16 Type { get; }
+        public abstract UInt32 Type { get; }
 
         public bool isDrawable = true;
         public bool isDrawReverse = false;
@@ -406,7 +406,7 @@ namespace libGis
     public abstract class CmnTile : CmnObj
     {
         public CmnTileCode tileInfo;
-        protected Dictionary<UInt16, CmnObjGroup> objDic;
+        protected Dictionary<UInt32, CmnObjGroup> objDic;
 
         override public UInt64 Id { get { return (UInt64)tileInfo.tileId; } }
 
@@ -424,7 +424,7 @@ namespace libGis
 
         public CmnTile()
         {
-            objDic = new Dictionary<UInt16, CmnObjGroup>();
+            objDic = new Dictionary<UInt32, CmnObjGroup>();
         }
 
         public abstract CmnTile CreateTile(uint tileId);
@@ -434,7 +434,7 @@ namespace libGis
         //必要に応じてオーバーライド
         public virtual int UpdateObjGroup(CmnObjGroup objGroup) /* abstract ?? */
         {
-            UInt16 objType = objGroup.Type;
+            UInt32 objType = objGroup.Type;
             //上書き
             objDic[objType] = objGroup;
 
@@ -453,7 +453,7 @@ namespace libGis
 
         //通常メソッド
 
-        public virtual CmnObjGroup GetObjGroup(UInt16 objType)
+        public virtual CmnObjGroup GetObjGroup(UInt32 objType)
         {
             if (objDic.ContainsKey(objType))
                 return objDic[objType];
@@ -461,7 +461,7 @@ namespace libGis
                 return null;
         }
 
-        private List<CmnObjGroup> GetObjGroupList(UInt16 objTypeBits = 0xFFFF)
+        private List<CmnObjGroup> GetObjGroupList(UInt32 objTypeBits = 0xFFFFFFFF)
         {
 
             return objDic
@@ -482,7 +482,7 @@ namespace libGis
             //return objGroupList;
         }
 
-        private List<UInt16> GetObjTypeList(UInt16 objTypeBits = 0xFFFF)
+        private List<UInt32> GetObjTypeList(UInt32 objTypeBits = 0xFFFFFFFF)
         {
             return objDic
                 .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
@@ -501,7 +501,7 @@ namespace libGis
             //return objTypeList;
         }
 
-        public virtual CmnObj[] GetObjArray(UInt16 objType)
+        public virtual CmnObj[] GetObjArray(UInt32 objType)
         {
             return GetObjGroup(objType)?.objArray;
 
@@ -512,29 +512,29 @@ namespace libGis
         }
 
         //非推奨。GetObjHandle推奨
-        public CmnObj GetObj(UInt16 objType, UInt64 objId)
+        public CmnObj GetObj(UInt32 objType, UInt64 objId)
         {
             return GetObjGroup(objType)?.GetObj(objId);
 
         }
 
         //非推奨。GetObjHandle推奨
-        public CmnObj GetObj(UInt16 objType, UInt16 objIndex)
+        public CmnObj GetObj(UInt32 objType, UInt16 objIndex)
         {
             return GetObjGroup(objType)?.GetObj(objIndex);
         }
 
-        public virtual CmnObjHandle GetObjHandle(UInt16 objType, UInt64 objId)
+        public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt64 objId)
         {
             return GetObjGroup(objType)?.GetObj(objId)?.ToCmnObjHandle(this);
         }
 
-        public virtual CmnObjHandle GetObjHandle(UInt16 objType, UInt16 objIndex)
+        public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt16 objIndex)
         {
             return GetObjGroup(objType)?.GetObj(objIndex)?.ToCmnObjHandle(this);
         }
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt16 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt32 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
         {
             var ret = GetObjGroupList(objType)
                 ?.Select(x => x?.GetNearestObj(latlon, maxSubType)?.SetTile(this))
@@ -545,7 +545,7 @@ namespace libGis
             return ret;
         }
 
-        //public CmnObjDistance GetNearestObj2(LatLon latlon, UInt16 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
+        //public CmnObjDistance GetNearestObj2(LatLon latlon, UInt32 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
         //{
         //    CmnObjDistance nearestObjDistance = new CmnObjDistance(null, double.MaxValue);
 
@@ -571,18 +571,18 @@ namespace libGis
 
         //描画用
 
-        public virtual void DrawData(CbGetObjFunc cbDrawFunc, UInt16 objType = 0xFFFF)
+        public virtual void DrawData(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFF)
         {
             GetObjGroupList(objType).ForEach(x => x?.DrawData(this, cbDrawFunc));
             //cbDrawFunc(Type, SubType, getGeometry());
         }
 
-        public virtual void AddObj(UInt16 objType, CmnObj obj)
+        public virtual void AddObj(UInt32 objType, CmnObj obj)
         {
             GetObjGroup(objType)?.AddObj(obj);
         }
 
-        public static bool CheckObjTypeMatch(UInt16 objType, UInt16 objTypeBits)
+        public static bool CheckObjTypeMatch(UInt32 objType, UInt32 objTypeBits)
         {
             if ((objTypeBits & objType) == objType)
                 return true;
@@ -657,7 +657,7 @@ namespace libGis
             this.noData = noData;
         }
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, int refType, UInt16 objType)// : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, int refType, UInt32 objType)// : base(objHdl?.tile, objHdl?.obj)
         {
             this.objHdl = objHdl;
             this.objRefType = refType;
@@ -677,7 +677,7 @@ namespace libGis
         //    this.nextRef = objRef;
         //}
 
-        //public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType, UInt16 objType) : base(tile, obj)
+        //public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType, UInt32 objType) : base(tile, obj)
         //{
         //    this.nextRef.refType = refType;
         //    this.nextRef = new CmnObjRef(refType, objType);
@@ -712,7 +712,7 @@ namespace libGis
             this.key = key;
         }
 
-        public CmnObjRef(int refType, ushort objType, bool final = true)
+        public CmnObjRef(int refType, UInt32 objType, bool final = true)
         {
             this.refType = refType;
             this.final = final;
@@ -755,7 +755,7 @@ namespace libGis
 
     public class CmnSearchKey
     {
-        public UInt16 objType;
+        public UInt32 objType;
         public CmnTile tile;
         public uint tileId = 0xffffffff;
         public TileXY tileOFfset;
@@ -764,7 +764,7 @@ namespace libGis
         public UInt16 objIndex = 0xffff;
         public byte objDirection = 0xff;
 
-        public CmnSearchKey(ushort objType)
+        public CmnSearchKey(UInt32 objType)
         {
             this.objType = objType;
         }
