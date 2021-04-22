@@ -192,7 +192,33 @@ namespace libGis
 
         //描画用
 
-        public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile) { return new List<AttrItemInfo>(); }
+        public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile)
+        {
+            List<AttrItemInfo> listItem = new List<AttrItemInfo>();
+            AttrItemInfo item;
+
+            //基本属性
+            listItem.Add(new AttrItemInfo(new string[] { "objType", $"{Type}" }, null));
+            listItem.Add(new AttrItemInfo(new string[] { "Id", $"{Id}" }, new AttrTag(0, null, null)));
+
+
+            //形状詳細表示
+            if (true)
+            {
+                for (int i = 0; i < Geometry.Length; i++)
+                {
+                    listItem.Add(new AttrItemInfo(new string[] { $"geometry[{i}]", $"({Geometry[i].ToString()})" }, new AttrTag(0, null, Geometry[i])));
+                }
+            }
+            //簡易表示
+            else
+            {
+                listItem.Add(new AttrItemInfo(new string[] { $"geometry[S]", $"({Geometry[0].ToString()})" }, new AttrTag(0, null, Geometry[0])));
+                listItem.Add(new AttrItemInfo(new string[] { $"geometry[E]", $"({Geometry[Geometry.Length - 1].ToString()})" }, new AttrTag(0, null, Geometry[Geometry.Length - 1])));
+
+            }
+            return new List<AttrItemInfo>();
+        }
 
 
         public virtual int DrawData(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
@@ -748,13 +774,17 @@ namespace libGis
     public struct TileObjId
     {
         public uint tileId;
-        public Int64 id;
+        public UInt64 id;
 
-        public TileObjId(uint tileId, Int64 id)
+        public TileObjId(uint tileId, UInt64 id)
         {
             this.tileId = tileId;
             this.id = id;
+        }
 
+        override public string ToString()
+        {
+            return $"{tileId}-{id}";
         }
     }
 
