@@ -94,6 +94,12 @@ namespace libGis
 
         }
 
+
+        public LatLon GetOffsetLatLon(double meterToEast, double meterToNorth)
+        {
+            return CalcOffsetLatLon(this, meterToEast, meterToNorth);
+        }
+
         public new string ToString()
         {
             return $"{lon:F7}_{lat:F7}";
@@ -196,6 +202,14 @@ namespace libGis
             double f1 = a * (y1 - y0) - b * (x1 - x0);
 
             return Math.Sqrt((f1 * f1) / r2);
+        }
+
+        public static LatLon CalcOffsetLatLon(LatLon latlon, double meterToEast, double meterToNorth)
+        {
+            double meterXperDgree = CalcDistanceBetween(latlon, new LatLon(latlon.lat, latlon.lon + 1.0));
+            double meterYperDgree = CalcDistanceBetween(latlon, new LatLon(latlon.lat + 1.0, latlon.lon));
+
+            return new LatLon(latlon.lat + meterToNorth / meterYperDgree , latlon.lon + meterToEast / meterXperDgree);
         }
 
         public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)  //開発中

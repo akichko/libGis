@@ -18,7 +18,7 @@ namespace libGis
 
         public CmnMapMgr(CmnTileCode tileCode)
         {
-           // tileDataApi = tile;
+            // tileDataApi = tile;
             tileApi = tileCode;
             tileDic = new Dictionary<uint, CmnTile>();
         }
@@ -42,7 +42,7 @@ namespace libGis
 
         public bool IsConnected
         {
-            get  { return mal.IsConnected;   }
+            get { return mal.IsConnected; }
 
         }
 
@@ -247,10 +247,10 @@ namespace libGis
 
         }
 
-        public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt32 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
+        public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
         {
             List<CmnTile> searchTileList;
-            
+
             //seachRange = Max -> 全タイルから検索
             if (searchRange == int.MaxValue)
             {
@@ -274,7 +274,7 @@ namespace libGis
                 return null;
 
             return (CmnObjHandle)nearestObj;
-            
+
         }
 
         //public CmnObjHandle SearchObj(CmnObjRef objRef)
@@ -304,7 +304,7 @@ namespace libGis
 
         public CmnObjHandle SearchObj(CmnSearchKey cmnSearchKey)
         {
-            if (cmnSearchKey == null )
+            if (cmnSearchKey == null)
                 return null;
 
             //Tile <- offset未対応
@@ -336,7 +336,7 @@ namespace libGis
 
             List<CmnObjHdlRef> tmpRefHdlList = objHdl.obj.GetObjRefHdlList(refType, objHdl.tile, objDirection); //Objの参照先一覧
 
-            foreach (var tmpRefHdl in tmpRefHdlList ?? new List<CmnObjHdlRef>() )
+            foreach (var tmpRefHdl in tmpRefHdlList ?? new List<CmnObjHdlRef>())
             {
                 CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpRefHdl.nextRef);
 
@@ -359,12 +359,12 @@ namespace libGis
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
             List<CmnObjRef> tmpObjRefList = objHdl.obj.GetObjAllRefList(objHdl.tile, direction); //Objの参照先一覧
-            
+
             foreach (var tmpObjRef in tmpObjRefList ?? new List<CmnObjRef>())
             {
                 CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpObjRef);
 
-                retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));                
+                retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));
             }
 
             return retList;
@@ -394,7 +394,9 @@ namespace libGis
 
             if (objRef.final == true)
             {
-                retList.Add(new CmnObjHdlRef(objHdl, objRef.refType));
+                if (objRef.key.objDirection != 0xff)
+                    objHdl = (CmnObjHandle)new CmnDirObjHandle(objHdl.tile, objHdl.obj, objRef.key.objDirection);
+                retList.Add(new CmnObjHdlRef((CmnDirObjHandle)objHdl, objRef.refType));
                 return retList;
             }
 
@@ -405,7 +407,7 @@ namespace libGis
             {
                 //ハンドルありor検索失敗
                 if (tmpObjHdlRef.objHdl != null || tmpObjHdlRef.noData)
-                { 
+                {
                     retList.Add(tmpObjHdlRef);
                 }
                 //検索情報あり
@@ -419,9 +421,39 @@ namespace libGis
             return retList;
         }
 
+
+        public virtual uint GetMapObjType(ECmnMapContentType cmnRefType)
+        {
+            switch (cmnRefType)
+            {
+                case ECmnMapContentType.Link:
+                    return (int)ECmnMapContentType.Link;
+                case ECmnMapContentType.Node:
+                    return (int)ECmnMapContentType.Node;
+                default:
+                    return 0;
+            }
+        }
+
+        public virtual int GetMapRefType(ECmnMapRefType cmnRefType)
+        {
+            switch (cmnRefType)
+            {
+                case ECmnMapRefType.NextLink:
+                    return (int)ECmnMapRefType.NextLink;
+                case ECmnMapRefType.BackLink:
+                    return (int)ECmnMapRefType.BackLink;
+                case ECmnMapRefType.NextLane:
+                    return (int)ECmnMapRefType.NextLane;
+                case ECmnMapRefType.BackLane:
+                    return (int)ECmnMapRefType.BackLane;
+                default:
+                    return 0;
+
+            }
+        }
+
     }
-
-
 
     public interface ICmnMapAccess
     {
