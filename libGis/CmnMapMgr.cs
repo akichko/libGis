@@ -23,6 +23,8 @@ namespace libGis
             tileDic = new Dictionary<uint, CmnTile>();
         }
 
+        /* 地図データ接続 ************************************************************/
+        
         public int Connect(string mapPath)
         {
             int ret = mal.ConnectMapData(mapPath);
@@ -47,7 +49,7 @@ namespace libGis
         }
 
 
-        //データ操作メソッド *****************************************************
+        /* データ操作メソッド ******************************************************/
 
         public abstract CmnTile CreateTile(uint tileId);
 
@@ -164,7 +166,7 @@ namespace libGis
         }
 
 
-        //タイル検索メソッド *****************************************************
+        /* タイル検索メソッド ******************************************************/
 
         public CmnTile SearchTile(uint tileId)
         {
@@ -215,7 +217,8 @@ namespace libGis
             return mal.GetMapTileIdList();
         }
 
-        //オブジェクト検索メソッド ***********************************************
+
+        /* オブジェクト検索メソッド ************************************************/
 
         public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt64 objId)
         {
@@ -422,36 +425,39 @@ namespace libGis
         }
 
 
-        public virtual uint GetMapObjType(ECmnMapContentType cmnRefType)
-        {
-            switch (cmnRefType)
-            {
-                case ECmnMapContentType.Link:
-                    return (int)ECmnMapContentType.Link;
-                case ECmnMapContentType.Node:
-                    return (int)ECmnMapContentType.Node;
-                default:
-                    return 0;
-            }
-        }
+        /* 地図コンテンツ仕様情報取得（基本的にorverride前提） ***********************************************/
 
-        public virtual int GetMapRefType(ECmnMapRefType cmnRefType)
-        {
-            switch (cmnRefType)
-            {
-                case ECmnMapRefType.NextLink:
-                    return (int)ECmnMapRefType.NextLink;
-                case ECmnMapRefType.BackLink:
-                    return (int)ECmnMapRefType.BackLink;
-                case ECmnMapRefType.NextLane:
-                    return (int)ECmnMapRefType.NextLane;
-                case ECmnMapRefType.BackLane:
-                    return (int)ECmnMapRefType.BackLane;
-                default:
-                    return 0;
+        //public virtual uint GetMapObjType(ECmnMapContentType cmnRefType)
+        //{
+        //    switch (cmnRefType)
+        //    {
+        //        case ECmnMapContentType.Link:
+        //            return (int)ECmnMapContentType.Link;
+        //        case ECmnMapContentType.Node:
+        //            return (int)ECmnMapContentType.Node;
+        //        default:
+        //            return 0;
+        //    }
+        //}
 
-            }
-        }
+        //public virtual int GetMapRefType(ECmnMapRefType cmnRefType)
+        //{
+        //    switch (cmnRefType)
+        //    {
+        //        case ECmnMapRefType.NextLink:
+        //            return (int)ECmnMapRefType.NextLink;
+        //        case ECmnMapRefType.BackLink:
+        //            return (int)ECmnMapRefType.BackLink;
+        //        case ECmnMapRefType.NextLane:
+        //            return (int)ECmnMapRefType.NextLane;
+        //        case ECmnMapRefType.BackLane:
+        //            return (int)ECmnMapRefType.BackLane;
+        //        default:
+        //            return 0;
+        //    }
+        //}
+
+        public virtual RoutingMapType RoutingMapType => null;
 
     }
 
@@ -475,8 +481,10 @@ namespace libGis
     }
 
 
+    public interface ICmnMapMgr { }
 
 
+    public interface ICmnRoutePlanner { }
 
 
 

@@ -170,16 +170,17 @@ namespace libGis
     }
 
 
-    /* Tileデータ *************************************************************/
+    /* オブジェクト *************************************************************/
+
     public abstract class CmnObj : IViewObj
     {
-        //抽象プロパティ
+        /* 抽象プロパティ =====================================================*/
 
         public abstract UInt64 Id { get; }
 
         public abstract UInt32 Type { get; } //ビットフラグ形式
 
-        //仮想プロパティ
+        /* 仮想プロパティ =====================================================*/
 
         public virtual UInt16 SubType => 0xffff; //値が小さいほど重要。データ切り捨ての閾値に利用
 
@@ -189,22 +190,23 @@ namespace libGis
 
         public virtual double Length => LatLon.CalcLength(Geometry);
 
+        /* 経路計算用 ----------------------------------------------------------*/
+
         public virtual int Cost => 50; //適当。override推奨
 
         public virtual byte Oneway => 0xff; //0xff:なし、1:順方向通行、2:逆方向通行
 
         public virtual bool IsOneway => Oneway == 0xff ? false : true;
 
-        //抽象メソッド：現状なし
+        /* 抽象メソッド：現状なし */
 
-        //仮想メソッド
+        /* 仮想メソッド =====================================================*/
 
         public virtual List<CmnObjRef> GetObjAllRefList() { return new List<CmnObjRef>(); } //現状はnull返却禁止
 
         public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 1) { return new List<CmnObjRef>(); } //現状はnull返却禁止
 
         public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) { return  new List<CmnObjHdlRef>(); } //現状はnull返却禁止
-
 
         public virtual double GetDistance(LatLon latlon) => latlon.GetDistanceToPolyline(Geometry);
 
@@ -226,7 +228,7 @@ namespace libGis
         }
 
 
-        //描画用
+        /* 描画用 ----------------------------------------------------------*/
 
         public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile)
         {
@@ -291,6 +293,8 @@ namespace libGis
         }
     }
 
+
+    /* オブジェクトグループ ****************************************************/
 
     public abstract class CmnObjGroup
     {
@@ -440,6 +444,8 @@ namespace libGis
         }
     }
 
+
+    /* タイル ******************************************************************/
 
     public abstract class CmnTile : CmnObj
     {
@@ -716,6 +722,8 @@ namespace libGis
     }
 
 
+    /* オブジェクト検索用クラス **********************************************/
+
     public class CmnObjRef
     {
         //参照種別。最終目的。リンクでも前後や対向車線などを区別する
@@ -737,39 +745,6 @@ namespace libGis
             this.key = new CmnSearchKey(objType);
         }
     }
-
-    //public class CmnDLinkHandle
-    //{
-    //    public CmnTile tile;
-    //    public CmnObj mapLink;
-    //    public byte direction;
-
-    //    public CmnDLinkHandle() { }
-
-    //    public CmnDLinkHandle(CmnTile tile, CmnObj mapLink, byte direction)
-    //    {
-    //        this.tile = tile;
-    //        this.mapLink = mapLink;
-    //        this.direction = direction;
-    //    }
-
-    //    public CmnDLinkHandle(CmnTile tile, CmnObj mapLink, byte direction, uint tileId, short linkIndex)
-    //    {
-    //        this.tile = tile;
-    //        this.mapLink = mapLink;
-    //        this.direction = direction;
-    //    }
-
-    //    //public CmnDLinkHandle(LinkHandle linkHdl, byte direction)
-    //    //{
-    //    //    this.tile = linkHdl.tile;
-    //    //    this.mapLink = linkHdl.mapLink;
-    //    //    this.direction = direction;
-    //    //}
-
-    //}
-
-
 
     public class CmnSearchKey
     {
@@ -794,7 +769,6 @@ namespace libGis
             return this;
         }
     }
-
 
     public struct TileObjId
     {
@@ -887,6 +861,7 @@ namespace libGis
         Node = 0x0002,
         LinkGeometry = 0x0004,
         LinkAttribute = 0x0008,
+        RoadNetwork = 0x0010,
         All = 0xffff
 
     }

@@ -87,7 +87,7 @@ namespace libGis
                 costInfo[i][1].tileCostInfo = this;
 
                 //使用時に設定すれば高速化かも
-                costInfo[i][0].linkIndex = i; 
+                costInfo[i][0].linkIndex = i;
                 costInfo[i][1].linkIndex = i;
                 costInfo[i][0].linkDirection = 0;
                 costInfo[i][1].linkDirection = 1;
@@ -105,7 +105,7 @@ namespace libGis
             return 0;
         }
 
-    
+
     }
 
 
@@ -119,7 +119,7 @@ namespace libGis
         CostRecord[] unprocessedS;
         CostRecord[] unprocessedD;
 
-        public int minCostS = 0; 
+        public int minCostS = 0;
         public int minCostD = 0;
 
         public CostInfoManage(int maxNum)
@@ -210,17 +210,14 @@ namespace libGis
         CmnMapMgr mapMgr;
 
         //汎用種別
-        UInt32 roadNwObjType;
-        UInt32 roadGeometryObjType;
-        UInt32 linkObjType;
-        Int32 nextLinkRefType;
-        Int32 backLinkRefType;
-        
+        public RoutingMapType routingMapType;
+
         //性能測定用
         public int[] logTickCountList;
         public int[] logUnprocessedCount;
         public int logMaxQueue = 0;
         public int logCalcCount = 0;
+        public int numTileLoad = 0;
 
         public Dykstra(CmnMapMgr mapMgr)
         {
@@ -232,11 +229,13 @@ namespace libGis
             logUnprocessedCount = new int[1000000];
             logTickCountList = new int[1000000];
 
-            roadNwObjType = mapMgr.GetMapObjType(ECmnMapContentType.Link) | mapMgr.GetMapObjType(ECmnMapContentType.Node);
-            roadGeometryObjType = mapMgr.GetMapObjType(ECmnMapContentType.LinkGeometry);
-            linkObjType = mapMgr.GetMapObjType(ECmnMapContentType.Link);
-            nextLinkRefType = mapMgr.GetMapRefType(ECmnMapRefType.NextLink);
-            backLinkRefType = mapMgr.GetMapRefType(ECmnMapRefType.BackLink);
+            routingMapType = mapMgr.RoutingMapType;
+
+            //roadNwObjType = mapMgr.GetMapObjType(ECmnMapContentType.Link) | mapMgr.GetMapObjType(ECmnMapContentType.Node);
+            //roadGeometryObjType = mapMgr.GetMapObjType(ECmnMapContentType.LinkGeometry);
+            //linkObjType = mapMgr.GetMapObjType(ECmnMapContentType.Link);
+            //nextLinkRefType = mapMgr.GetMapRefType(ECmnMapRefType.NextLink);
+            //backLinkRefType = mapMgr.GetMapRefType(ECmnMapRefType.BackLink);
 
 
 
@@ -343,12 +342,14 @@ namespace libGis
             if (tmpTileCostInfo.tile != null)
                 return 0;
 
-            mapMgr.LoadTile(tileId, roadNwObjType, tmpTileCostInfo.maxUsableRoadType);
+            mapMgr.LoadTile(tileId, routingMapType.roadNwObjType, tmpTileCostInfo.maxUsableRoadType);
             CmnTile tmpTile = mapMgr.SearchTile(tileId);
 
-            tmpTileCostInfo.SetTileCostInfo(tmpTile, linkObjType);
-            Console.Write($"\r {dicTileCostInfo.Count()} tiles read");
+            tmpTileCostInfo.SetTileCostInfo(tmpTile, routingMapType.linkObjType);
 
+            numTileLoad++;
+
+            //Console.WriteLine($"Loaded: tileId = {tileId}, num = {numTileLoad}, {dicTileCostInfo.Count()} tiles read");
 
             return 0;
         }
@@ -445,22 +446,22 @@ namespace libGis
                 if (isStartSide)
                 {
                     //接続リンク。向きは自動判別
-                    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, nextLinkRefType);
+                    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, routingMapType.nextLinkRefType);
                 }
                 else
                 {
-                    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, backLinkRefType);
+                    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, routingMapType.backLinkRefType);
                 }
 
                 //初期設定の読み込み可能範囲内タイル
                 noDataTileIdList = objHdlRefList
-                    .Where(x => x.noData)
-                    .Select(x => x.nextRef.key.tileId)
+                    //.Where(x => x.noData)
+                    .Select(x => (x.objHdl?.tile?.tileId ?? x.nextRef?.key?.tileId) ?? 0xffffffff)
                     .Where(x => x != 0xffffffff && dicTileCostInfo.ContainsKey(x) && !dicTileCostInfo[x].isLoaded)
                     .ToList();
 
                 //不足タイルがあれば読み込み
-                if(noDataTileIdList.Count > 0)
+                if (noDataTileIdList.Count > 0)
                     noDataTileIdList.ForEach(x => AddTileInfo(x));
                 else
                     break;
@@ -468,7 +469,7 @@ namespace libGis
 
             connectLinkList = objHdlRefList
                 .Select(x => (CmnDirObjHandle)x.objHdl)
-                .Where(x=>x!=null)
+                .Where(x => x != null)
                 .ToList();
 
 
@@ -523,9 +524,6 @@ namespace libGis
                 {
                     //コストは暫定でリンク長、ではなく50
                     nextTotalCost = currentCostInfo.totalCostD + nextLinkRef.obj.Cost;
-
-                    if (nextTotalCost < 0)
-                        ;
 
                     //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
                     if (nextCostInfo.statusD == 0 || nextTotalCost < nextCostInfo.totalCostD)
@@ -616,9 +614,9 @@ namespace libGis
         {
             routeResult.ForEach(x =>
             {
-                mapMgr.LoadTile(x.tileCostInfo.tileId, roadGeometryObjType, x.tileCostInfo.maxUsableRoadType);
+                mapMgr.LoadTile(x.tileCostInfo.tileId, routingMapType.roadGeometryObjType, x.tileCostInfo.maxUsableRoadType);
             });
-            return  routeResult.Select(x => x.DLinkHdl).Select(x => x.obj.GetGeometry(x.direction)).SelectMany(x=>x).ToArray();
+            return routeResult.Select(x => x.DLinkHdl).Select(x => x.obj.GetGeometry(x.direction)).SelectMany(x => x).ToArray();
 
         }
 
@@ -632,51 +630,60 @@ namespace libGis
             });
         }
 
-            //public int WriteResult()
-            //{
-            //    return 0;
-            //}
+        //public int WriteResult()
+        //{
+        //    return 0;
+        //}
 
-            //public List<CmnObjHdlDir> GetResult()
-            //{
-            //    //List<List<LinkRef>> resultInfo = new List<List<LinkRef>>();
-            //    CostRecord goal = goalInfo.Where(x => x.status == 2).OrderBy(x => x.totalCost).FirstOrDefault();
-            //    if (goal == null)
-            //    {
-            //        Console.WriteLine("no goal");
-            //        return null;
-            //    }
-            //    List<DLinkHandle> routeIdList = new List<DLinkHandle>();
-            //    CostRecord tmp = goal;
-            //    while (tmp.back != null)
-            //    {
-            //        DLinkHandle tmpLinkRef = new DLinkHandle();
-            //        tmpLinkRef.tile = tmp.tileCostInfo.tile;
-            //        tmpLinkRef.mapLink = tmp.tileCostInfo.tile.link[tmp.linkIndex];
-            //        tmpLinkRef.direction = tmp.linkDirection;
-            //        tmp = tmp.back;
-            //        routeIdList.Add(tmpLinkRef);
-            //    }
-            //    routeIdList.Reverse();
-            //    return routeIdList;
-            //    //return resultInfo;
-            //}
-
-
-            //public int PrintCalcCount()
-            //{
-            //    Console.WriteLine($"calcCount = {logCalcCount}");
-            //    return 0;
-            //}
-
-        }
+        //public List<CmnObjHdlDir> GetResult()
+        //{
+        //    //List<List<LinkRef>> resultInfo = new List<List<LinkRef>>();
+        //    CostRecord goal = goalInfo.Where(x => x.status == 2).OrderBy(x => x.totalCost).FirstOrDefault();
+        //    if (goal == null)
+        //    {
+        //        Console.WriteLine("no goal");
+        //        return null;
+        //    }
+        //    List<DLinkHandle> routeIdList = new List<DLinkHandle>();
+        //    CostRecord tmp = goal;
+        //    while (tmp.back != null)
+        //    {
+        //        DLinkHandle tmpLinkRef = new DLinkHandle();
+        //        tmpLinkRef.tile = tmp.tileCostInfo.tile;
+        //        tmpLinkRef.mapLink = tmp.tileCostInfo.tile.link[tmp.linkIndex];
+        //        tmpLinkRef.direction = tmp.linkDirection;
+        //        tmp = tmp.back;
+        //        routeIdList.Add(tmpLinkRef);
+        //    }
+        //    routeIdList.Reverse();
+        //    return routeIdList;
+        //    //return resultInfo;
+        //}
 
 
+        //public int PrintCalcCount()
+        //{
+        //    Console.WriteLine($"calcCount = {logCalcCount}");
+        //    return 0;
+        //}
 
-    /****** 経路計算マネージャ ******************************************************************************/
+    }
+
+    public class RoutingMapType
+    {
+        public UInt32 roadNwObjType; //探索に必要な地図コンテンツ。リンクだけとは限らない
+        public UInt32 roadGeometryObjType; //結果表示用
+        public UInt32 linkObjType; //リンク（コスト・方向あり）
+
+        public Int32 nextLinkRefType; //次リンクの参照タイプ
+        public Int32 backLinkRefType; //前リンクの参照タイプ
+    }
 
 
-    public class CmnRouteMgr
+/****** 経路計算マネージャ ******************************************************************************/
+
+
+public class CmnRouteMgr
     {
 
         CmnMapMgr mapMgr;
@@ -717,7 +724,7 @@ namespace libGis
 
         public int Prepare(bool allCache)
         {
-            //探索レベルを決める
+            //探索レベルを決める？
             //CalcSearchLevel();
 
             if (orgLatLon == null || dstLatLon == null)
@@ -725,37 +732,38 @@ namespace libGis
 
             //始点終点ハンドル取得
 
+            RoutingMapType routingMapType = mapMgr.RoutingMapType;
+
             uint startTileId = mapMgr.tileApi.CalcTileId(orgLatLon);
             List<uint> tileIdListS = mapMgr.tileApi.CalcTileIdAround(orgLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListS.ForEach(x => mapMgr.LoadTile(x));
-            orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, mapMgr.GetMapObjType(ECmnMapContentType.Link));// | mapMgr.GetMapObjType(ECmnMapContentType.Node)); ;// (uint)SpMapContentType.Link);
- 
+            orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, routingMapType.roadNwObjType);
 
             uint destTileId = mapMgr.tileApi.CalcTileId(dstLatLon);
             List<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListD.ForEach(x => mapMgr.LoadTile(x));        
-            dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, mapMgr.GetMapObjType(ECmnMapContentType.Link));// | mapMgr.GetMapObjType(ECmnMapContentType.Node));
-           
+            dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, routingMapType.roadNwObjType);
+
+            if (orgHdl == null || dstHdl == null)
+                return -1;
+
+            //始終点タイル登録
 
             tileIdListS.ForEach(x => ReadTile(x));
             tileIdListD.ForEach(x => ReadTile(x));
 
-
             Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] Memory = {(Environment.WorkingSet / 1024.0 / 1024.0):F1} MB");
-
-
-
-
 
             //利用タイル決定
             List<uint> searchTileId = CalcRouteTileId2();
 
             Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] calc tile num = {searchTileId.Count}");
 
-            //メッシュ読み込み・コストテーブル登録
+            //タイル読み込み・コストテーブル登録
             ReadTiles(searchTileId, allCache);
 
             Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] read tile num = {dykstra.dicTileCostInfo.Count}");
+
 
             //始終点コスト設定
             dykstra.AddTileInfo(orgHdl.tile.tileId);
@@ -807,7 +815,7 @@ namespace libGis
         private int ReadTiles(List<uint> tileIdList, bool allCache)
         {
             Console.WriteLine("tile reading");
-            int count = 0;
+            //int count = 0;
             foreach (uint tileId in tileIdList)
             {
                 byte maxRoadType = CalcMaxUsableRoadType(tileId, orgHdl.tile.tileId, dstHdl.tile.tileId);
