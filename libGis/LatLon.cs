@@ -256,6 +256,111 @@ namespace libGis
 
         }
 
+        public static LatLon[] DouglasPeuker(LatLon[] geometry, double errDist, double maxOffsetLength)
+        {
+            byte[] useFlag = new byte[geometry.Length];
+            useFlag[0] = 1;
+            useFlag[geometry.Length - 1] = 1;
+
+            LatLon[] tmpGeometry;
+            
+            while (true) {
+                tmpGeometry = geometry.Where((x, i) => useFlag[i] == 1).ToArray();
+                
+                var mostDistPoint = geometry
+                    .Select((latlon, index) => new { latlon, index })
+                    .Where(x => useFlag[x.index] == 0)
+                    .Select(x => new { d = CalcDistanceBetween(x.latlon, tmpGeometry), i = x.index })
+                    .OrderByDescending(x => x.d)
+                    .FirstOrDefault();
+
+                if (mostDistPoint == null)
+                    break;
+
+                if(mostDistPoint.d < errDist)
+                {
+                    break;
+                }
+                else
+                {
+                    useFlag[mostDistPoint.i] = 1;
+                }
+            }
+
+
+            //補完点距離の上限オーバー確認
+
+            List<LatLon> retLatLon = new List<LatLon>();
+            LatLon baseLatLon = geometry[0];
+            retLatLon.Add(baseLatLon);
+
+            for (int i = 1; i < geometry.Length; i++)
+            {
+
+                if (baseLatLon.GetDistanceTo(geometry[i]) > maxOffsetLength)
+                {
+                    //１つ手前の補完点が利用可能
+                    if(useFlag[i-1] == 0)
+                    {
+                        retLatLon.Add(geometry[i - 1]);
+                        baseLatLon = geometry[i - 1];
+                        useFlag[i - 1] = 1;
+                        i--;
+                        continue;
+
+                    }
+
+                    //利用できない場合、補完点を生成
+
+                    LatLon tmpLatLon = LatLon.CalcOffsetLatLon(baseLatLon, geometry[i], maxOffsetLength);
+
+                    retLatLon.Add(tmpLatLon);
+                    baseLatLon = tmpLatLon;
+                    i--;
+                    continue;
+                }
+
+                if (useFlag[i] == 1)
+                {
+                    retLatLon.Add(geometry[i]);
+                    baseLatLon = geometry[i];
+
+                }
+            }        
+
+            return retLatLon.ToArray();
+        
+        }
+
+        public static LatLon CalcOffsetLatLon(LatLon baseLatLon, LatLon toLatLon, double offsetLength)
+        {
+            double lineDistance = LatLon.CalcDistanceBetween(baseLatLon, toLatLon);
+
+            return baseLatLon + (toLatLon - baseLatLon) * offsetLength / lineDistance;
+        }
+
+
+
+        public static LatLon operator +(LatLon a, LatLon b)
+        {
+            return new LatLon(a.lat + b.lat, a.lon + b.lon);
+        }
+
+        public static LatLon operator -(LatLon a, LatLon b)
+        {
+            return new LatLon(a.lat - b.lat, a.lon - b.lon);
+        }
+
+        public static LatLon operator *(LatLon a, double b)
+        {
+            return new LatLon(a.lat * b, a.lon * b);
+        }
+
+        public static LatLon operator /(LatLon a, double b)
+        {
+            return new LatLon(a.lat / b, a.lon / b);
+        }
+
     }
 
 

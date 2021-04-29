@@ -415,18 +415,26 @@ namespace libGis
 
         }
 
-        public virtual void DrawData(CmnTile tile, CbGetObjFunc cbDrawFunc)
+        public virtual void DrawData(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
         {
-            if (objArray == null)
-                return;
-
             if (isDrawable)
             {
-                if (isDrawReverse)
-                    objArray.Reverse().ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
-                //Array.ForEach(objArray.Reverse().ToArray(), x => x.DrawData(cbDrawFunc));
+                if (isArray)
+                {
+                    if (isDrawReverse)
+                        objArray?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
+                    //Array.ForEach(objArray.Reverse().ToArray(), x => x.DrawData(cbDrawFunc));
+                    else
+                        objArray?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
+                    //Array.ForEach(objArray, x => x.DrawData(tile, cbDrawFunc));
+                }
                 else
-                    Array.ForEach(objArray, x => x.DrawData(tile, cbDrawFunc));
+                {
+                    if (isDrawReverse)
+                        objList?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
+                    else
+                        objList?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
+                }
             }
         }
 
@@ -587,10 +595,18 @@ namespace libGis
 
         //描画用
 
-        public virtual void DrawData(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFFFFFF)
+        public virtual void DrawData(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFFFFFF, UInt16 subType = 0xFFFF)
         {
-            GetObjGroupList(objType).ForEach(x => x?.DrawData(this, cbDrawFunc));
+            GetObjGroupList(objType).ForEach(x => x?.DrawData(this, cbDrawFunc, subType));
             //cbDrawFunc(Type, SubType, getGeometry());
+        }
+
+        public virtual void DrawData(CbGetObjFunc cbDrawFunc, Dictionary<uint, ushort> typeDic)
+        {
+            foreach(var x in typeDic)
+            {
+                GetObjGroup(x.Key)?.DrawData(this, cbDrawFunc, x.Value);
+            }
         }
 
         public virtual void AddObj(UInt32 objType, CmnObj obj)

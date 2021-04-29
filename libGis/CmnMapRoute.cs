@@ -13,7 +13,7 @@ namespace libGis
 
         public byte statusS = 0; //0:未開始　1:計算中　2:探索終了
         public byte statusD = 0; //0:未開始　1:計算中　2:探索終了  終点側
-        public bool isGoal = false; //以降は目的地側から計算済み
+        //public bool isGoal = false; //以降は目的地側から計算済み
 
         public TileCostInfo tileCostInfo; //親参照
         public ushort linkIndex;
@@ -34,7 +34,7 @@ namespace libGis
 
         public uint TileId => tileCostInfo.tileId;
 
-        public int Cost => (int)MapLink.Length;
+        public int Cost => (int)MapLink.Cost;
 
         public CmnObjHandle LinkHdl
         {
@@ -164,6 +164,11 @@ namespace libGis
             {
                 for (int i = 0; i < numElementS; i++)
                 {
+                    //if (unprocessedS[i].statusS == 2)
+                    //{
+                    //    Delete(i, isStartSide);
+                    //}
+
                     if (unprocessedS[i].totalCostS < tmpMinCost)
                     {
                         tmpMinCost = unprocessedS[i].totalCostS;
@@ -176,6 +181,10 @@ namespace libGis
             {
                 for (int i = 0; i < numElementD; i++)
                 {
+                    //if (unprocessedD[i].statusD == 2)
+                    //{
+                    //    Delete(i, isStartSide);
+                    //}
                     if (unprocessedD[i].totalCostD < tmpMinCost)
                     {
                         tmpMinCost = unprocessedD[i].totalCostD;
@@ -258,7 +267,7 @@ namespace libGis
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = 1;
-                costRec.totalCostS = (int)linkHdl.obj.Length - offset;
+                costRec.totalCostS = (int)(linkHdl.obj.Cost * ( - 0.3));
                 costRec.totalCostD = int.MaxValue;
                 costRec.statusS = 1;
                 unprocessed.Add(costRec, true);
@@ -271,7 +280,7 @@ namespace libGis
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = 0;
-                costRec.totalCostS = offset;
+                costRec.totalCostS = (int)(linkHdl.obj.Cost * (0.3 - 1.0));
                 costRec.totalCostD = int.MaxValue;
                 costRec.statusS = 1;
                 unprocessed.Add(costRec, true);
@@ -292,11 +301,12 @@ namespace libGis
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = 1;
                 costRec.totalCostS = int.MaxValue;
-                costRec.totalCostD = offset;
+                //costRec.totalCostD = offset;
+                costRec.totalCostD = (int)(linkHdl.obj.Cost * (0.3 - 1.0));
                 costRec.statusD = 1;
                 unprocessed.Add(costRec, false);
 
-                costRec.isGoal = true;
+                //costRec.isGoal = true;
                 goalInfo.Add(costRec);
             }
             //逆方向
@@ -307,11 +317,12 @@ namespace libGis
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = 0;
                 costRec.totalCostS = int.MaxValue;
-                costRec.totalCostD = (int)linkHdl.obj.Length - offset;
+                costRec.totalCostD = (int)(linkHdl.obj.Cost * ( - 0.3));
+                //costRec.totalCostD = (int)linkHdl.obj.Length - offset;
                 costRec.statusD = 1;
                 unprocessed.Add(costRec, false);
 
-                costRec.isGoal = true;
+                //costRec.isGoal = true;
                 goalInfo.Add(costRec);
             }
 
@@ -504,8 +515,9 @@ namespace libGis
 
                 if (isStartSide)
                 {
-                    //コストは暫定でリンク長、ではなく50
-                    nextTotalCost = currentCostInfo.totalCostS + nextLinkRef.obj.Cost;
+                    //並走レーンをいずれ考慮する場合は、自コストは除外＋車線変更コスト
+                    //nextTotalCost = currentCostInfo.totalCostS + nextLinkRef.obj.Cost;
+                    nextTotalCost = currentCostInfo.totalCostS + currentDLinkHdl.obj.Cost;
 
                     //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
                     if (nextCostInfo.statusS == 0 || nextTotalCost < nextCostInfo.totalCostS)
@@ -522,8 +534,8 @@ namespace libGis
                 }
                 else //目的地側
                 {
-                    //コストは暫定でリンク長、ではなく50
-                    nextTotalCost = currentCostInfo.totalCostD + nextLinkRef.obj.Cost;
+                    //nextTotalCost = currentCostInfo.totalCostD + nextLinkRef.obj.Cost;
+                    nextTotalCost = currentCostInfo.totalCostD + currentDLinkHdl.obj.Cost;
 
                     //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
                     if (nextCostInfo.statusD == 0 || nextTotalCost < nextCostInfo.totalCostD)
@@ -762,7 +774,7 @@ public class CmnRouteMgr
             //タイル読み込み・コストテーブル登録
             ReadTiles(searchTileId, allCache);
 
-            Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] read tile num = {dykstra.dicTileCostInfo.Count}");
+            Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] dicTileCostInfo.Count = {dykstra.dicTileCostInfo.Count}");
 
 
             //始終点コスト設定
