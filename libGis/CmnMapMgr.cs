@@ -25,9 +25,9 @@ namespace libGis
 
         /* 地図データ接続 ************************************************************/
         
-        public int Connect(string mapPath, ushort port=0, string userId="", string pass="", string DbName="")
+        public int Connect(string connectStr)
         {
-            int ret = mal.ConnectMapData(mapPath, port, userId, pass, DbName);
+            int ret = mal.ConnectMapData(connectStr);
             Console.WriteLine("Connected");
 
             return ret;
@@ -217,6 +217,11 @@ namespace libGis
             return mal.GetMapTileIdList();
         }
 
+
+        public virtual uint CalcTileId(LatLon latlon)
+        {
+            return tileApi.CalcTileId(latlon);
+        }
 
         /* オブジェクト検索メソッド ************************************************/
 
@@ -465,8 +470,8 @@ namespace libGis
     {
         bool IsConnected { get; }
 
-        int ConnectMapData(string mapPath, ushort port = 0, string userId = "", string pass = "", string DbName = "");
-
+        int ConnectMapData(string connectStr);
+        
         int DisconnectMapData();
 
         List<uint> GetMapTileIdList();

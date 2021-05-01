@@ -345,6 +345,53 @@ namespace libGis
 
     }
 
+
+
+    public abstract class CmnObjHandle2 : CmnObjHandle
+    {
+
+        /* 抽象プロパティ =====================================================*/
+        public virtual UInt64 Id => obj.Id;
+        public virtual UInt32 Type => obj.Type;
+        public virtual UInt16 SubType => obj.SubType;
+        public virtual LatLon[] Geometry => obj.Geometry;
+        public virtual UInt16 Index => obj.Index;
+        public virtual double Length => obj.Length;
+
+        /* 経路計算用 ----------------------------------------------------------*/
+
+        public virtual int Cost => obj.Cost;
+        public virtual byte Oneway => obj.Oneway;
+        public virtual bool IsOneway => obj.IsOneway;
+
+        /* 抽象メソッド：現状なし */
+
+        /* 仮想メソッド =====================================================*/
+
+        public virtual List<CmnObjRef> GetObjAllRefList() => obj.GetObjAllRefList();
+        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 1) => obj.GetObjAllRefList(tile, direction);
+        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) => obj.GetObjRefHdlList(refType, tile, direction);
+        public virtual double GetDistance(LatLon latlon) => obj.GetDistance(latlon);
+
+
+        public virtual LatLon GetCenterLatLon() => obj.GetCenterLatLon();
+
+        public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile) => obj.ToCmnObjHandle(tile);
+
+
+        /* 描画用 ----------------------------------------------------------*/
+
+        public virtual List<AttrItemInfo> GetAttributeListItem() => obj.GetAttributeListItem(tile);
+
+
+        public virtual int DrawData(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw) => obj.DrawData(tile, cbGetObjFuncForDraw);
+
+        public virtual LatLon[] GetGeometry(int direction) => obj.GetGeometry(direction);
+
+    }
+
+
+
     public class AttrItemInfo
     {
         public string[] attrStr;
@@ -703,7 +750,7 @@ namespace libGis
         public CmnTile tile;
         public CmnObj obj;
 
-        //public CmnObjHandle() { }
+        public CmnObjHandle() { }
         public CmnObjHandle(CmnTile tile, CmnObj obj)
         {
             this.tile = tile;
