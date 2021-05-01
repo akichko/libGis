@@ -21,84 +21,16 @@ namespace libGis
 
         // メソッド
 
-        public double GetDistanceTo(LatLon toLatLon)
-        {
-            return CalcDistanceBetween(this, toLatLon);
+        public double GetDistanceTo(LatLon toLatLon) => CalcDistanceBetween(this, toLatLon);
 
-            //    int Rx = 6378137;
-            //    double E2 = 6.69437999019758E-03;// '第2離心率(e^2)
+        public double GetDistanceToLine(LatLon A, LatLon B) => CalcDistanceOfPointAndLine(this, A, B);
 
-            //    double di = toLatLon.lat - lat;
+        public double GetDistanceToPolyline(LatLon[] polyline) => CalcDistanceBetween(this, polyline);
 
-            //    double dk = toLatLon.lon - lon;
-            //    double i = (lat + toLatLon.lat) / 2;
+        public double GetDistanceToPolyline(List<LatLon> polyline) => GetDistanceToPolyline(polyline.ToArray());
 
-            //    double W = Math.Sqrt(1 - E2 * Math.Pow(Math.Sin(i * Math.PI / 180), 2));
-            //    double M = Rx * (1 - E2) / Math.Pow(W, 3);
-            //    double N = Rx / W;
+        public LatLon GetOffsetLatLon(double meterToEast, double meterToNorth) => CalcOffsetLatLon(this, meterToEast, meterToNorth);
 
-            //    return Math.Sqrt(Math.Pow((di * Math.PI / 180 * M), 2) + Math.Pow((dk * Math.PI / 180 * N * Math.Cos(i * Math.PI / 180)), 2));
-        }
-
-
-        public double GetDistanceToLine(LatLon A, LatLon B)
-        {
-            return CalcDistanceOfPointAndLine(this, A, B);
-
-            //LatLon AofSameLat = new LatLon(lat, A.lon);
-            //LatLon AofSameLon = new LatLon(A.lat, lon);
-            //LatLon BofSameLat = new LatLon(lat, B.lon);
-            //LatLon BofSameLon = new LatLon(B.lat, lon);
-
-            //double x1 = GetDistanceTo(AofSameLat) * Math.Sign(A.lon - lon);
-            //double y1 = GetDistanceTo(AofSameLon) * Math.Sign(A.lat - lat);
-            //double x2 = GetDistanceTo(BofSameLat) * Math.Sign(B.lon - lon);
-            //double y2 = GetDistanceTo(BofSameLon) * Math.Sign(B.lat - lat);
-
-            //return CalcDistanceOfPointAndLine(0.0, 0.0, x1, y1, x2, y2);
-
-        }
-
-
-        public double GetDistanceToPolyline(LatLon[] polyline)
-        {
-            return CalcDistanceBetween(this, polyline);
-
-
-            //if (polyline.Length == 0)
-            //    return double.MaxValue;
-
-            //else if (polyline.Length == 1)
-            //    return GetDistanceTo(polyline[0]);
-
-            //double minDistance = Double.MaxValue;
-            //double tmp;
-
-            //for (int i = 0; i < polyline.Length - 1; i++)
-            //{
-            //    tmp = GetDistanceToLine(polyline[i], polyline[i + 1]);
-            //    if (tmp < minDistance)
-            //    {
-            //        minDistance = tmp;
-            //    }
-            //}
-
-            //return minDistance;
-
-        }
-
-
-        public double GetDistanceToPolyline(List<LatLon> polyline)
-        {
-            return GetDistanceToPolyline(polyline.ToArray());
-
-        }
-
-
-        public LatLon GetOffsetLatLon(double meterToEast, double meterToNorth)
-        {
-            return CalcOffsetLatLon(this, meterToEast, meterToNorth);
-        }
 
         public new string ToString()
         {
