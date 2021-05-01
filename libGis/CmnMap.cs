@@ -297,6 +297,9 @@ namespace libGis
         }
 
 
+        public abstract ICmnObjHandle ToICmnObjHandle(CmnTile tile);
+
+
         /* 描画用 ----------------------------------------------------------*/
 
         public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile)
@@ -347,7 +350,7 @@ namespace libGis
 
 
 
-    public abstract class CmnObjHandle2 : CmnObjHandle
+    public abstract class ICmnObjHandle : CmnObjHandle
     {
 
         /* 抽象プロパティ =====================================================*/
@@ -376,7 +379,7 @@ namespace libGis
 
         public virtual LatLon GetCenterLatLon() => obj.GetCenterLatLon();
 
-        public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile) => obj.ToCmnObjHandle(tile);
+        public virtual ICmnObjHandle ToICmnObjHandle(CmnTile tile) => obj.ToICmnObjHandle(tile);
 
 
         /* 描画用 ----------------------------------------------------------*/
@@ -387,6 +390,14 @@ namespace libGis
         public virtual int DrawData(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw) => obj.DrawData(tile, cbGetObjFuncForDraw);
 
         public virtual LatLon[] GetGeometry(int direction) => obj.GetGeometry(direction);
+
+
+
+        public ICmnObjHandle(CmnTile tile, CmnObj obj)
+        {
+            this.tile = tile;
+            this.obj = obj;
+        }
 
     }
 
