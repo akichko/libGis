@@ -29,9 +29,10 @@ namespace libGis
     //}
 
 
-    public  class GisTileCode : CmnTileCode //, IView
+    public class GisTileCode : CmnTileCode //, IView
     {
         const byte ConstDefaultLevel = 2;
+        const byte ConstMaxLevel = 7;
 
         //コンストラクタ
         public GisTileCode()
@@ -44,77 +45,98 @@ namespace libGis
         }
 
         //オーバーライドプロパティ
-        override public byte DefaultLevel
+        public override byte DefaultLevel => ConstDefaultLevel;
+        public override byte MaxLevel => ConstMaxLevel;
+
+
+        /* オーバーライドメソッド *****************************************************************************/
+
+        //ID -> XYL
+        public override byte CalcTileLv(uint tileId) => GisTileCode.S_CalcLv(tileId);
+        public override int CalcTileX(uint tileId) => GisTileCode.S_CalcX(tileId);
+        public override int CalcTileY(uint tileId) => GisTileCode.S_CalcY(tileId);
+
+        //XYL -> ID
+        public override uint CalcTileId(int x, int y, byte level = ConstDefaultLevel)
         {
-            get { return ConstDefaultLevel; }
+            return S_CalcTileId((UInt16)x, (UInt16)y, level);
+        }
+
+        // XYL -> LatLon
+        public override double CalcTileLon(int tileX, byte tileLv)
+        {
+            return (tileX << tileLv) / Math.Pow(2, 15) * 360.0;
+        }
+
+        public override double CalcTileLat(int tileY, byte tileLv)
+        {
+            return (tileY << tileLv) / Math.Pow(2, 14) * 180.0;
+        }
+
+        // LatLon -> XYL
+        public override int CalcTileX(double lon, byte level)
+        {
+            if (lon < 0) lon += 360.0;
+
+            UInt16 x = (UInt16)((lon / 360.0) * Math.Pow(2, 15));
+            x = (UInt16)(x >> level);
+            return (int)x;
+        }
+
+        public override int CalcTileY(double lat, byte level)
+        {
+            if (lat < 0) lat += 180.0;
+
+            UInt16 y = (UInt16)((lat / 180.0) * Math.Pow(2, 14));
+            y = (UInt16)(y >> level);
+            return (int)y;
+
         }
 
 
-        //オーバーライドメソッド
-        override public byte CalcTileLv(uint tileId)
-        {
-            return GisTileCode.GetLv(tileId);
-        }
+        //LatLon -> ID
+        //public override uint CalcTileId(LatLon latlon, byte level = ConstDefaultLevel)
+        //{
+        //    return SCalcTileId(latlon, level);
+        //}
 
-        override public int CalcTileX(uint tileId)
-        {
-           return GisTileCode.GetX(tileId); 
-        }
-
-        override public int CalcTileY(uint tileId)
-        {
-            return GisTileCode.GetY(tileId);
-        }
-
-        override public uint CalcTileId(int x, int y, byte level = ConstDefaultLevel)
-        {
-            return SCalcTileId((UInt16)x, (UInt16)y, level);
-        }
-
-
-        override public uint CalcTileId(LatLon latlon, byte level = ConstDefaultLevel)
-        {
-            return SCalcTileId(latlon, level);
-        }
-
-
-        override public LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
-        {
-            return SCalcLatLon(this.tileId, tilePos);
-        }
-
+        //public override LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
+        //{
+        //    return SCalcLatLon(this.tileId, tilePos);
+        //}
 
         //追加メソッド
         public double CalcDistanceTo(uint tileId)
         {
-            return SCalcTileDistance(this.tileId, tileId);
+            return S_CalcTileDistance(this.tileId, tileId);
         }
 
 
-        //Staticメソッド
-        public static UInt16 GetX(uint tileId)
+        /* Staticメソッド *****************************************************************************/
+        public static UInt16 S_CalcX(uint tileId)
         {
             return (UInt16)((tileId & 0x1fffc000) >> 14);
         }
 
-        public static UInt16 GetY(uint tileId)
+        public static UInt16 S_CalcY(uint tileId)
         {
             return (UInt16)((tileId & 0x00003fff));
         }
 
-        public static byte GetLv(uint tileId)
+        public static byte S_CalcLv(uint tileId)
         {
             return (byte)((tileId & 0xe0000000) >> 29);
         }
 
-        public static uint SCalcTileId(UInt16 x, UInt16 y, byte level= ConstDefaultLevel)
+        public static uint S_CalcTileId(UInt16 x, UInt16 y, byte level = ConstDefaultLevel)
         {
             return ((uint)level << 29) | ((uint)x << 14) | (uint)y;
         }
 
-        public static uint SCalcTileId(LatLon latlon, byte level = ConstDefaultLevel)
+        // Staticが必要な場面があるかも
+        public static uint S_CalcTileId(LatLon latlon, byte level = ConstDefaultLevel)
         {
-            if (latlon.lon < -180.0 || latlon.lon > 180.0 || latlon.lat < -90.0 || latlon.lat > 90.0 || level > 6)
+            if (latlon.lon < -180.0 || latlon.lon > 180.0 || latlon.lat < -90.0 || latlon.lat > 90.0 || level > ConstMaxLevel)
                 return 0xffffffff;
 
             double tmpLon = latlon.lon;
@@ -129,26 +151,26 @@ namespace libGis
             UInt16 y = (UInt16)((latlon.lat / 180.0) * Math.Pow(2, 14));
             y = (UInt16)(y >> level);
 
-            return SCalcTileId(x, y, level);
+            return S_CalcTileId(x, y, level);
         }
 
 
-        public static double SCalcTileDistance(uint tileIdA, uint tileIdB)
+        public static double S_CalcTileDistance(uint tileIdA, uint tileIdB)
         {
-            return LatLon.CalcDistanceBetween(SCalcLatLon(tileIdA), SCalcLatLon(tileIdB));
+            return LatLon.CalcDistanceBetween(S_CalcLatLon(tileIdA), S_CalcLatLon(tileIdB));
 
         }
 
 
 
-        public static LatLon SCalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
+        public static LatLon S_CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
         {
             double dx;
             double dy;
 
-            int tileX = GetX(tileId);
-            int tileY = GetY(tileId);
-            byte tileLv = GetLv(tileId);
+            int tileX = S_CalcX(tileId);
+            int tileY = S_CalcY(tileId);
+            byte tileLv = S_CalcLv(tileId);
 
             switch (tilePos)
             {
@@ -186,15 +208,15 @@ namespace libGis
         //
         public static List<uint> S_CalcTileIdAround(uint tileId, int distanceX, int distanceY)
         {
-            IEnumerable<int> rangeX = Enumerable.Range(GetX(tileId) - distanceX, distanceX * 2 + 1);
-            IEnumerable<int> rangeY = Enumerable.Range(GetY(tileId) - distanceY, distanceY * 2 + 1);
+            IEnumerable<int> rangeX = Enumerable.Range(S_CalcX(tileId) - distanceX, distanceX * 2 + 1);
+            IEnumerable<int> rangeY = Enumerable.Range(S_CalcX(tileId) - distanceY, distanceY * 2 + 1);
 
             List<uint> retList = new List<uint>();
             foreach (var x in rangeX)
             {
                 foreach (var y in rangeY)
                 {
-                    retList.Add(GisTileCode.SCalcTileId((ushort)x, (ushort)y));
+                    retList.Add(GisTileCode.S_CalcTileId((ushort)x, (ushort)y));
                 }
 
             }
@@ -216,10 +238,10 @@ namespace libGis
             //TileXY tA = new TileXY(tileIdA);
             //TileXY tB = new TileXY(tileIdB);
 
-            uint aX = GetX(tileIdA);
-            uint aY = GetY(tileIdA);
-            uint bX = GetX(tileIdB);
-            uint bY = GetY(tileIdB);
+            uint aX = S_CalcX(tileIdA);
+            uint aY = S_CalcY(tileIdA);
+            uint bX = S_CalcX(tileIdB);
+            uint bY = S_CalcY(tileIdB);
 
             int diffX = Math.Abs((int)(aX - bX));
             int diffY = Math.Abs((int)(aY - bY));
@@ -238,16 +260,16 @@ namespace libGis
             {
                 foreach (var y in rangeY)
                 {
-                    retList.Add(SCalcTileId((ushort)x, (ushort)y));
+                    retList.Add(S_CalcTileId((ushort)x, (ushort)y));
                 }
 
             }
 
             //選別
-            double baseLength = SCalcTileDistance(tileIdA, tileIdB) * ratio;
+            double baseLength = S_CalcTileDistance(tileIdA, tileIdB) * ratio;
 
             retList = retList.Where(x =>
-                SCalcTileDistance(x, tileIdA) + SCalcTileDistance(x, tileIdB) <= baseLength
+                S_CalcTileDistance(x, tileIdA) + S_CalcTileDistance(x, tileIdB) <= baseLength
             ).ToList();
 
 
@@ -257,23 +279,6 @@ namespace libGis
         }
     }
 
-
-
-
-    public class Polyline
-    {
-        public LatLon[] geometry;
-    }
-
-    public class Lane : Polyline { }
-
-    public class Link : Polyline { }
-
-
-    public class MapPoint
-    {
-        public LatLon latLon;
-    }
 
 
 

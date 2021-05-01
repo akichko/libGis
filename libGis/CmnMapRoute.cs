@@ -47,13 +47,14 @@ namespace libGis
         }
     }
 
+
     public class TileCostInfo
     {
         public uint tileId;
         public CmnTile tile;
         public CmnObj[] linkArray;
         public CostRecord[][] costInfo; //始点方向リンク、終点方向リンク
-        public byte status = 0; //0:未開始　1:計算中　2:探索終了
+        //public byte status = 0; //0:未開始　1:計算中　2:探索終了
 
         public bool isLoaded = false;
 
@@ -97,19 +98,19 @@ namespace libGis
             return 0;
         }
 
-        public int CalcTileDistance(uint startTileId, uint destTileId)
-        {
-            DistFromStartTile = (float)GisTileCode.SCalcTileDistance(tileId, startTileId);
-            DistFromDestTile = (float)GisTileCode.SCalcTileDistance(tileId, destTileId);
+        //public int CalcTileDistance(uint startTileId, uint destTileId)
+        //{
+        //    DistFromStartTile = (float)tile.tileInfo.CalcTileDistance(tileId, startTileId);
+        //    DistFromDestTile = (float)tile.tileInfo.CalcTileDistance(tileId, destTileId);
 
-            return 0;
-        }
+        //    //DistFromStartTile = (float)GisTileCode.S_CalcTileDistance(tileId, startTileId);
+        //    //DistFromDestTile = (float)GisTileCode.S_CalcTileDistance(tileId, destTileId);
+
+        //    return 0;
+        //}
 
 
     }
-
-
-
 
 
     public class CostInfoManage
@@ -337,7 +338,10 @@ namespace libGis
 
             TileCostInfo tileCostInfo = new TileCostInfo(tileId);
 
-            tileCostInfo.CalcTileDistance(tileIdS, tileIdE);
+            tileCostInfo.DistFromStartTile = (float)mapMgr.tileApi.CalcTileDistance(tileId, tileIdS);
+            tileCostInfo.DistFromDestTile = (float)mapMgr.tileApi.CalcTileDistance(tileId, tileIdE);
+
+            //tileCostInfo.CalcTileDistance(tileIdS, tileIdE);
             tileCostInfo.maxUsableRoadType = maxUsableRoadType;
             dicTileCostInfo.Add(tileId, tileCostInfo);
 
@@ -642,10 +646,6 @@ namespace libGis
             });
         }
 
-        //public int WriteResult()
-        //{
-        //    return 0;
-        //}
 
         //public List<CmnObjHdlDir> GetResult()
         //{
@@ -672,12 +672,6 @@ namespace libGis
         //    //return resultInfo;
         //}
 
-
-        //public int PrintCalcCount()
-        //{
-        //    Console.WriteLine($"calcCount = {logCalcCount}");
-        //    return 0;
-        //}
 
     }
 
@@ -848,8 +842,8 @@ public class CmnRouteMgr
 
         private byte CalcMaxUsableRoadType(uint targetTileId, uint startTileId, uint destTileId)
         {
-            float DistFromStartTile = (float)GisTileCode.SCalcTileDistance(targetTileId, startTileId);
-            float DistFromDestTile = (float)GisTileCode.SCalcTileDistance(targetTileId, destTileId);
+            float DistFromStartTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, startTileId);
+            float DistFromDestTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, destTileId);
 
             double minDist = Math.Min(DistFromStartTile, DistFromDestTile);
 

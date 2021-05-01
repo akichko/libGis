@@ -7,7 +7,7 @@ using System.Drawing;
 
 namespace libGis
 {
-    //
+    
     /* Tileコード *************************************************************/
     public abstract class CmnTileCode
     {
@@ -17,50 +17,119 @@ namespace libGis
         public virtual int X { get { return CalcTileX(tileId); } }
         public virtual int Y { get { return CalcTileY(tileId); } }
 
-        //抽象メソッド
+        /* 抽象メソッド ********************************************************/
 
         public abstract byte DefaultLevel { get; }
+        public abstract byte MaxLevel { get; }
 
         public abstract uint CalcTileId(int x, int y, byte level);
 
         public abstract int CalcTileX(uint tileId);
-
         public abstract int CalcTileY(uint tileId);
-
         public abstract byte CalcTileLv(uint tileId);
 
-        public abstract uint CalcTileId(LatLon latlon, byte level);
+        //public abstract uint CalcTileId(LatLon latlon, byte level);
 
-        public abstract LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center);
+        public abstract double CalcTileLon(int tileX, byte level);
+        public abstract double CalcTileLat(int tileY, byte level);
+
+        public abstract int CalcTileX(double lon, byte level);
+        public abstract int CalcTileY(double lat, byte level);
 
 
-        //通常メソッド
+        /* 通常メソッド **********************************************************/
 
-        public virtual uint CalcTileId(int x, int y)
+        //タイルコード変換
+
+        public virtual LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
         {
-            return CalcTileId(x, y, DefaultLevel);
+            TileXYL xyl = CalcTileXYL(tileId);
+
+            switch (tilePos)
+            {
+                case ERectPos.SouthWest:
+
+                    return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
+
+                case ERectPos.SouthEast:
+
+                    return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
+
+                case ERectPos.NorthWest:
+
+                    return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
+
+                case ERectPos.NorthEast:
+
+                    return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
+
+                case ERectPos.Center:
+
+                    LatLon tmpSW = new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
+                    LatLon tmpNE = new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
+
+                    return (tmpSW + tmpNE) / 2.0;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
         }
 
-        public virtual uint CalcTileId(LatLon latlon)
+        public virtual uint CalcTileId(LatLon latlon, byte level)
         {
-            return CalcTileId(latlon, DefaultLevel);
-        }
+            if (latlon.lon < -180.0 || latlon.lon > 180.0 || latlon.lat < -90.0 || latlon.lat > 90.0 || level > MaxLevel)
+                return 0xffffffff;
 
-        public virtual uint CalcTileId(TileXYL xyl)
-        {
-            return CalcTileId(xyl.x, xyl.y, xyl.lv);
+            //double tmpLon = latlon.lon;
+            //double tmpLat = latlon.lat;
+
+            //if (tmpLon < 0) tmpLon += 360.0;
+            //if (tmpLat < 0) tmpLat += 180.0;
+
+            int tileX = CalcTileX(latlon.lon, level);
+            int tileY = CalcTileY(latlon.lat, level);
+
+            return CalcTileId(tileX, tileY, level);
         }
+        
+        public virtual uint CalcTileId(int x, int y) => CalcTileId(x, y, DefaultLevel);
+
+        public virtual uint CalcTileId(LatLon latlon) => CalcTileId(latlon, DefaultLevel);
+
+        public virtual uint CalcTileId(TileXYL xyl) => CalcTileId(xyl.x, xyl.y, xyl.lv);
 
         public virtual TileXYL CalcTileXYL(LatLon latlon, byte level)
         {
-            uint tileId = CalcTileId(latlon);
-            int x = CalcTileX(tileId);
-            int y = CalcTileY(tileId);
+            //uint tileId = CalcTileId(latlon);
+            //int x = CalcTileX(tileId);
+            //int y = CalcTileY(tileId);
+
+            int x = CalcTileX(latlon.lon, level);
+            int y = CalcTileY(latlon.lat, level);
             byte lv = CalcTileLv(tileId);
 
             return new TileXYL(x, y, lv);
         }
 
+        public virtual TileXYL CalcTileXYL(uint tileId)
+        {
+            TileXYL ret = new TileXYL();
+            ret.x = CalcTileX(tileId);
+            ret.y = CalcTileY(tileId);
+            ret.lv = CalcTileLv(tileId);
+
+            return ret;
+        }
+
+
+        //タイル演算
+
+        public virtual double CalcTileDistance(uint tileIdA, uint tileIdB)
+        {
+            return LatLon.CalcDistanceBetween(CalcLatLon(tileIdA), CalcLatLon(tileIdB));
+
+        }
 
         public virtual List<uint> CalcTileIdAround(uint tileId, int tileRangeX, int tileRangeY)
         {

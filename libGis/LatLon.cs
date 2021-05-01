@@ -212,6 +212,13 @@ namespace libGis
             return new LatLon(latlon.lat + meterToNorth / meterYperDgree , latlon.lon + meterToEast / meterXperDgree);
         }
 
+        public static LatLon CalcOffsetLatLon(LatLon baseLatLon, LatLon toLatLon, double offsetLength)
+        {
+            double lineDistance = LatLon.CalcDistanceBetween(baseLatLon, toLatLon);
+
+            return baseLatLon + (toLatLon - baseLatLon) * offsetLength / lineDistance;
+        }
+
         public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)  //開発中
         {
             if (polyline == null || polyline.Length <= 1)
@@ -256,7 +263,7 @@ namespace libGis
 
         }
 
-        public static LatLon[] DouglasPeuker(LatLon[] geometry, double errDist, double maxOffsetLength)
+        public static LatLon[] DouglasPeuker(LatLon[] geometry, double errDist, double maxOffsetLength = double.MaxValue)
         {
             byte[] useFlag = new byte[geometry.Length];
             useFlag[0] = 1;
@@ -332,14 +339,8 @@ namespace libGis
         
         }
 
-        public static LatLon CalcOffsetLatLon(LatLon baseLatLon, LatLon toLatLon, double offsetLength)
-        {
-            double lineDistance = LatLon.CalcDistanceBetween(baseLatLon, toLatLon);
 
-            return baseLatLon + (toLatLon - baseLatLon) * offsetLength / lineDistance;
-        }
-
-
+        //演算子オーバーライド
 
         public static LatLon operator +(LatLon a, LatLon b)
         {

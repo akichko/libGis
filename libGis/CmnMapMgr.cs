@@ -25,9 +25,9 @@ namespace libGis
 
         /* 地図データ接続 ************************************************************/
         
-        public int Connect(string mapPath)
+        public int Connect(string mapPath, ushort port=0, string userId="", string pass="", string DbName="")
         {
-            int ret = mal.ConnectMapData(mapPath);
+            int ret = mal.ConnectMapData(mapPath, port, userId, pass, DbName);
             Console.WriteLine("Connected");
 
             return ret;
@@ -399,7 +399,7 @@ namespace libGis
             {
                 if (objRef.key.objDirection != 0xff)
                     objHdl = (CmnObjHandle)new CmnDirObjHandle(objHdl.tile, objHdl.obj, objRef.key.objDirection);
-                retList.Add(new CmnObjHdlRef((CmnDirObjHandle)objHdl, objRef.refType));
+                retList.Add(new CmnObjHdlRef((CmnObjHandle)objHdl, objRef.refType));
                 return retList;
             }
 
@@ -465,7 +465,7 @@ namespace libGis
     {
         bool IsConnected { get; }
 
-        int ConnectMapData(string mapPath);
+        int ConnectMapData(string mapPath, ushort port = 0, string userId = "", string pass = "", string DbName = "");
 
         int DisconnectMapData();
 
