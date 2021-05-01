@@ -297,8 +297,12 @@ namespace libGis
         }
 
 
-        public abstract ICmnObjHandle ToICmnObjHandle(CmnTile tile);
+        //public abstract ICmnObjHandle ToICmnObjHandle(CmnTile tile);
 
+        public virtual ICmnObjHandle ToICmnObjHandle(CmnTile tile)
+        {
+            return new CmnObjHandle(tile, this);
+        }
 
         /* 描画用 ----------------------------------------------------------*/
 
@@ -333,8 +337,8 @@ namespace libGis
 
         public virtual int DrawData(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
         {
-            //Graphic, ViewParam が課題
-            return cbGetObjFuncForDraw(tile, this);
+            //Graphic, ViewParam が課題           
+            return cbGetObjFuncForDraw(this.ToICmnObjHandle(tile));
         }
 
 
@@ -350,8 +354,10 @@ namespace libGis
 
 
 
-    public abstract class ICmnObjHandle : CmnObjHandle
+    public abstract class ICmnObjHandle
     {
+        public CmnTile tile;
+        public CmnObj obj;
 
         /* 抽象プロパティ =====================================================*/
         public virtual UInt64 Id => obj.Id;
@@ -392,12 +398,14 @@ namespace libGis
         public virtual LatLon[] GetGeometry(int direction) => obj.GetGeometry(direction);
 
 
-
+        public ICmnObjHandle() { }
+        
         public ICmnObjHandle(CmnTile tile, CmnObj obj)
         {
             this.tile = tile;
             this.obj = obj;
         }
+
 
     }
 
@@ -674,14 +682,14 @@ namespace libGis
             return GetObjGroup(objType)?.GetObj(objIndex);
         }
 
-        public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt64 objId)
+        public virtual ICmnObjHandle GetObjHandle(UInt32 objType, UInt64 objId)
         {
-            return GetObjGroup(objType)?.GetObj(objId)?.ToCmnObjHandle(this);
+            return GetObjGroup(objType)?.GetObj(objId)?.ToICmnObjHandle(this);
         }
 
-        public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt16 objIndex)
+        public virtual ICmnObjHandle GetObjHandle(UInt32 objType, UInt16 objIndex)
         {
-            return GetObjGroup(objType)?.GetObj(objIndex)?.ToCmnObjHandle(this);
+            return GetObjGroup(objType)?.GetObj(objIndex)?.ToICmnObjHandle(this);
         }
 
         public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
@@ -756,10 +764,8 @@ namespace libGis
 
     /* オブジェクト参照クラス *************************************************/
 
-    public class CmnObjHandle
+    public class CmnObjHandle : ICmnObjHandle
     {
-        public CmnTile tile;
-        public CmnObj obj;
 
         public CmnObjHandle() { }
         public CmnObjHandle(CmnTile tile, CmnObj obj)
@@ -772,6 +778,7 @@ namespace libGis
             this.tile = tile;
             return this;
         }
+
     }
 
     public class CmnObjHdlDistance : CmnObjHandle //距離拡張
@@ -803,27 +810,27 @@ namespace libGis
 
     public class CmnObjHdlRef// : CmnObjHandle //参照属性拡張
     {
-        public CmnObjHandle objHdl;
+        public ICmnObjHandle objHdl;
         public bool isDirObjHandle = false; //trueの場合、CmnDirObjHandleにキャスト可能
         public int objRefType;
         public CmnObjRef nextRef; //NULLになるまで、データ参照を再帰的に続ける必要がある
         public bool noData = false; //検索結果がない場合、最後のRef情報を返却
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, CmnObjRef nextRef, bool noData = false)// : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(ICmnObjHandle objHdl, CmnObjRef nextRef, bool noData = false)// : base(objHdl?.tile, objHdl?.obj)
         {
             this.objHdl = objHdl;
             this.nextRef = nextRef;
             this.noData = noData;
         }
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, int refType, UInt32 objType)// : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(ICmnObjHandle objHdl, int refType, UInt32 objType)// : base(objHdl?.tile, objHdl?.obj)
         {
             this.objHdl = objHdl;
             this.objRefType = refType;
             this.nextRef = new CmnObjRef(refType, new CmnSearchKey(objType));
         }
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, int refType)// : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(ICmnObjHandle objHdl, int refType)// : base(objHdl?.tile, objHdl?.obj)
         {
             this.objHdl = objHdl;
             this.objRefType = refType;
@@ -952,7 +959,8 @@ namespace libGis
     }
 
 
-    public delegate int CbGetObjFunc(CmnTile tile, CmnObj cmnObj);
+    public delegate int CbGetObjFunc(ICmnObjHandle objHdl);
+    //public delegate int CbGetObjFunc(CmnTile tile, CmnObj cmnObj);
 
     //public delegate CmnObj CbGetObjFunc();
 

@@ -254,7 +254,7 @@ namespace libGis
 
         /****** 設定 ******************************************************************************/
 
-        public int SetStartCost(CmnObjHandle linkHdl, int offset, byte direction = 0xff)
+        public int SetStartCost(ICmnObjHandle linkHdl, int offset, byte direction = 0xff)
         {
             //TileObjId start = new TileObjId(mapPos.tileId, mapPos.linkId);
             //MapLink sMapLink = mapMgr.SearchMapLink(start);
@@ -290,7 +290,7 @@ namespace libGis
             return 0;
         }
 
-        public int SetDestination(CmnObjHandle linkHdl, int offset, byte direction = 0xff)
+        public int SetDestination(ICmnObjHandle linkHdl, int offset, byte direction = 0xff)
         {
             //offsetが暫定
             CostRecord costRec;
@@ -697,8 +697,8 @@ public class CmnRouteMgr
         public LatLon orgLatLon;
         public LatLon dstLatLon;
 
-        public CmnObjHandle orgHdl;
-        public CmnObjHandle dstHdl;
+        public ICmnObjHandle orgHdl;
+        public ICmnObjHandle dstHdl;
 
         //経路計算用メモリ
         public Dykstra dykstra;

@@ -225,7 +225,7 @@ namespace libGis
 
         /* オブジェクト検索メソッド ************************************************/
 
-        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt64 objId)
+        public ICmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt64 objId)
         {
             return SearchTile(tileId)?.GetObjHandle(objType, objId);
 
@@ -240,7 +240,7 @@ namespace libGis
 
         }
 
-        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt16 objIndex)
+        public ICmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt16 objIndex)
         {
             return SearchTile(tileId)?.GetObjHandle(objType, objIndex);
 
@@ -255,7 +255,7 @@ namespace libGis
 
         }
 
-        public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
+        public ICmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
         {
             List<CmnTile> searchTileList;
 
@@ -281,7 +281,7 @@ namespace libGis
             if (nearestObj == null)
                 return null;
 
-            return (CmnObjHandle)nearestObj;
+            return (ICmnObjHandle)nearestObj;
 
         }
 
@@ -310,7 +310,7 @@ namespace libGis
 
         //}
 
-        public CmnObjHandle SearchObj(CmnSearchKey cmnSearchKey)
+        public ICmnObjHandle SearchObj(CmnSearchKey cmnSearchKey)
         {
             if (cmnSearchKey == null)
                 return null;
@@ -338,7 +338,7 @@ namespace libGis
         /* 関連オブジェクト検索 *************************************************************/
 
         //関連オブジェクト取得（参照種別指定）
-        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, int refType, byte objDirection)
+        public virtual List<CmnObjHdlRef> SearchRefObject(ICmnObjHandle objHdl, int refType, byte objDirection)
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
@@ -362,7 +362,7 @@ namespace libGis
 
 
         //関連オブジェクト取得（全て）。必要に応じてオーバーライド
-        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, byte direction = 1)
+        public virtual List<CmnObjHdlRef> SearchRefObject(ICmnObjHandle objHdl, byte direction = 1)
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
@@ -389,7 +389,7 @@ namespace libGis
                 return retList; //異常
 
             //CmnObjHandle objHdl = SearchObj(objRef); //ハンドル
-            CmnObjHandle objHdl = SearchObj(objRef.key); //キー⇒ハンドル
+            ICmnObjHandle objHdl = SearchObj(objRef.key); //キー⇒ハンドル
             //検索失敗
             if (objHdl == null)
             {
@@ -403,8 +403,8 @@ namespace libGis
             if (objRef.final == true)
             {
                 if (objRef.key.objDirection != 0xff)
-                    objHdl = (CmnObjHandle)new CmnDirObjHandle(objHdl.tile, objHdl.obj, objRef.key.objDirection);
-                retList.Add(new CmnObjHdlRef((CmnObjHandle)objHdl, objRef.refType));
+                    objHdl = (ICmnObjHandle)new CmnDirObjHandle(objHdl.tile, objHdl.obj, objRef.key.objDirection);
+                retList.Add(new CmnObjHdlRef((ICmnObjHandle)objHdl, objRef.refType));
                 return retList;
             }
 
