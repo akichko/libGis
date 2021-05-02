@@ -38,12 +38,14 @@ namespace libGis
 
         public CmnObjHandle LinkHdl
         {
-            get { return new CmnObjHandle(tileCostInfo.tile, tileCostInfo.linkArray[linkIndex]); }
+            get { return tileCostInfo.linkArray[linkIndex].ToCmnObjHandle(tileCostInfo.tile); }
+            //get { return new CmnObjHandle(tileCostInfo.tile, tileCostInfo.linkArray[linkIndex]); }
         }
 
-        public CmnDirObjHandle DLinkHdl
+        public CmnObjHandle DLinkHdl
         {
-            get { return new CmnDirObjHandle(tileCostInfo.tile, tileCostInfo.linkArray[linkIndex], linkDirection); }
+            get { return tileCostInfo.linkArray[linkIndex].ToCmnObjHandle(tileCostInfo.tile, linkDirection); }
+            //get { return new CmnDirObjHandle(tileCostInfo.tile, tileCostInfo.linkArray[linkIndex], linkDirection); }
         }
     }
 
@@ -393,7 +395,7 @@ namespace libGis
 
         }
 
-        public CostRecord GetLinkCostInfo(CostRecord currentInfo, CmnDirObjHandle linkRef)
+        public CostRecord GetLinkCostInfo(CostRecord currentInfo, CmnObjHandle linkRef)
         {
             return GetLinkCostInfo(currentInfo, linkRef.tile.tileId, linkRef.obj.Index, linkRef.direction);
         }
@@ -449,9 +451,9 @@ namespace libGis
 
             //出発地側か目的地側か
 
-            CmnDirObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
+            CmnObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
 
-            List<CmnDirObjHandle> connectLinkList = null;
+            List<CmnObjHandle> connectLinkList = null;
             List<CmnObjHdlRef> objHdlRefList;
             List<uint> noDataTileIdList;
 
@@ -483,13 +485,13 @@ namespace libGis
             }
 
             connectLinkList = objHdlRefList
-                .Select(x => (CmnDirObjHandle)x.objHdl)
+                .Select(x => (CmnObjHandle)x.objHdl)
                 .Where(x => x != null)
                 .ToList();
 
 
             //接続リンクとコスト参照
-            foreach (CmnDirObjHandle nextLinkRef in connectLinkList ?? new List<CmnDirObjHandle>())
+            foreach (CmnObjHandle nextLinkRef in connectLinkList ?? new List<CmnObjHandle>())
             {
                 //探索除外：　Uターンリンク、タイルに応じた使用可能道路種別でない、スタート付近で道路種別が下がる移動、一方通行逆走
 

@@ -300,9 +300,9 @@ namespace libGis
         //public abstract CmnObjHandle ToCmnObjHandle(CmnTile tile);
 
         /* 必要に応じてオーバーライド */
-        public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile)
+        public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile, byte direction = 0xff)
         {
-            return new CmnObjHandle(tile, this);
+            return new CmnObjHandle(tile, this, direction);
         }
 
         /* 描画用 ----------------------------------------------------------*/
@@ -794,11 +794,14 @@ namespace libGis
     //    }
 
     //    public CmnObjHandle ToCmnObjHandle() =>obj.ToCmnObjHandle(tile);
-        
+
     //}
 
+
+    /* ハンドル機能が正常動作しないので一時的な使用を推奨 */
     public class CmnObjHdlDistance : CmnObjHandle //距離拡張
     {
+        //ppublic CmnObjHandle objHdl; //あるいは継承させない
         public double distance;
 
         public CmnObjHdlDistance(CmnTile tile, CmnObj obj, double distance) : base(tile, obj)
@@ -813,16 +816,16 @@ namespace libGis
         }
     }
 
-    public class CmnDirObjHandle : CmnObjHandle //方向拡張
-    {
-        //public byte direction;
+    //public class CmnDirObjHandle : CmnObjHandle //方向拡張
+    //{
+    //    //public byte direction;
 
-        public CmnDirObjHandle(CmnTile tile, CmnObj obj, byte direction) : base(tile, obj)
-        {
-            this.direction = direction;
-        }
+    //    public CmnDirObjHandle(CmnTile tile, CmnObj obj, byte direction) : base(tile, obj)
+    //    {
+    //        this.direction = direction;
+    //    }
 
-    }
+    //}
 
     public class CmnObjHdlRef// : CmnObjHandle //参照属性拡張
     {
@@ -853,13 +856,13 @@ namespace libGis
             this.nextRef = new CmnObjRef(refType, null);
         }
 
-        public CmnObjHdlRef(CmnDirObjHandle dirObjHdl, int refType)// : base(objHdl?.tile, objHdl?.obj)
-        {
-            this.objHdl = (CmnObjHandle)dirObjHdl;
-            this.isDirObjHandle = true;
-            this.objRefType = refType;
-            this.nextRef = new CmnObjRef(refType, null);
-        }
+        //public CmnObjHdlRef(CmnDirObjHandle dirObjHdl, int refType)// : base(objHdl?.tile, objHdl?.obj)
+        //{
+        //    this.objHdl = (CmnObjHandle)dirObjHdl;
+        //    this.isDirObjHandle = true;
+        //    this.objRefType = refType;
+        //    this.nextRef = new CmnObjRef(refType, null);
+        //}
 
         //public CmnObjHdlRef(CmnTile tile, CmnObj obj, int refType, CmnObjRef objRef) : base(tile, obj)
         //{

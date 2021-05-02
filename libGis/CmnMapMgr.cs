@@ -338,11 +338,11 @@ namespace libGis
         /* 関連オブジェクト検索 *************************************************************/
 
         //関連オブジェクト取得（参照種別指定）
-        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, int refType, byte objDirection)
+        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, int refType)
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
-            List<CmnObjHdlRef> tmpRefHdlList = objHdl.obj.GetObjRefHdlList(refType, objHdl.tile, objDirection); //Objの参照先一覧
+            List<CmnObjHdlRef> tmpRefHdlList = objHdl.obj.GetObjRefHdlList(refType, objHdl.tile, objHdl.direction); //Objの参照先一覧
 
             foreach (var tmpRefHdl in tmpRefHdlList ?? new List<CmnObjHdlRef>())
             {
@@ -355,10 +355,10 @@ namespace libGis
         }
 
         //ラッパー
-        public virtual List<CmnObjHdlRef> SearchRefObject(CmnDirObjHandle objDHdl, int refType)
-        {
-            return SearchRefObject(objDHdl, refType, objDHdl.direction);
-        }
+        //public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objDHdl, int refType)
+        //{
+        //    return SearchRefObject(objDHdl, refType, objDHdl.direction);
+        //}
 
 
         //関連オブジェクト取得（全て）。必要に応じてオーバーライド
@@ -403,8 +403,8 @@ namespace libGis
             if (objRef.final == true)
             {
                 if (objRef.key.objDirection != 0xff)
-                    objHdl = (CmnObjHandle)new CmnDirObjHandle(objHdl.tile, objHdl.obj, objRef.key.objDirection);
-                retList.Add(new CmnObjHdlRef((CmnObjHandle)objHdl, objRef.refType));
+                    objHdl = new CmnObjHandle(objHdl.tile, objHdl.obj, objRef.key.objDirection);
+                retList.Add(new CmnObjHdlRef(objHdl, objRef.refType));
                 return retList;
             }
 
