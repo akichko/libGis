@@ -281,34 +281,9 @@ namespace libGis
             if (nearestObj == null)
                 return null;
 
-            return nearestObj.ToCmnObjHandle();
+            return nearestObj.objHdl;
 
         }
-
-        //public CmnObjHandle SearchObj(CmnObjRef objRef)
-        //{
-        //    if (objRef == null)
-        //        return null;
-
-        //    //Tile <- offset未対応
-        //    CmnTile tile;
-        //    if (objRef.tile != null)
-        //        tile = objRef.tile;
-        //    else
-        //        tile = SearchTile(objRef.tileId);
-
-        //    if (tile == null)
-        //        return null;
-
-        //    //Obj
-        //    if (objRef.obj != null)
-        //        return new CmnObjHandle(tile, objRef.obj);
-        //    else if (objRef.objIndex != 0xffff)
-        //        return tile.GetObjHandle(objRef.objType, objRef.objIndex);
-        //    else
-        //        return tile.GetObjHandle(objRef.objType, objRef.objId);
-
-        //}
 
         public CmnObjHandle SearchObj(CmnSearchKey cmnSearchKey)
         {
@@ -354,15 +329,9 @@ namespace libGis
             return retList;
         }
 
-        //ラッパー
-        //public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objDHdl, int refType)
-        //{
-        //    return SearchRefObject(objDHdl, refType, objDHdl.direction);
-        //}
-
 
         //関連オブジェクト取得（全て）。必要に応じてオーバーライド
-        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, byte direction = 1)
+        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, byte direction = 0xff)
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 

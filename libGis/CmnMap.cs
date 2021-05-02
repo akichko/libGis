@@ -273,7 +273,7 @@ namespace libGis
 
         public virtual List<CmnObjRef> GetObjAllRefList() { return new List<CmnObjRef>(); } //現状はnull返却禁止
 
-        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 1) { return new List<CmnObjRef>(); } //現状はnull返却禁止
+        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 0xff) { return new List<CmnObjRef>(); } //現状はnull返却禁止
 
         public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) { return  new List<CmnObjHdlRef>(); } //現状はnull返却禁止
 
@@ -371,13 +371,13 @@ namespace libGis
             this.direction = direction;
         }
 
-        public CmnObjHandle SetTile(CmnTile tile) => obj.ToCmnObjHandle(tile);
-        //{
-        //    this.tile = tile;
-        //    return this;
-        //}
+        //public CmnObjHandle SetTile(CmnTile tile) => obj.ToCmnObjHandle(tile);
+        ////{
+        ////    this.tile = tile;
+        ////    return this;
+        ////}
 
-        public CmnObjHandle ToCmnObjHandle() => obj.ToCmnObjHandle(tile);
+        //public CmnObjHandle ToCmnObjHandle() => obj.ToCmnObjHandle(tile);
 
 
         /* 仮想プロパティ =====================================================*/
@@ -399,8 +399,8 @@ namespace libGis
         /* 仮想メソッド =====================================================*/
 
         public virtual List<CmnObjRef> GetObjAllRefList() => obj.GetObjAllRefList(tile);
-        public virtual List<CmnObjRef> GetObjAllRefList(byte direction = 1) => obj.GetObjAllRefList(tile, direction);
-        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, byte direction = 1) => obj.GetObjRefHdlList(refType, tile, direction);
+        public virtual List<CmnObjRef> GetObjAllRefList(byte direction = 0xff) => obj.GetObjAllRefList(tile, direction);
+        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, byte direction = 0xff) => obj.GetObjRefHdlList(refType, tile, direction);
         public virtual double GetDistance(LatLon latlon) => obj.GetDistance(latlon);
 
 
@@ -506,18 +506,18 @@ namespace libGis
             }
         }
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
+        public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
         {
             if (!isGeoSearchable)
                 return null;
 
-            CmnObjHdlDistance nearestObjDistance;
+            CmnObjDistance nearestObjDistance;
 
             if (isArray)
             {
                 nearestObjDistance = objArray
                     ?.Where(x => x.SubType <= maxSubType)
-                    .Select(x => new CmnObjHdlDistance(null, x, x.GetDistance(latlon)))
+                    .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
                     .OrderBy(x => x.distance)
                     .FirstOrDefault();
             }
@@ -525,7 +525,7 @@ namespace libGis
             {
                 nearestObjDistance = objList
                     ?.Where(x => x.SubType <= maxSubType)
-                    .Select(x => new CmnObjHdlDistance(null, x, x.GetDistance(latlon)))
+                    .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
                     .OrderBy(x => x.distance)
                     .FirstOrDefault();
             }
@@ -710,7 +710,7 @@ namespace libGis
         {
             //?必要か要精査
             var ret = GetObjGroupList(objType)
-                ?.Select(x => x?.GetNearestObj(latlon, maxSubType)?.SetTile(this))
+                ?.Select(x => x?.GetNearestObj(latlon, maxSubType)?.ToCmnObjHdlDistance(this))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();
@@ -778,59 +778,41 @@ namespace libGis
 
     /* オブジェクト参照クラス *************************************************/
 
-    //public class CmnObjHandle : ICmnObjHandle
-    //{
-
-    //    public CmnObjHandle() { }
-    //    public CmnObjHandle(CmnTile tile, CmnObj obj)
-    //    {
-    //        this.tile = tile;
-    //        this.obj = obj;
-    //    }
-    //    public CmnObjHandle SetTile(CmnTile tile)
-    //    {
-    //        this.tile = tile;
-    //        return this;
-    //    }
-
-    //    public CmnObjHandle ToCmnObjHandle() =>obj.ToCmnObjHandle(tile);
-
-    //}
-
-
-    /* ハンドル機能が正常動作しないので一時的な使用を推奨 */
-    public class CmnObjHdlDistance : CmnObjHandle //距離拡張
+    //地理検索用
+    public class CmnObjHdlDistance
     {
-        //ppublic CmnObjHandle objHdl; //あるいは継承させない
+        public CmnObjHandle objHdl;
         public double distance;
 
-        public CmnObjHdlDistance(CmnTile tile, CmnObj obj, double distance) : base(tile, obj)
+        public CmnObjHdlDistance(CmnObjHandle objHdl, double distance)
         {
+            this.objHdl = objHdl;
             this.distance = distance;
-        }
-
-        public new CmnObjHdlDistance SetTile(CmnTile tile)
-        {
-            this.tile = tile;
-            return this;
         }
     }
 
-    //public class CmnDirObjHandle : CmnObjHandle //方向拡張
-    //{
-    //    //public byte direction;
+    public class CmnObjDistance
+    {
+        public CmnObj obj;
+        public double distance;
 
-    //    public CmnDirObjHandle(CmnTile tile, CmnObj obj, byte direction) : base(tile, obj)
-    //    {
-    //        this.direction = direction;
-    //    }
+        public CmnObjDistance(CmnObj obj, double distance)
+        {
+            this.obj = obj;
+            this.distance = distance;
+        }
 
-    //}
+        public CmnObjHdlDistance ToCmnObjHdlDistance(CmnTile tile)
+        {
+            return new CmnObjHdlDistance(obj.ToCmnObjHandle(tile), distance);
+        }
+    }
 
-    public class CmnObjHdlRef// : CmnObjHandle //参照属性拡張
+
+    public class CmnObjHdlRef //参照属性拡張
     {
         public CmnObjHandle objHdl;
-        public bool isDirObjHandle = false; //trueの場合、CmnDirObjHandleにキャスト可能
+        //public bool isDirObjHandle = false; //trueの場合、CmnDirObjHandleにキャスト可能
         public int objRefType;
         public CmnObjRef nextRef; //NULLになるまで、データ参照を再帰的に続ける必要がある
         public bool noData = false; //検索結果がない場合、最後のRef情報を返却
