@@ -7,32 +7,27 @@ using System.Drawing;
 
 namespace libGis
 {
-    
-    /* Tileコード *************************************************************/
-    public abstract class CmnTileCode
-    {
-        //プロパティ
-        public virtual uint tileId { get; protected set; }
-        public virtual byte Lv { get { return CalcTileLv(tileId); } }
-        public virtual int X { get { return CalcTileX(tileId); } }
-        public virtual int Y { get { return CalcTileY(tileId); } }
 
+    public abstract class CmnTileCodeApi
+    {
         /* 抽象メソッド ********************************************************/
 
         public abstract byte DefaultLevel { get; }
         public abstract byte MaxLevel { get; }
 
+        //XYL => ID
         public abstract uint CalcTileId(int x, int y, byte level);
 
+        //ID => XYL
         public abstract int CalcTileX(uint tileId);
         public abstract int CalcTileY(uint tileId);
         public abstract byte CalcTileLv(uint tileId);
 
-        //public abstract uint CalcTileId(LatLon latlon, byte level);
-
+        //XYL => LatLon
         public abstract double CalcTileLon(int tileX, byte level);
         public abstract double CalcTileLat(int tileY, byte level);
 
+        //LatLon => XYL
         public abstract int CalcTileX(double lon, byte level);
         public abstract int CalcTileY(double lat, byte level);
 
@@ -41,6 +36,7 @@ namespace libGis
 
         //タイルコード変換
 
+        //ID => LatLon
         public virtual LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
         {
             TileXYL xyl = CalcTileXYL(tileId);
@@ -76,6 +72,18 @@ namespace libGis
 
         }
 
+        //ID => XYL
+        public virtual TileXYL CalcTileXYL(uint tileId)
+        {
+            TileXYL ret = new TileXYL();
+            ret.x = CalcTileX(tileId);
+            ret.y = CalcTileY(tileId);
+            ret.lv = CalcTileLv(tileId);
+
+            return ret;
+        }
+
+        //LatLon => ID
         public virtual uint CalcTileId(LatLon latlon, byte level)
         {
             if (latlon.lon < -180.0 || latlon.lon > 180.0 || latlon.lat < -90.0 || latlon.lat > 90.0 || level > MaxLevel)
@@ -92,35 +100,26 @@ namespace libGis
 
             return CalcTileId(tileX, tileY, level);
         }
-        
-        public virtual uint CalcTileId(int x, int y) => CalcTileId(x, y, DefaultLevel);
 
         public virtual uint CalcTileId(LatLon latlon) => CalcTileId(latlon, DefaultLevel);
 
+        //XYL => ID        
+        public virtual uint CalcTileId(int x, int y) => CalcTileId(x, y, DefaultLevel);
+
         public virtual uint CalcTileId(TileXYL xyl) => CalcTileId(xyl.x, xyl.y, xyl.lv);
 
+
+        //LatLon => XYL
         public virtual TileXYL CalcTileXYL(LatLon latlon, byte level)
         {
-            //uint tileId = CalcTileId(latlon);
-            //int x = CalcTileX(tileId);
-            //int y = CalcTileY(tileId);
-
             int x = CalcTileX(latlon.lon, level);
             int y = CalcTileY(latlon.lat, level);
-            byte lv = CalcTileLv(tileId);
+            byte lv = level;
 
             return new TileXYL(x, y, lv);
         }
 
-        public virtual TileXYL CalcTileXYL(uint tileId)
-        {
-            TileXYL ret = new TileXYL();
-            ret.x = CalcTileX(tileId);
-            ret.y = CalcTileY(tileId);
-            ret.lv = CalcTileLv(tileId);
-
-            return ret;
-        }
+        public virtual TileXYL CalcTileXYL(LatLon latlon) => CalcTileXYL(latlon, DefaultLevel);
 
 
         //タイル演算
@@ -148,7 +147,6 @@ namespace libGis
             return retList;
         }
 
-
         public virtual List<uint> CalcTileIdAround(LatLon latlon, double radius, byte level)
         {
             List<uint> retList = new List<uint>();
@@ -157,27 +155,21 @@ namespace libGis
             TileXYL xylNE = CalcTileXYL(latlon.GetOffsetLatLon(radius, radius), level);
 
 
-            for(int x=xylSW.x; x<=xylNE.x; x++)
+            for (int x = xylSW.x; x <= xylNE.x; x++)
             {
-                for(int y=xylSW.y; y<=xylNE.y; y++)
+                for (int y = xylSW.y; y <= xylNE.y; y++)
                 {
                     retList.Add(CalcTileId(x, y, level));
                 }
             }
-           
+
             return retList;
         }
 
-
-        public virtual uint CalcOffsetTileId(Int16 offsetX, Int16 offsetY)
+        public virtual TileXY CalcTileOffset(uint baseTileId, uint tileId)
         {
-            return CalcTileId(X + offsetX, Y + offsetY, Lv);
-        }
-
-        public virtual TileXY CalcTileOffsetTo(uint tileId)
-        {
-            int offsetX = CalcTileX(tileId) - this.X;
-            int offsetY = CalcTileY(tileId) - this.Y;
+            int offsetX = CalcTileX(tileId) - CalcTileX(baseTileId);
+            int offsetY = CalcTileY(tileId) - CalcTileY(baseTileId);
 
             return new TileXY(offsetX, offsetY);
         }
@@ -190,17 +182,41 @@ namespace libGis
             return new TileXY(offsetX, offsetY);
         }
 
+    }
+
+
+    /* Tileコード *************************************************************/
+    public abstract class CmnTileCode : CmnTileCodeApi
+    {
+        //プロパティ
+        public virtual uint TileId { get; protected set; }
+        public virtual byte Lv { get { return CalcTileLv(TileId); } }
+        public virtual int X { get { return CalcTileX(TileId); } }
+        public virtual int Y { get { return CalcTileY(TileId); } }
+
+        /* 通常メソッド **********************************************************/
+
+        //public override TileXYL CalcTileXYL(LatLon latlon) => CalcTileXYL(latlon, Lv);
+
+        public virtual uint CalcOffsetTileId(Int16 offsetX, Int16 offsetY)
+        {
+            return CalcTileId(X + offsetX, Y + offsetY, Lv);
+        }
+
+        public virtual TileXY CalcTileOffsetTo(uint tileId) => CalcTileOffset(this.TileId, tileId);
+
         public virtual LatLon[] GetGeometry()
         {
             LatLon[] ret = new LatLon[5];
-            ret[0] = CalcLatLon(tileId, ERectPos.SouthWest);
-            ret[1] = CalcLatLon(tileId, ERectPos.SouthEast);
-            ret[2] = CalcLatLon(tileId, ERectPos.NorthEast);
-            ret[3] = CalcLatLon(tileId, ERectPos.NorthWest);
-            ret[4] = CalcLatLon(tileId, ERectPos.SouthWest);
+            ret[0] = CalcLatLon(TileId, ERectPos.SouthWest);
+            ret[1] = CalcLatLon(TileId, ERectPos.SouthEast);
+            ret[2] = CalcLatLon(TileId, ERectPos.NorthEast);
+            ret[3] = CalcLatLon(TileId, ERectPos.NorthWest);
+            ret[4] = CalcLatLon(TileId, ERectPos.SouthWest);
 
             return ret;
         }
+
     }
 
     //public struct CmnTileOffset
@@ -254,6 +270,8 @@ namespace libGis
         public virtual UInt16 SubType => 0xffff; //値が小さいほど重要。データ切り捨ての閾値に利用
 
         public virtual LatLon[] Geometry => null;
+
+        public virtual LatLon Location => null;
 
         public virtual UInt16 Index { get; set; }　//現状はメモリを消費する実装
 
@@ -363,12 +381,18 @@ namespace libGis
 
         /* コンストラクタ・データ生成 ==============================================*/
 
-        public CmnObjHandle() { }
+        //public CmnObjHandle() { }
         public CmnObjHandle(CmnTile tile, CmnObj obj, byte direction = 0xff)
         {
             this.tile = tile;
             this.obj = obj;
             this.direction = direction;
+        }
+
+        public CmnObjHandle SetDirection(byte direction)
+        {
+            this.direction = direction;
+            return this;
         }
 
         //public CmnObjHandle SetTile(CmnTile tile) => obj.ToCmnObjHandle(tile);
@@ -380,51 +404,49 @@ namespace libGis
         //public CmnObjHandle ToCmnObjHandle() => obj.ToCmnObjHandle(tile);
 
 
-        /* 仮想プロパティ =====================================================*/
+        /* 追加メソッド =====================================================*/
+        public bool IsEqualTo(CmnObjHandle objHdl)
+        {
+            if (objHdl != null && (this.TileId == objHdl.TileId) && (this.ObjId == objHdl.ObjId) && (this.Index == objHdl.Index))
+                return true;
+            else
+                return false;
+        }
+
+        public virtual uint TileId => tile.tileId;
+        
+
+        /* 属性取得にタイル情報が必要な場合はオーバーライド *****************************/
+
+        /* プロパティ =====================================================*/
         public virtual UInt64 ObjId => obj.Id;
         public virtual UInt32 Type => obj.Type;
         public virtual UInt16 SubType => obj.SubType;
         public virtual LatLon[] Geometry => obj.Geometry;
+        public virtual LatLon Location => obj.Location;
         public virtual UInt16 Index => obj.Index;
         public virtual double Length => obj.Length;
-
-        /* 経路計算用 ----------------------------------------------------------*/
-
         public virtual int Cost => obj.Cost;
         public virtual byte Oneway => obj.Oneway;
         public virtual bool IsOneway => obj.IsOneway;
 
-        /* 抽象メソッド：現状なし */
-
-        /* 仮想メソッド =====================================================*/
-
+        /* メソッド =====================================================*/
         public virtual List<CmnObjRef> GetObjAllRefList() => obj.GetObjAllRefList(tile);
         public virtual List<CmnObjRef> GetObjAllRefList(byte direction = 0xff) => obj.GetObjAllRefList(tile, direction);
         public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, byte direction = 0xff) => obj.GetObjRefHdlList(refType, tile, direction);
         public virtual double GetDistance(LatLon latlon) => obj.GetDistance(latlon);
-
-
         public virtual LatLon GetCenterLatLon() => obj.GetCenterLatLon();
-
         public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile) => obj.ToCmnObjHandle(tile);
-
-
-        /* 描画用 ----------------------------------------------------------*/
-
         public virtual List<AttrItemInfo> GetAttributeListItem() => obj.GetAttributeListItem(tile);
-
-
         public virtual int DrawData(CbGetObjFunc cbGetObjFuncForDraw) => obj.DrawData(tile, cbGetObjFuncForDraw);
-
         public virtual LatLon[] GetGeometry(int direction) => obj.GetGeometry(direction);
-
-
-
 
     }
 
 
 
+
+    //Viewer用
     public class AttrItemInfo
     {
         public string[] attrStr;
@@ -611,9 +633,9 @@ namespace libGis
 
         //プロパティ
 
-        override public UInt64 Id => (UInt64)tileInfo.tileId;
+        override public UInt64 Id => (UInt64)tileInfo.TileId;
 
-        public uint tileId => tileInfo.tileId;
+        public uint tileId => tileInfo.TileId;
         public int X => tileInfo.X;
         public int Y => tileInfo.Y;
         public int Lv => tileInfo.Lv;

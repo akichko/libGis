@@ -9,14 +9,14 @@ namespace libGis
     public abstract class CmnMapMgr
     {
         //public CmnTile tileDataApi;
-        public CmnTileCode tileApi;
+        public CmnTileCodeApi tileApi;
         protected Dictionary<uint, CmnTile> tileDic;
         protected ICmnMapAccess mal;
 
         //抽象メソッド
         //現状なし。MAL側
 
-        public CmnMapMgr(CmnTileCode tileCode)
+        public CmnMapMgr(CmnTileCodeApi tileCode)
         {
             // tileDataApi = tile;
             tileApi = tileCode;
@@ -300,13 +300,17 @@ namespace libGis
             if (tile == null)
                 return null;
 
-            //Obj
+            //キーにObjあり
             if (cmnSearchKey.obj != null)
                 return cmnSearchKey.obj.ToCmnObjHandle(tile);
+            //Index検索
             else if (cmnSearchKey.objIndex != 0xffff)
-                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objIndex);
+                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objIndex)?.SetDirection(cmnSearchKey.objDirection);
+            //ID検索
             else
-                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId);
+                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId)?.SetDirection(cmnSearchKey.objDirection);
+
+
         }
 
 
@@ -317,7 +321,7 @@ namespace libGis
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
-            List<CmnObjHdlRef> tmpRefHdlList = objHdl.obj.GetObjRefHdlList(refType, objHdl.tile, objHdl.direction); //Objの参照先一覧
+            List<CmnObjHdlRef> tmpRefHdlList = objHdl.GetObjRefHdlList(refType); //Objの参照先一覧
 
             foreach (var tmpRefHdl in tmpRefHdlList ?? new List<CmnObjHdlRef>())
             {
@@ -335,7 +339,7 @@ namespace libGis
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
-            List<CmnObjRef> tmpObjRefList = objHdl.obj.GetObjAllRefList(objHdl.tile, direction); //Objの参照先一覧
+            List<CmnObjRef> tmpObjRefList = objHdl.GetObjAllRefList(); //Objの参照先一覧
 
             foreach (var tmpObjRef in tmpObjRefList ?? new List<CmnObjRef>())
             {
@@ -371,14 +375,14 @@ namespace libGis
 
             if (objRef.final == true)
             {
-                if (objRef.key.objDirection != 0xff)
-                    objHdl = new CmnObjHandle(objHdl.tile, objHdl.obj, objRef.key.objDirection);
+                //if (objRef.key.objDirection != 0xff)
+                //    objHdl = new CmnObjHandle(objHdl.tile, objHdl.obj, objRef.key.objDirection);
                 retList.Add(new CmnObjHdlRef(objHdl, objRef.refType));
                 return retList;
             }
 
 
-            List<CmnObjHdlRef> tmpObjHdlRefList = objHdl.obj.GetObjRefHdlList(objRef.refType, objHdl.tile, objRef.key.objDirection); //Objの参照先一覧（種別指定）
+            List<CmnObjHdlRef> tmpObjHdlRefList = objHdl.GetObjRefHdlList(objRef.refType, objRef.key.objDirection); //Objの参照先一覧（種別指定）
 
             foreach (var tmpObjHdlRef in tmpObjHdlRefList ?? new List<CmnObjHdlRef>())
             {

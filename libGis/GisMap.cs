@@ -37,11 +37,11 @@ namespace libGis
         //コンストラクタ
         public GisTileCode()
         {
-            this.tileId = 0xFFFFFFFF;
+            this.TileId = 0xFFFFFFFF;
         }
         public GisTileCode(uint tileId)
         {
-            this.tileId = tileId;
+            this.TileId = tileId;
         }
 
         //オーバーライドプロパティ
@@ -108,7 +108,7 @@ namespace libGis
         //追加メソッド
         public double CalcDistanceTo(uint tileId)
         {
-            return S_CalcTileDistance(this.tileId, tileId);
+            return S_CalcTileDistance(this.TileId, tileId);
         }
 
 
