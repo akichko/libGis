@@ -182,6 +182,56 @@ namespace libGis
             return new TileXY(offsetX, offsetY);
         }
 
+
+        public virtual List<uint> CalcTileEllipse(uint tileIdA, uint tileIdB, double ratio)
+        {
+            List<uint> retList = new List<uint>();
+
+            if (tileIdA == tileIdB)
+            {
+                return CalcTileIdAround(tileIdA, 1, 1);
+            }
+
+            //大き目に取る
+            //TileXY tA = new TileXY(tileIdA);
+            //TileXY tB = new TileXY(tileIdB);
+
+            int aX = CalcTileX(tileIdA);
+            int aY = CalcTileY(tileIdA);
+            int bX = CalcTileX(tileIdB);
+            int bY = CalcTileY(tileIdB);
+
+            int diffX = Math.Abs((int)(aX - bX));
+            int diffY = Math.Abs((int)(aY - bY));
+
+            int lengthXY = diffX + diffY;
+
+            int minX = (int)Math.Min(aX, bX);
+            int minY = (int)Math.Min(aY, bY);
+
+            IEnumerable<int> rangeX = Enumerable.Range(minX - lengthXY, diffX + lengthXY * 2 + 1);
+            IEnumerable<int> rangeY = Enumerable.Range(minY - lengthXY, diffY + lengthXY * 2 + 1);
+
+            int debugX = rangeX.Count();
+            int deBugY = rangeY.Count();
+            foreach (var x in rangeX)
+            {
+                foreach (var y in rangeY)
+                {
+                    retList.Add(CalcTileId(x, y));
+                }
+            }
+
+            //選別
+            double baseLength = CalcTileDistance(tileIdA, tileIdB) * ratio;
+
+            retList = retList.Where(x =>
+                CalcTileDistance(x, tileIdA) + CalcTileDistance(x, tileIdB) <= baseLength
+            ).ToList();
+
+            return retList;
+        }
+
     }
 
 
@@ -414,6 +464,8 @@ namespace libGis
         }
 
         public virtual uint TileId => tile.tileId;
+
+        public LatLon[] DirGeometry => obj.GetGeometry(direction);
         
 
         /* 属性取得にタイル情報が必要な場合はオーバーライド *****************************/

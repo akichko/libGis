@@ -56,7 +56,6 @@ namespace libGis
         public CmnTile tile;
         public CmnObj[] linkArray;
         public CostRecord[][] costInfo; //始点方向リンク、終点方向リンク
-        //public byte status = 0; //0:未開始　1:計算中　2:探索終了
 
         public bool isLoaded = false;
 
@@ -225,7 +224,7 @@ namespace libGis
         public RoutingMapType routingMapType;
 
         //性能測定用
-        public int[] logTickCountList;
+       // public int[] logTickCountList;
         public int[] logUnprocessedCount;
         public int logMaxQueue = 0;
         public int logCalcCount = 0;
@@ -239,7 +238,7 @@ namespace libGis
 
             unprocessed = new CostInfoManage(10000);
             logUnprocessedCount = new int[1000000];
-            logTickCountList = new int[1000000];
+            //logTickCountList = new int[1000000];
 
             routingMapType = mapMgr.RoutingMapType;
 
@@ -438,7 +437,10 @@ namespace libGis
                 Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] Goal Found !! (CalcCount = {logCalcCount}, totalCost = {currentCostInfo.totalCostS})");
                 //currentCostInfo.statusS = 2;
                 //currentCostInfo.statusD = 2;
-                finalRecord = currentCostInfo;
+                if (isStartSide)
+                    finalRecord = currentCostInfo.back;
+                else
+                    finalRecord = currentCostInfo.next;
                 return -1;
             }
 
@@ -577,7 +579,7 @@ namespace libGis
                 ret = CalcRouteStep();
 
                 nowTickCount = Environment.TickCount;
-                logTickCountList[logCalcCount] = nowTickCount - pastTickCount;
+                //logTickCountList[logCalcCount] = nowTickCount - pastTickCount;
                 pastTickCount = nowTickCount;
 
                 logUnprocessedCount[logCalcCount] = unprocessed.numElementS + unprocessed.numElementD;
@@ -634,7 +636,11 @@ namespace libGis
             {
                 mapMgr.LoadTile(x.tileCostInfo.tileId, routingMapType.roadGeometryObjType, x.tileCostInfo.maxUsableRoadType);
             });
-            return routeResult.Select(x => x.DLinkHdl).Select(x => x.obj.GetGeometry(x.direction)).SelectMany(x => x).ToArray();
+
+            List<LatLon> retList = new List<LatLon>();
+            retList.Add(routeResult[0].DLinkHdl.DirGeometry[0]);
+            retList.AddRange(routeResult.Select(x => x.DLinkHdl.DirGeometry.Skip(1)).SelectMany(x => x));
+            return retList.ToArray();
 
         }
 
@@ -705,6 +711,9 @@ public class CmnRouteMgr
         //経路計算用メモリ
         public Dykstra dykstra;
 
+        //結果格納
+        public List<CmnObjHandle> routeHdlList;
+
         public CmnRouteMgr(CmnMapMgr mapMgr)
         {
             //startPos = new MapPos();
@@ -763,7 +772,8 @@ public class CmnRouteMgr
             Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] Memory = {(Environment.WorkingSet / 1024.0 / 1024.0):F1} MB");
 
             //利用タイル決定
-            List<uint> searchTileId = CalcRouteTileId2();
+            //List<uint> searchTileId = CalcRouteTileId2();
+            List<uint> searchTileId = mapMgr.tileApi.CalcTileEllipse(orgHdl.tile.tileId, dstHdl.tile.tileId, 1.2);
 
             Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] calc tile num = {searchTileId.Count}");
 
@@ -799,19 +809,19 @@ public class CmnRouteMgr
         }
 
 
-        private List<uint> CalcRouteTileId2()
-        {
-            //最小エリア対応
+        //private List<uint> CalcRouteTileId2()
+        //{
+        //    //最小エリア対応
 
-            double ratio = 1.2;
-            return GisTileCode.CalcTileEllipse(orgHdl.tile.tileId, dstHdl.tile.tileId, ratio);
+        //    double ratio = 1.2;
+        //    return GisTileCode.CalcTileEllipse(orgHdl.tile.tileId, dstHdl.tile.tileId, ratio);
 
-        }
+        //}
 
 
         private int ReadTile(uint tileId)
         {
-            byte maxRoadType = CalcMaxUsableRoadType(tileId, orgHdl.tile.tileId, dstHdl.tile.tileId);
+            byte maxRoadType = CalcMaxUsableRoadType(tileId);
 
             dykstra.SetTileInfo(tileId, maxRoadType, orgHdl.tile.tileId, dstHdl.tile.tileId);
             dykstra.AddTileInfo(tileId);
@@ -826,7 +836,7 @@ public class CmnRouteMgr
             //int count = 0;
             foreach (uint tileId in tileIdList)
             {
-                byte maxRoadType = CalcMaxUsableRoadType(tileId, orgHdl.tile.tileId, dstHdl.tile.tileId);
+                byte maxRoadType = CalcMaxUsableRoadType(tileId);
 
                 dykstra.SetTileInfo(tileId, maxRoadType, orgHdl.tile.tileId, dstHdl.tile.tileId);
 
@@ -842,10 +852,13 @@ public class CmnRouteMgr
         }
 
 
-        private byte CalcMaxUsableRoadType(uint targetTileId, uint startTileId, uint destTileId)
+        private byte CalcMaxUsableRoadType(uint targetTileId)
         {
-            float DistFromStartTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, startTileId);
-            float DistFromDestTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, destTileId);
+            if (targetTileId == orgHdl.TileId || targetTileId == dstHdl.TileId)
+                return 9;
+
+            float DistFromStartTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, orgHdl.TileId);
+            float DistFromDestTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, dstHdl.TileId);
 
             double minDist = Math.Min(DistFromStartTile, DistFromDestTile);
 
@@ -853,13 +866,17 @@ public class CmnRouteMgr
             //double distFromDest = MapTool.CalcTileDistance(tileId, destTileId);
             //minDist = Math.Min(minDist, distFromDest);
 
-            if (minDist < 2000)
+            if (minDist < 5000)
             {
-                return 7;
+                return 8;
             }
             else if (minDist < 8000)
             {
                 return 6;
+            }
+            else if (minDist < 12000)
+            {
+                return 5;
             }
             else if (minDist < 15000)
             {
@@ -883,9 +900,29 @@ public class CmnRouteMgr
 
         /* 結果出力 *****************/
 
+        public List<CmnObjHandle> GetRouteHdlList()
+        {
+            routeHdlList = dykstra.routeResult.Select(x=>x.DLinkHdl).ToList();
+            return routeHdlList;
+        }
+
+  
+
+
         public LatLon[] GetResult()
         {
-            return dykstra.GetRouteGeometry();
+            //dykstra.routeResult.ForEach(x =>
+            //{
+            //    mapMgr.LoadTile(x.tileCostInfo.tileId, dykstra.routingMapType.roadGeometryObjType, x.tileCostInfo.maxUsableRoadType);
+            //});
+
+            //List<LatLon> retList = new List<LatLon>();
+            //retList.Add(dykstra.routeResult[0].DLinkHdl.DirGeometry[0]);
+            //retList.AddRange(dykstra.routeResult.Select(x => x.DLinkHdl.DirGeometry.Skip(1)).SelectMany(x => x));
+            //return retList.ToArray();
+
+
+           return dykstra.GetRouteGeometry();
         }
 
         //public void WriteCacheTileXY()
@@ -960,6 +997,7 @@ public class CmnRouteMgr
         //{
         //    return dykstra.GetResult();
         //}
+
 
 
 

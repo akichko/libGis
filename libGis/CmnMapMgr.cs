@@ -159,6 +159,7 @@ namespace libGis
             return tileDic.Remove(tileId);
         }
 
+
         public int AddObj(uint tileId, UInt32 objType, CmnObj obj)
         {
             SearchTile(tileId)?.AddObj(objType, obj);
@@ -321,7 +322,7 @@ namespace libGis
         {
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
-            List<CmnObjHdlRef> tmpRefHdlList = objHdl.GetObjRefHdlList(refType); //Objの参照先一覧
+            List<CmnObjHdlRef> tmpRefHdlList = objHdl.GetObjRefHdlList(refType, objHdl.direction); //Objの参照先一覧
 
             foreach (var tmpRefHdl in tmpRefHdlList ?? new List<CmnObjHdlRef>())
             {
@@ -436,6 +437,50 @@ namespace libGis
         //}
 
         public virtual RoutingMapType RoutingMapType => null;
+
+
+        /* 経路計算 *************************************************************/
+
+        public LatLon[] CalcRouteGeometry(LatLon orgLatLon, LatLon dstLatLon)
+        {
+            CmnRouteMgr routeMgr = new CmnRouteMgr(this);
+
+            routeMgr.orgLatLon = orgLatLon;
+            routeMgr.dstLatLon = dstLatLon;
+
+            routeMgr.Prepare(false);
+
+            routeMgr.CalcRoute();
+
+            //道路NWメモリ解放？
+            routeMgr.dykstra.dicTileCostInfo = null;
+
+            CmnMapView mapView = new CmnMapView();
+            //List<CmnObjHandle> routeHdlList = routeMgr.GetRouteHdlList();
+            LatLon[] routeGeometry = routeMgr.GetResult();
+
+            return routeGeometry;
+        }
+
+        public List<CmnObjHandle> CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+        {
+            CmnRouteMgr routeMgr = new CmnRouteMgr(this);
+
+            routeMgr.orgLatLon = orgLatLon;
+            routeMgr.dstLatLon = dstLatLon;
+
+            routeMgr.Prepare(false);
+
+            routeMgr.CalcRoute();
+
+            //道路NWメモリ解放？
+            routeMgr.dykstra.dicTileCostInfo = null;
+
+            CmnMapView mapView = new CmnMapView();
+            return routeMgr.GetRouteHdlList();
+
+        }
+
 
     }
 

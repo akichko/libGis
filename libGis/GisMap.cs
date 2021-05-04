@@ -106,10 +106,10 @@ namespace libGis
         //}
 
         //追加メソッド
-        public double CalcDistanceTo(uint tileId)
-        {
-            return S_CalcTileDistance(this.TileId, tileId);
-        }
+        //public double CalcDistanceTo(uint tileId)
+        //{
+        //    return S_CalcTileDistance(this.TileId, tileId);
+        //}
 
 
         /* Staticメソッド *****************************************************************************/
@@ -206,77 +206,78 @@ namespace libGis
 
 
         //
-        public static List<uint> S_CalcTileIdAround(uint tileId, int distanceX, int distanceY)
-        {
-            IEnumerable<int> rangeX = Enumerable.Range(S_CalcX(tileId) - distanceX, distanceX * 2 + 1);
-            IEnumerable<int> rangeY = Enumerable.Range(S_CalcX(tileId) - distanceY, distanceY * 2 + 1);
+        //public static List<uint> S_CalcTileIdAround(uint tileId, int distanceX, int distanceY)
+        //{
+        //    IEnumerable<int> rangeX = Enumerable.Range(S_CalcX(tileId) - distanceX, distanceX * 2 + 1);
+        //    IEnumerable<int> rangeY = Enumerable.Range(S_CalcX(tileId) - distanceY, distanceY * 2 + 1);
 
-            List<uint> retList = new List<uint>();
-            foreach (var x in rangeX)
-            {
-                foreach (var y in rangeY)
-                {
-                    retList.Add(GisTileCode.S_CalcTileId((ushort)x, (ushort)y));
-                }
+        //    List<uint> retList = new List<uint>();
+        //    foreach (var x in rangeX)
+        //    {
+        //        foreach (var y in rangeY)
+        //        {
+        //            retList.Add(GisTileCode.S_CalcTileId((ushort)x, (ushort)y));
+        //        }
 
-            }
+        //    }
 
-            return retList;
+        //    return retList;
 
-        }
+        //}
 
-        public static List<uint> CalcTileEllipse(uint tileIdA, uint tileIdB, double ratio)
-        {
-            List<uint> retList = new List<uint>();
+        //public static List<uint> CalcTileEllipse(uint tileIdA, uint tileIdB, double ratio)
+        //{
+        //    List<uint> retList = new List<uint>();
 
-            if (tileIdA == tileIdB)
-            {
-                return S_CalcTileIdAround(tileIdA, 1, 1);
-            }
+        //    if (tileIdA == tileIdB)
+        //    {
+        //        return S_CalcTileIdAround(tileIdA, 1, 1);
+        //    }
 
-            //大き目に取る
-            //TileXY tA = new TileXY(tileIdA);
-            //TileXY tB = new TileXY(tileIdB);
+        //    //大き目に取る
+        //    //TileXY tA = new TileXY(tileIdA);
+        //    //TileXY tB = new TileXY(tileIdB);
 
-            uint aX = S_CalcX(tileIdA);
-            uint aY = S_CalcY(tileIdA);
-            uint bX = S_CalcX(tileIdB);
-            uint bY = S_CalcY(tileIdB);
+        //    uint aX = S_CalcX(tileIdA);
+        //    uint aY = S_CalcY(tileIdA);
+        //    uint bX = S_CalcX(tileIdB);
+        //    uint bY = S_CalcY(tileIdB);
 
-            int diffX = Math.Abs((int)(aX - bX));
-            int diffY = Math.Abs((int)(aY - bY));
+        //    int diffX = Math.Abs((int)(aX - bX));
+        //    int diffY = Math.Abs((int)(aY - bY));
 
-            int lengthXY = diffX + diffY;
+        //    int lengthXY = diffX + diffY;
 
-            int minX = (int)Math.Min(aX, bX);
-            int minY = (int)Math.Min(aY, bY);
+        //    int minX = (int)Math.Min(aX, bX);
+        //    int minY = (int)Math.Min(aY, bY);
 
-            IEnumerable<int> rangeX = Enumerable.Range(minX - lengthXY, diffX + lengthXY * 2 + 1);
-            IEnumerable<int> rangeY = Enumerable.Range(minY - lengthXY, diffY + lengthXY * 2 + 1);
+        //    IEnumerable<int> rangeX = Enumerable.Range(minX - lengthXY, diffX + lengthXY * 2 + 1);
+        //    IEnumerable<int> rangeY = Enumerable.Range(minY - lengthXY, diffY + lengthXY * 2 + 1);
 
-            int debugX = rangeX.Count();
-            int deBugY = rangeY.Count();
-            foreach (var x in rangeX)
-            {
-                foreach (var y in rangeY)
-                {
-                    retList.Add(S_CalcTileId((ushort)x, (ushort)y));
-                }
+        //    int debugX = rangeX.Count();
+        //    int deBugY = rangeY.Count();
+        //    foreach (var x in rangeX)
+        //    {
+        //        foreach (var y in rangeY)
+        //        {
+        //            retList.Add(S_CalcTileId((ushort)x, (ushort)y));
+        //        }
 
-            }
+        //    }
 
-            //選別
-            double baseLength = S_CalcTileDistance(tileIdA, tileIdB) * ratio;
+        //    //選別
+        //    double baseLength = S_CalcTileDistance(tileIdA, tileIdB) * ratio;
 
-            retList = retList.Where(x =>
-                S_CalcTileDistance(x, tileIdA) + S_CalcTileDistance(x, tileIdB) <= baseLength
-            ).ToList();
+        //    retList = retList.Where(x =>
+        //        S_CalcTileDistance(x, tileIdA) + S_CalcTileDistance(x, tileIdB) <= baseLength
+        //    ).ToList();
 
 
 
-            return retList;
+        //    return retList;
 
-        }
+        //}
+
     }
 
 
