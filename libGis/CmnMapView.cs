@@ -19,18 +19,18 @@ namespace libGis
             kmlString.AppendLine("<name>KmlFile</name>");
             kmlString.AppendLine("<open>1</open>");
             kmlString.AppendLine("<Placemark>");
-            kmlString.AppendLine("<name>スタート</name>");
+            kmlString.AppendLine("<name>Origin</name>");
             kmlString.AppendLine($"<Point><coordinates> { start.lon },{ start.lat },0</coordinates></Point>");
             kmlString.AppendLine("</Placemark>");
 
             kmlString.AppendLine("<Placemark>");
-            kmlString.AppendLine("<name>目的地</name>");
+            kmlString.AppendLine("<name>Destination</name>");
             kmlString.AppendLine($"<Point><coordinates> {dest.lon},{dest.lat},0</coordinates></Point>");
             kmlString.AppendLine("</Placemark>");
 
             kmlString.AppendLine("<Placemark>");
 
-            kmlString.AppendLine("<name> ルート情報 </name>");
+            kmlString.AppendLine("<name> Route Info </name>");
 
 
             kmlString.AppendLine("<Style> <LineStyle> <color> 8000ff00 </color> <width> 10 </width> </LineStyle> </Style>");

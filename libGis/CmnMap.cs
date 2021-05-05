@@ -321,7 +321,7 @@ namespace libGis
 
         public virtual LatLon[] Geometry => null;
 
-        public virtual LatLon Location => null;
+        public virtual LatLon Location => null; //未対応
 
         public virtual UInt16 Index { get; set; }　//現状はメモリを消費する実装
 
@@ -519,9 +519,9 @@ namespace libGis
 
     /* オブジェクトグループ ****************************************************/
 
-    public abstract class CmnObjGroup
+    public class CmnObjGroup
     {
-        public abstract UInt32 Type { get; }
+        public UInt32 Type { get; }
 
         public bool isDrawable = true;
         public bool isDrawReverse = false;
@@ -532,6 +532,20 @@ namespace libGis
         public CmnObj[] objArray;
         public List<CmnObj> objList;
         public UInt16 loadedSubType = 0;
+
+
+        public CmnObjGroup(UInt32 type)
+        {
+            Type = type;
+        }
+
+
+        public CmnObjGroup(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType)
+        {
+            Type = type;
+            this.loadedSubType = loadedSubType;
+            this.objArray = objArray;
+        }
 
 
         public virtual CmnObj[] GetObjArray()

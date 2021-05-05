@@ -832,7 +832,7 @@ public class CmnRouteMgr
 
         private int ReadTiles(List<uint> tileIdList, bool allCache)
         {
-            Console.WriteLine("tile reading");
+            //Console.WriteLine("tile reading");
             //int count = 0;
             foreach (uint tileId in tileIdList)
             {
