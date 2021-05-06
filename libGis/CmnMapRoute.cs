@@ -420,6 +420,13 @@ namespace libGis
             if (minIndex < 0) //探索失敗
             {
                 Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
+
+                //dicTileCostInfo.Where(x=>x.Value.tile != null)
+                //foreach (var tileCostInfo in dicTileCostInfo) {
+                //    tileCostInfo.
+                //}
+                //routeResult = 
+
                 return -1;
             }
 

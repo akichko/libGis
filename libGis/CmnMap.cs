@@ -123,6 +123,20 @@ namespace libGis
 
 
         //タイル演算
+        public virtual uint CalcOffsetTileId(uint baseTileId, Int16 offsetX, Int16 offsetY)
+        {
+            return CalcTileId(CalcTileX(baseTileId) + offsetX, CalcTileY(baseTileId) + offsetY, CalcTileLv(baseTileId));
+        }
+
+        public virtual double CalcTileLengthX(uint tileId)
+        {
+            return LatLon.CalcDistanceBetween(CalcLatLon(tileId), CalcLatLon(CalcOffsetTileId(tileId, 1, 0)));
+        }
+        public virtual double CalcTileLengthY(uint tileId)
+        {
+            return LatLon.CalcDistanceBetween(CalcLatLon(tileId), CalcLatLon(CalcOffsetTileId(tileId, 0, 1)));
+        }
+
 
         public virtual double CalcTileDistance(uint tileIdA, uint tileIdB)
         {
@@ -204,7 +218,7 @@ namespace libGis
             int diffX = Math.Abs((int)(aX - bX));
             int diffY = Math.Abs((int)(aY - bY));
 
-            int lengthXY = diffX + diffY;
+            int lengthXY = Math.Max(diffX,diffY);
 
             int minX = (int)Math.Min(aX, bX);
             int minY = (int)Math.Min(aY, bY);
@@ -223,7 +237,13 @@ namespace libGis
             }
 
             //選別
-            double baseLength = CalcTileDistance(tileIdA, tileIdB) * ratio;
+            double baseLength = CalcTileDistance(tileIdA, tileIdB);
+            double minBaseLength = (CalcTileLengthX(tileIdA) + CalcTileLengthY(tileIdB)) * 3;
+            if (baseLength < minBaseLength)
+            {
+                baseLength = minBaseLength;
+            }
+            baseLength *= ratio;
 
             retList = retList.Where(x =>
                 CalcTileDistance(x, tileIdA) + CalcTileDistance(x, tileIdB) <= baseLength
