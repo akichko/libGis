@@ -8,7 +8,6 @@ namespace libGis
 {
     public abstract class CmnMapMgr
     {
-        //public CmnTile tileDataApi;
         public CmnTileCodeApi tileApi;
         protected Dictionary<uint, CmnTile> tileDic;
         protected ICmnMapAccess mal;
@@ -16,10 +15,9 @@ namespace libGis
         //抽象メソッド
         //現状なし。MAL側
 
-        public CmnMapMgr(CmnTileCodeApi tileCode)
+        public CmnMapMgr(CmnTileCodeApi tileCodeApi)
         {
-            // tileDataApi = tile;
-            tileApi = tileCode;
+            this.tileApi = tileCodeApi;
             tileDic = new Dictionary<uint, CmnTile>();
         }
 
@@ -53,7 +51,7 @@ namespace libGis
 
         public abstract CmnTile CreateTile(uint tileId);
 
-        public int LoadTile(uint tileId, UInt32 reqType = 0xFFFFFFFF, UInt16 reqMaxSubType = 0xFFFF)
+        public virtual int LoadTile(uint tileId, UInt32 reqType = 0xFFFFFFFF, UInt16 reqMaxSubType = 0xFFFF)
         {
             if (!IsConnected) return -1;
 

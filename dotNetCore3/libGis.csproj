@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\libGis\CmnMap.cs" Link="CmnMap.cs" />
+    <Compile Include="..\libGis\CmnMapMgr.cs" Link="CmnMapMgr.cs" />
+    <Compile Include="..\libGis\CmnMapRoute.cs" Link="CmnMapRoute.cs" />
+    <Compile Include="..\libGis\CmnMapView.cs" Link="CmnMapView.cs" />
+    <Compile Include="..\libGis\GisMap.cs" Link="GisMap.cs" />
+    <Compile Include="..\libGis\LatLon.cs" Link="LatLon.cs" />
+  </ItemGroup>
+
+</Project>

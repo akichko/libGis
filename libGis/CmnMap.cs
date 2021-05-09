@@ -7,12 +7,12 @@ using System.Drawing;
 
 namespace libGis
 {
-
     public abstract class CmnTileCodeApi
     {
         /* 抽象メソッド ********************************************************/
 
         public abstract byte DefaultLevel { get; }
+        public abstract byte MinLevel { get; }
         public abstract byte MaxLevel { get; }
 
         //XYL => ID
@@ -34,7 +34,7 @@ namespace libGis
 
         /* 通常メソッド **********************************************************/
 
-        //タイルコード変換
+        /* タイルコード変換 */
 
         //ID => LatLon
         public virtual LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
@@ -72,15 +72,10 @@ namespace libGis
 
         }
 
-        //ID => XYL
-        public virtual TileXYL CalcTileXYL(uint tileId)
+        //XYL => LatLon
+        public virtual LatLon CalcLatLon(TileXYL xyl)
         {
-            TileXYL ret = new TileXYL();
-            ret.x = CalcTileX(tileId);
-            ret.y = CalcTileY(tileId);
-            ret.lv = CalcTileLv(tileId);
-
-            return ret;
+            return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLon(xyl.x, xyl.lv));
         }
 
         //LatLon => ID
@@ -108,6 +103,16 @@ namespace libGis
 
         public virtual uint CalcTileId(TileXYL xyl) => CalcTileId(xyl.x, xyl.y, xyl.lv);
 
+        //ID => XYL
+        public virtual TileXYL CalcTileXYL(uint tileId)
+        {
+            TileXYL ret = new TileXYL();
+            ret.x = CalcTileX(tileId);
+            ret.y = CalcTileY(tileId);
+            ret.lv = CalcTileLv(tileId);
+
+            return ret;
+        }
 
         //LatLon => XYL
         public virtual TileXYL CalcTileXYL(LatLon latlon, byte level)
@@ -122,7 +127,7 @@ namespace libGis
         public virtual TileXYL CalcTileXYL(LatLon latlon) => CalcTileXYL(latlon, DefaultLevel);
 
 
-        //タイル演算
+        /* タイル演算 */
         public virtual uint CalcOffsetTileId(uint baseTileId, Int16 offsetX, Int16 offsetY)
         {
             return CalcTileId(CalcTileX(baseTileId) + offsetX, CalcTileY(baseTileId) + offsetY, CalcTileLv(baseTileId));
@@ -142,6 +147,43 @@ namespace libGis
         {
             return LatLon.CalcDistanceBetween(CalcLatLon(tileIdA), CalcLatLon(tileIdB));
 
+        }
+
+        public virtual double CalcTileDistance2(uint tileIdA, uint tileIdB)
+        {
+            int tileXA = CalcTileX(tileIdA);
+            int tileXB = CalcTileX(tileIdB);
+            int tileYA = CalcTileY(tileIdA);
+            int tileYB = CalcTileY(tileIdB);
+
+            ERectPos posTileA = ERectPos.SouthWest;
+            ERectPos posTileB = ERectPos.SouthWest;
+
+            if (tileXA < tileXB)
+            {
+                posTileA = ERectPos.SouthEast;
+                if (tileYA < tileYB)
+                    posTileA = ERectPos.NorthEast;
+                else if(tileYA > tileYB)
+                    posTileB = ERectPos.NorthWest;
+            }
+            else if(tileXB < tileXA)
+            {
+                posTileB = ERectPos.SouthEast;
+                if (tileYB < tileYA)
+                    posTileB = ERectPos.NorthEast;
+                else if(tileYB > tileYA)
+                    posTileA = ERectPos.NorthWest;
+            }
+            else //(tileXA == tileXB)
+            {
+                if (tileYA < tileYB)
+                    posTileA = ERectPos.NorthWest;
+                else if (tileYA > tileYB)
+                    posTileB = ERectPos.NorthWest;
+            }
+
+            return LatLon.CalcDistanceBetween(CalcLatLon(tileIdA, posTileA), CalcLatLon(tileIdB, posTileB));
         }
 
         public virtual List<uint> CalcTileIdAround(uint tileId, int tileRangeX, int tileRangeY)
@@ -345,11 +387,11 @@ namespace libGis
 
         public virtual UInt16 Index { get; set; }　//現状はメモリを消費する実装
 
-        public virtual double Length => LatLon.CalcLength(Geometry);
+        public virtual double Length => Geometry != null ? LatLon.CalcLength(Geometry) : 0;
 
         /* 経路計算用 ----------------------------------------------------------*/
 
-        public virtual int Cost => 50; //適当。override推奨
+        public virtual int Cost => Geometry != null ? (int)Length : 10; //override推奨
 
         public virtual byte Oneway => 0xff; //0xff:なし、1:順方向通行、2:逆方向通行
 
@@ -442,83 +484,7 @@ namespace libGis
     }
 
 
-
-    public class CmnObjHandle
-    {
-        public CmnTile tile;
-        public CmnObj obj;
-        public byte direction = 0xff;
-
-        /* コンストラクタ・データ生成 ==============================================*/
-
-        //public CmnObjHandle() { }
-        public CmnObjHandle(CmnTile tile, CmnObj obj, byte direction = 0xff)
-        {
-            this.tile = tile;
-            this.obj = obj;
-            this.direction = direction;
-        }
-
-        public CmnObjHandle SetDirection(byte direction)
-        {
-            this.direction = direction;
-            return this;
-        }
-
-        //public CmnObjHandle SetTile(CmnTile tile) => obj.ToCmnObjHandle(tile);
-        ////{
-        ////    this.tile = tile;
-        ////    return this;
-        ////}
-
-        //public CmnObjHandle ToCmnObjHandle() => obj.ToCmnObjHandle(tile);
-
-
-        /* 追加メソッド =====================================================*/
-        public bool IsEqualTo(CmnObjHandle objHdl)
-        {
-            if (objHdl != null && (this.TileId == objHdl.TileId) && (this.ObjId == objHdl.ObjId) && (this.Index == objHdl.Index))
-                return true;
-            else
-                return false;
-        }
-
-        public virtual uint TileId => tile.tileId;
-
-        public LatLon[] DirGeometry => obj.GetGeometry(direction);
-        
-
-        /* 属性取得にタイル情報が必要な場合はオーバーライド *****************************/
-
-        /* プロパティ =====================================================*/
-        public virtual UInt64 ObjId => obj.Id;
-        public virtual UInt32 Type => obj.Type;
-        public virtual UInt16 SubType => obj.SubType;
-        public virtual LatLon[] Geometry => obj.Geometry;
-        public virtual LatLon Location => obj.Location;
-        public virtual UInt16 Index => obj.Index;
-        public virtual double Length => obj.Length;
-        public virtual int Cost => obj.Cost;
-        public virtual byte Oneway => obj.Oneway;
-        public virtual bool IsOneway => obj.IsOneway;
-
-        /* メソッド =====================================================*/
-        public virtual List<CmnObjRef> GetObjAllRefList() => obj.GetObjAllRefList(tile);
-        public virtual List<CmnObjRef> GetObjAllRefList(byte direction = 0xff) => obj.GetObjAllRefList(tile, direction);
-        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, byte direction = 0xff) => obj.GetObjRefHdlList(refType, tile, direction);
-        public virtual double GetDistance(LatLon latlon) => obj.GetDistance(latlon);
-        public virtual LatLon GetCenterLatLon() => obj.GetCenterLatLon();
-        public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile) => obj.ToCmnObjHandle(tile);
-        public virtual List<AttrItemInfo> GetAttributeListItem() => obj.GetAttributeListItem(tile);
-        public virtual int DrawData(CbGetObjFunc cbGetObjFuncForDraw) => obj.DrawData(tile, cbGetObjFuncForDraw);
-        public virtual LatLon[] GetGeometry(int direction) => obj.GetGeometry(direction);
-
-    }
-
-
-
-
-    //Viewer用
+    //属性表示用
     public class AttrItemInfo
     {
         public string[] attrStr;
@@ -577,7 +543,7 @@ namespace libGis
                 return objList?.ToArray();
         }
 
-        public virtual CmnObj GetObj(UInt64 objId)
+        public virtual CmnObj GetObj(UInt64 objId) //全走査。２分木探索したい場合はオーバーライド
         {
             if (!isIdSearchable)
                 return null;
@@ -714,18 +680,18 @@ namespace libGis
 
     public abstract class CmnTile : CmnObj
     {
-        public CmnTileCode tileInfo;
+        public CmnTileCode tileCode;
         protected Dictionary<UInt32, CmnObjGroup> objDic;
 
         //プロパティ
 
-        override public UInt64 Id => (UInt64)tileInfo.TileId;
+        override public UInt64 Id => (UInt64)tileCode.TileId;
 
-        public uint tileId => tileInfo.TileId;
-        public int X => tileInfo.X;
-        public int Y => tileInfo.Y;
-        public int Lv => tileInfo.Lv;
-        override public LatLon[] Geometry => tileInfo.GetGeometry();
+        public uint TileId => tileCode.TileId;
+        public int X => tileCode.X;
+        public int Y => tileCode.Y;
+        public int Lv => tileCode.Lv;
+        override public LatLon[] Geometry => tileCode.GetGeometry();
 
 
         public CmnTile()
@@ -886,6 +852,71 @@ namespace libGis
 
     /* オブジェクト参照クラス *************************************************/
 
+
+    public class CmnObjHandle
+    {
+        public CmnTile tile;
+        public CmnObj obj;
+        public byte direction = 0xff;
+
+        /* コンストラクタ・データ生成 ==============================================*/
+
+        //public CmnObjHandle() { }
+        public CmnObjHandle(CmnTile tile, CmnObj obj, byte direction = 0xff)
+        {
+            this.tile = tile;
+            this.obj = obj;
+            this.direction = direction;
+        }
+
+        public CmnObjHandle SetDirection(byte direction)
+        {
+            this.direction = direction;
+            return this;
+        }
+
+
+        /* 追加メソッド =====================================================*/
+        public virtual bool IsEqualTo(CmnObjHandle objHdl)
+        {
+            if (objHdl != null && (this.TileId == objHdl.TileId) && (this.ObjId == objHdl.ObjId) && (this.Index == objHdl.Index))
+                return true;
+            else
+                return false;
+        }
+
+        public virtual uint TileId => tile.TileId;
+
+        public virtual LatLon[] DirGeometry => obj.GetGeometry(direction);
+        
+
+        /* 属性取得にタイル情報が必要な場合はオーバーライド *****************************/
+
+        /* プロパティ =====================================================*/
+        public virtual UInt64 ObjId => obj.Id;
+        public virtual UInt32 Type => obj.Type;
+        public virtual UInt16 SubType => obj.SubType;
+        public virtual LatLon[] Geometry => obj.Geometry;
+        public virtual LatLon Location => obj.Location;
+        public virtual UInt16 Index => obj.Index;
+        public virtual double Length => obj.Length;
+        public virtual int Cost => obj.Cost;
+        public virtual byte Oneway => obj.Oneway;
+        public virtual bool IsOneway => obj.IsOneway;
+
+        /* メソッド =====================================================*/
+        public virtual List<CmnObjRef> GetObjAllRefList() => obj.GetObjAllRefList(tile);
+        public virtual List<CmnObjRef> GetObjAllRefList(byte direction = 0xff) => obj.GetObjAllRefList(tile, direction);
+        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, byte direction = 0xff) => obj.GetObjRefHdlList(refType, tile, direction);
+        public virtual double GetDistance(LatLon latlon) => obj.GetDistance(latlon);
+        public virtual LatLon GetCenterLatLon() => obj.GetCenterLatLon();
+        public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile) => obj.ToCmnObjHandle(tile);
+        public virtual List<AttrItemInfo> GetAttributeListItem() => obj.GetAttributeListItem(tile);
+        public virtual int DrawData(CbGetObjFunc cbGetObjFuncForDraw) => obj.DrawData(tile, cbGetObjFuncForDraw);
+        public virtual LatLon[] GetGeometry(int direction) => obj.GetGeometry(direction);
+
+    }
+
     //地理検索用
     public class CmnObjHdlDistance
     {
@@ -920,26 +951,25 @@ namespace libGis
     public class CmnObjHdlRef //参照属性拡張
     {
         public CmnObjHandle objHdl;
-        //public bool isDirObjHandle = false; //trueの場合、CmnDirObjHandleにキャスト可能
         public int objRefType;
         public CmnObjRef nextRef; //NULLになるまで、データ参照を再帰的に続ける必要がある
         public bool noData = false; //検索結果がない場合、最後のRef情報を返却
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, CmnObjRef nextRef, bool noData = false)// : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, CmnObjRef nextRef, bool noData = false)
         {
             this.objHdl = objHdl;
             this.nextRef = nextRef;
             this.noData = noData;
         }
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, int refType, UInt32 objType)// : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, int refType, UInt32 objType)
         {
             this.objHdl = objHdl;
             this.objRefType = refType;
             this.nextRef = new CmnObjRef(refType, new CmnSearchKey(objType));
         }
 
-        public CmnObjHdlRef(CmnObjHandle objHdl, int refType)// : base(objHdl?.tile, objHdl?.obj)
+        public CmnObjHdlRef(CmnObjHandle objHdl, int refType)
         {
             this.objHdl = objHdl;
             this.objRefType = refType;
@@ -1062,12 +1092,6 @@ namespace libGis
 
     /* 描画用 ****************************************************************/
 
-    public abstract class CmnViewParam
-    {
-
-    }
-
-
     public delegate int CbGetObjFunc(CmnObjHandle objHdl);
     //public delegate int CbGetObjFunc(CmnTile tile, CmnObj cmnObj);
 
@@ -1115,6 +1139,9 @@ namespace libGis
     }
 
 
+
+    //サンプル。使うかどうかは自由
+
     public enum ECmnMapContentType
     {
         Link = 0x0001,
@@ -1123,11 +1150,8 @@ namespace libGis
         LinkAttribute = 0x0008,
         RoadNetwork = 0x0010,
         All = 0xffff
-
     }
 
-
-    //使うかどうかは自由
     public enum ECmnMapRefType
     {
         Selected,

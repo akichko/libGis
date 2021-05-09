@@ -71,7 +71,7 @@ namespace libGis
 
         public int SetTileCostInfo(CmnTile tile, UInt32 linkObjType)
         {
-            this.tileId = tile.tileId;
+            this.tileId = tile.TileId;
             this.tile = tile;
             linkArray = tile.GetObjArray(linkObjType);
 
@@ -265,7 +265,7 @@ namespace libGis
             //順方向
             if (direction == 1 || direction == 0xff)
             {
-                costRec = GetLinkCostInfo(null, linkHdl.tile.tileId, linkHdl.obj.Index, 1);
+                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, 1);
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = 1;
@@ -278,7 +278,7 @@ namespace libGis
             //逆方向
             if (direction == 0 || direction == 0xff)
             {
-                costRec = GetLinkCostInfo(null, linkHdl.tile.tileId, linkHdl.obj.Index, 0);
+                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, 0);
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = 0;
@@ -298,7 +298,7 @@ namespace libGis
             //順方向
             if (direction == 1 || direction == 0xff)
             {
-                costRec = GetLinkCostInfo(null, linkHdl.tile.tileId, linkHdl.obj.Index, 1);
+                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, 1);
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = 1;
@@ -314,7 +314,7 @@ namespace libGis
             //逆方向
             if (direction == 0 || direction == 0xff)
             {
-                costRec = GetLinkCostInfo(null, linkHdl.tile.tileId, linkHdl.obj.Index, 0);
+                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, 0);
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = 0;
@@ -396,7 +396,7 @@ namespace libGis
 
         public CostRecord GetLinkCostInfo(CostRecord currentInfo, CmnObjHandle linkRef)
         {
-            return GetLinkCostInfo(currentInfo, linkRef.tile.tileId, linkRef.obj.Index, linkRef.direction);
+            return GetLinkCostInfo(currentInfo, linkRef.tile.TileId, linkRef.obj.Index, linkRef.direction);
         }
 
 
@@ -482,7 +482,7 @@ namespace libGis
                 //初期設定の読み込み可能範囲内タイル
                 noDataTileIdList = objHdlRefList
                     //.Where(x => x.noData)
-                    .Select(x => (x.objHdl?.tile?.tileId ?? x.nextRef?.key?.tileId) ?? 0xffffffff)
+                    .Select(x => (x.objHdl?.tile?.TileId ?? x.nextRef?.key?.tileId) ?? 0xffffffff)
                     .Where(x => x != 0xffffffff && dicTileCostInfo.ContainsKey(x) && !dicTileCostInfo[x].isLoaded)
                     .ToList();
 
@@ -780,19 +780,19 @@ public class CmnRouteMgr
 
             //利用タイル決定
             //List<uint> searchTileId = CalcRouteTileId2();
-            List<uint> searchTileId = mapMgr.tileApi.CalcTileEllipse(orgHdl.tile.tileId, dstHdl.tile.tileId, 1.2);
+            List<uint> searchTileId = mapMgr.tileApi.CalcTileEllipse(orgHdl.tile.TileId, dstHdl.tile.TileId, 1.2);
 
             Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] calc tile num = {searchTileId.Count}");
 
             //タイル読み込み・コストテーブル登録
             ReadTiles(searchTileId, allCache);
 
-            Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] dicTileCostInfo.Count = {dykstra.dicTileCostInfo.Count}");
+            //Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] dicTileCostInfo.Count = {dykstra.dicTileCostInfo.Count}");
 
 
             //始終点コスト設定
-            dykstra.AddTileInfo(orgHdl.tile.tileId);
-            dykstra.AddTileInfo(dstHdl.tile.tileId);
+            dykstra.AddTileInfo(orgHdl.tile.TileId);
+            dykstra.AddTileInfo(dstHdl.tile.TileId);
 
             dykstra.SetStartCost(orgHdl, 10, orgHdl.obj.Oneway);
             dykstra.SetDestination(dstHdl, 10, dstHdl.obj.Oneway);
@@ -830,7 +830,7 @@ public class CmnRouteMgr
         {
             byte maxRoadType = CalcMaxUsableRoadType(tileId);
 
-            dykstra.SetTileInfo(tileId, maxRoadType, orgHdl.tile.tileId, dstHdl.tile.tileId);
+            dykstra.SetTileInfo(tileId, maxRoadType, orgHdl.tile.TileId, dstHdl.tile.TileId);
             dykstra.AddTileInfo(tileId);
 
             return 0;
@@ -845,7 +845,7 @@ public class CmnRouteMgr
             {
                 byte maxRoadType = CalcMaxUsableRoadType(tileId);
 
-                dykstra.SetTileInfo(tileId, maxRoadType, orgHdl.tile.tileId, dstHdl.tile.tileId);
+                dykstra.SetTileInfo(tileId, maxRoadType, orgHdl.tile.TileId, dstHdl.tile.TileId);
 
                 if (allCache)
                 {

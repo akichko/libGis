@@ -6,32 +6,10 @@ using System.Threading.Tasks;
 
 namespace libGis
 {
-
-
-    //public abstract class GisTile : CmnTile
-    //{
-    //    public GisTile() { }
-
-    //    public GisTile(uint tileid)
-    //    {
-    //        tileInfo = new GisTileCode(tileid);
-
-
-    //        objDic = new Dictionary<UInt16, CmnObjGroup>();
-    //}
-
-    //    override public CmnTile CreateTile(uint tileId)
-    //    {
-    //        return new GisTile(tileId);
-    //    }
-
-    //    public abstract int UpdateObjGroup(UInt32 objType, CmnObjGroup objGroup);
-    //}
-
-
     public class GisTileCode : CmnTileCode //, IView
     {
         const byte ConstDefaultLevel = 2;
+        const byte ConstMinLevel = 0;
         const byte ConstMaxLevel = 7;
 
         //コンストラクタ
@@ -46,6 +24,7 @@ namespace libGis
 
         //オーバーライドプロパティ
         public override byte DefaultLevel => ConstDefaultLevel;
+        public override byte MinLevel => ConstMinLevel;
         public override byte MaxLevel => ConstMaxLevel;
 
 

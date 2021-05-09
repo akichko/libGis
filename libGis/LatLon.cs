@@ -144,11 +144,11 @@ namespace libGis
             return new LatLon(latlon.lat + meterToNorth / meterYperDgree , latlon.lon + meterToEast / meterXperDgree);
         }
 
-        public static LatLon CalcOffsetLatLon(LatLon baseLatLon, LatLon toLatLon, double offsetLength)
+        public static LatLon CalcOffsetLatLon(LatLon baseLatLon, LatLon toLatLon, double offsetMeter)
         {
             double lineDistance = LatLon.CalcDistanceBetween(baseLatLon, toLatLon);
 
-            return baseLatLon + (toLatLon - baseLatLon) * offsetLength / lineDistance;
+            return baseLatLon + (toLatLon - baseLatLon) * offsetMeter / lineDistance;
         }
 
         public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)  //開発中
