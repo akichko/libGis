@@ -223,6 +223,10 @@ namespace libGis
         //汎用種別
         public RoutingMapType routingMapType;
 
+        //探索初期の制限
+        public byte rankDownRestrictSubType = 6;
+        public double rankDownRestrictDistance = 8000;
+
         //性能測定用
        // public int[] logTickCountList;
         public int[] logUnprocessedCount;
@@ -511,6 +515,7 @@ namespace libGis
                 //.Where(x => x.mapLink != currentLinkHdl.mapLink && x.mapLink.roadType <= currentCostInfo.tileCostInfo.maxUsableRoadType) )
 
 
+                //要改善
                 if (nextLinkRef.obj.SubType >= 6
                     && currentDLinkHdl.obj.SubType < nextLinkRef.obj.SubType
                     && currentCostInfo.tileCostInfo.DistFromDestTile > 8000)
@@ -707,7 +712,7 @@ namespace libGis
 public class CmnRouteMgr
     {
 
-        CmnMapMgr mapMgr;
+        protected CmnMapMgr mapMgr;
 
         public LatLon orgLatLon;
         public LatLon dstLatLon;
@@ -723,8 +728,6 @@ public class CmnRouteMgr
 
         public CmnRouteMgr(CmnMapMgr mapMgr)
         {
-            //startPos = new MapPos();
-            //destPos = new MapPos();
             dykstra = new Dykstra(mapMgr);
             this.mapMgr = mapMgr;
         }
@@ -859,48 +862,51 @@ public class CmnRouteMgr
         }
 
 
-        private byte CalcMaxUsableRoadType(uint targetTileId)
+        //地図仕様に応じてオーバーライド
+        protected virtual byte CalcMaxUsableRoadType(uint targetTileId)
         {
-            if (targetTileId == orgHdl.TileId || targetTileId == dstHdl.TileId)
-                return 9;
+            return 0xff;
 
-            float DistFromStartTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, orgHdl.TileId);
-            float DistFromDestTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, dstHdl.TileId);
+            //if (targetTileId == orgHdl.TileId || targetTileId == dstHdl.TileId)
+            //    return 9;
 
-            double minDist = Math.Min(DistFromStartTile, DistFromDestTile);
+            //float DistFromStartTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, orgHdl.TileId);
+            //float DistFromDestTile = (float)mapMgr.tileApi.CalcTileDistance(targetTileId, dstHdl.TileId);
 
-            //double minDist = MapTool.CalcTileDistance(tileId, startTileId);
-            //double distFromDest = MapTool.CalcTileDistance(tileId, destTileId);
-            //minDist = Math.Min(minDist, distFromDest);
+            //double minDist = Math.Min(DistFromStartTile, DistFromDestTile);
 
-            if (minDist < 5000)
-            {
-                return 8;
-            }
-            else if (minDist < 8000)
-            {
-                return 6;
-            }
-            else if (minDist < 12000)
-            {
-                return 5;
-            }
-            else if (minDist < 15000)
-            {
-                return 4;
-            }
-            else if (minDist < 50000)
-            {
-                return 3;
-            }
-            else if (minDist < 100000)
-            {
-                return 2;
-            }
-            else //  >100km
-            {
-                return 1;
-            }
+            ////double minDist = MapTool.CalcTileDistance(tileId, startTileId);
+            ////double distFromDest = MapTool.CalcTileDistance(tileId, destTileId);
+            ////minDist = Math.Min(minDist, distFromDest);
+
+            //if (minDist < 5000)
+            //{
+            //    return 8;
+            //}
+            //else if (minDist < 8000)
+            //{
+            //    return 6;
+            //}
+            //else if (minDist < 12000)
+            //{
+            //    return 5;
+            //}
+            //else if (minDist < 15000)
+            //{
+            //    return 4;
+            //}
+            //else if (minDist < 50000)
+            //{
+            //    return 3;
+            //}
+            //else if (minDist < 100000)
+            //{
+            //    return 2;
+            //}
+            //else //  >100km
+            //{
+            //    return 1;
+            //}
 
         }
 

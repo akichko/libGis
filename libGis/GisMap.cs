@@ -73,23 +73,6 @@ namespace libGis
         }
 
 
-        //LatLon -> ID
-        //public override uint CalcTileId(LatLon latlon, byte level = ConstDefaultLevel)
-        //{
-        //    return SCalcTileId(latlon, level);
-        //}
-
-        //public override LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
-        //{
-        //    return SCalcLatLon(this.tileId, tilePos);
-        //}
-
-        //追加メソッド
-        //public double CalcDistanceTo(uint tileId)
-        //{
-        //    return S_CalcTileDistance(this.TileId, tileId);
-        //}
-
 
         /* Staticメソッド *****************************************************************************/
         public static UInt16 S_CalcX(uint tileId)
@@ -115,7 +98,7 @@ namespace libGis
         // Staticが必要な場面があるかも
         public static uint S_CalcTileId(LatLon latlon, byte level = ConstDefaultLevel)
         {
-            if (latlon.lon < -180.0 || latlon.lon > 180.0 || latlon.lat < -90.0 || latlon.lat > 90.0 || level > ConstMaxLevel)
+            if (latlon.lon < -180.0 || latlon.lon > 180.0 || latlon.lat < -90.0 || latlon.lat > 90.0 || level < ConstMinLevel || level > ConstMaxLevel)
                 return 0xffffffff;
 
             double tmpLon = latlon.lon;

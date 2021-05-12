@@ -8,14 +8,14 @@ namespace libGis
 {
     public abstract class CmnMapMgr
     {
-        public CmnTileCodeApi tileApi;
+        public ICmnTileCodeApi tileApi;
         protected Dictionary<uint, CmnTile> tileDic;
         protected ICmnMapAccess mal;
 
         //抽象メソッド
         //現状なし。MAL側
 
-        public CmnMapMgr(CmnTileCodeApi tileCodeApi)
+        public CmnMapMgr(ICmnTileCodeApi tileCodeApi)
         {
             this.tileApi = tileCodeApi;
             tileDic = new Dictionary<uint, CmnTile>();
@@ -439,9 +439,14 @@ namespace libGis
 
         /* 経路計算 *************************************************************/
 
+        public virtual CmnRouteMgr CreateRouteMgr()
+        {
+            return new CmnRouteMgr(this);
+        }
+
         public LatLon[] CalcRouteGeometry(LatLon orgLatLon, LatLon dstLatLon)
         {
-            CmnRouteMgr routeMgr = new CmnRouteMgr(this);
+            CmnRouteMgr routeMgr = CreateRouteMgr();
 
             routeMgr.orgLatLon = orgLatLon;
             routeMgr.dstLatLon = dstLatLon;
@@ -462,7 +467,7 @@ namespace libGis
 
         public List<CmnObjHandle> CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
         {
-            CmnRouteMgr routeMgr = new CmnRouteMgr(this);
+            CmnRouteMgr routeMgr = CreateRouteMgr();
 
             routeMgr.orgLatLon = orgLatLon;
             routeMgr.dstLatLon = dstLatLon;
