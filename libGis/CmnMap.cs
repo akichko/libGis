@@ -115,9 +115,9 @@ namespace libGis
     {
         //プロパティ
         public virtual uint TileId { get; protected set; }
-        public virtual byte Lv { get { return CalcTileLv(TileId); } }
-        public virtual int X { get { return CalcTileX(TileId); } }
-        public virtual int Y { get { return CalcTileY(TileId); } }
+        public virtual byte Lv => CalcTileLv(TileId);
+        public virtual int X => CalcTileX(TileId);
+        public virtual int Y => CalcTileY(TileId);
 
         /* 抽象メソッド ********************************************************/
 
@@ -594,7 +594,7 @@ namespace libGis
 
     /* オブジェクトグループ ****************************************************/
 
-    public class CmnObjGroup
+    public abstract class CmnObjGroup
     {
         public UInt32 Type { get; }
 
@@ -604,7 +604,7 @@ namespace libGis
         public bool isIdSearchable = true;
         public bool isArray = true; //false -> List
 
-        public CmnObj[] objArray;
+        public abstract CmnObj[] ObjArray { get; }
         public List<CmnObj> objList;
         public UInt16 loadedSubType = 0;
 
@@ -615,59 +615,29 @@ namespace libGis
         }
 
 
-        public CmnObjGroup(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType)
-        {
-            Type = type;
-            this.loadedSubType = loadedSubType;
-            this.objArray = objArray;
-        }
+        //public CmnObjGroup(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType)
+        //{
+        //    Type = type;
+        //    this.loadedSubType = loadedSubType;
+        //    this.objArray = objArray;
+        //}
 
 
         public virtual CmnObj[] GetObjArray()
         {
             if (isArray)
-                return objArray;
+                return ObjArray;
 
             else
                 return objList?.ToArray();
         }
 
-        public virtual CmnObj GetObj(UInt64 objId) //全走査。２分木探索等したい場合はオーバーライド
-        {
-            if (!isIdSearchable)
-                return null;
+        public abstract CmnObj GetObj(UInt64 objId); //全走査。２分木探索等したい場合はオーバーライド
 
-            if (isArray)
-            {
-                return objArray
-                    ?.Where(x => x.Id == objId)
-                    .FirstOrDefault();
-            }
-            else
-            {
-                return objList
-                    ?.Where(x => x.Id == objId)
-                    .FirstOrDefault();
-            }
-        }
+        public abstract CmnObj GetObj(UInt16 objIndex);
 
-        public virtual CmnObj GetObj(UInt16 objIndex)
-        {
-            if (isArray)
-            {
-                if (objArray == null || objIndex >= objArray.Length)
-                    return null;
-                else
-                    return objArray[objIndex];
-            }
-            else
-            {
-                if (objList == null || objIndex >= objList.Count)
-                    return null;
-                else
-                    return objList[objIndex];
-            }
-        }
+
+        public abstract IEnumerable<CmnObj> GetIEnumerableObjs();
 
         public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
         {
@@ -676,22 +646,28 @@ namespace libGis
 
             CmnObjDistance nearestObjDistance;
 
-            if (isArray)
-            {
-                nearestObjDistance = objArray
-                    ?.Where(x => x.SubType <= maxSubType)
-                    .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
-                    .OrderBy(x => x.distance)
-                    .FirstOrDefault();
-            }
-            else
-            {
-                nearestObjDistance = objList
-                    ?.Where(x => x.SubType <= maxSubType)
-                    .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
-                    .OrderBy(x => x.distance)
-                    .FirstOrDefault();
-            }
+            nearestObjDistance = GetIEnumerableObjs()
+                ?.Where(x => x.SubType <= maxSubType)
+                .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+                .OrderBy(x => x.distance)
+                .FirstOrDefault();
+
+            //if (isArray)
+            //{
+            //    nearestObjDistance = objArray
+            //        ?.Where(x => x.SubType <= maxSubType)
+            //        .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+            //        .OrderBy(x => x.distance)
+            //        .FirstOrDefault();
+            //}
+            //else
+            //{
+            //    nearestObjDistance = objList
+            //        ?.Where(x => x.SubType <= maxSubType)
+            //        .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+            //        .OrderBy(x => x.distance)
+            //        .FirstOrDefault();
+            //}
 
             if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
                 return null;
@@ -706,6 +682,7 @@ namespace libGis
         {
             if (isArray)
             {
+                CmnObj[] objArray = GetObjArray();
                 if (objArray == null)
                     return;
 
@@ -734,9 +711,9 @@ namespace libGis
                 if (isArray)
                 {
                     if (isDrawReverse)
-                        objArray?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+                        GetIEnumerableObjs()?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
                     else
-                        objArray?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+                        GetIEnumerableObjs()?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
                 }
                 else
                 {
@@ -764,6 +741,209 @@ namespace libGis
         }
     }
 
+
+    public class CmnObjGroupArray : CmnObjGroup
+    {
+
+        public bool isArray = true; //false -> List
+
+        public CmnObj[] objArray;
+
+
+        public CmnObjGroupArray(UInt32 type) : base(type) { }
+
+
+        public CmnObjGroupArray(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
+        {
+            this.loadedSubType = loadedSubType;
+            this.objArray = objArray;
+        }
+
+        public override CmnObj[] ObjArray => objArray;
+        
+
+        public virtual CmnObj[] GetObjArray()
+        {
+            return objArray;
+        }
+
+        public override CmnObj GetObj(UInt64 objId) //全走査。２分木探索等したい場合はオーバーライド
+        {
+            if (!isIdSearchable)
+                return null;
+
+            return objArray
+                ?.Where(x => x.Id == objId)
+                .FirstOrDefault();
+
+        }
+
+        public override CmnObj GetObj(UInt16 objIndex)
+        {
+            if (objArray == null || objIndex >= objArray.Length)
+                return null;
+            else
+                return objArray[objIndex];
+        }
+
+        //public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
+        //{
+        //    if (!isGeoSearchable)
+        //        return null;
+
+        //    CmnObjDistance nearestObjDistance;
+
+        //    nearestObjDistance = objArray
+        //        ?.Where(x => x.SubType <= maxSubType)
+        //        .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+        //        .OrderBy(x => x.distance)
+        //        .FirstOrDefault();
+
+
+        //    if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
+        //        return null;
+
+        //    return nearestObjDistance;
+
+        //}
+
+
+        //不要ならoverrideで無効化
+        public virtual void SetIndex()
+        {
+            if (objArray == null)
+                return;
+
+            for (ushort i = 0; i < objArray.Length; i++)
+            {
+                objArray[i].Index = i;
+            }
+        }
+
+        public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
+        {
+            if (isDrawable)
+            {
+                if (isDrawReverse)
+                    objArray?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+                else
+                    objArray?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+            }
+
+        }
+
+
+        public virtual void AddObj(CmnObj obj)
+        {       
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<CmnObj> GetIEnumerableObjs()
+        {
+            return (IEnumerable<CmnObj>)objArray;
+        }
+    }
+
+
+    public class CmnObjGroupList : CmnObjGroup
+    {
+        public bool isArray = true; //false -> List
+
+        public List<CmnObj> objList;
+
+
+        public CmnObjGroupList(UInt32 type) : base(type) { }
+
+
+        public CmnObjGroupList(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
+        {
+            this.loadedSubType = loadedSubType;
+            this.objList = objArray.ToList();
+        }
+
+        public override CmnObj[] ObjArray => objList.ToArray();
+
+        public virtual CmnObj[] GetObjArray()
+        {     
+            return objList?.ToArray();
+        }
+
+        public override CmnObj GetObj(UInt64 objId) //全走査。２分木探索等したい場合はオーバーライド
+        {
+            if (!isIdSearchable)
+                return null;
+
+            return objList
+                ?.Where(x => x.Id == objId)
+                .FirstOrDefault();
+        }
+
+        public override CmnObj GetObj(UInt16 objIndex)
+        {
+            if (objList == null || objIndex >= objList.Count)
+                return null;
+            else
+                return objList[objIndex];
+        }
+
+        public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
+        {
+            if (!isGeoSearchable)
+                return null;
+
+            CmnObjDistance nearestObjDistance;
+
+            nearestObjDistance = objList
+                ?.Where(x => x.SubType <= maxSubType)
+                .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+                .OrderBy(x => x.distance)
+                .FirstOrDefault();
+
+            if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
+                return null;
+
+            return nearestObjDistance;
+
+        }
+
+
+        //不要ならoverrideで無効化
+        public virtual void SetIndex()
+        {
+            if (objList == null)
+                return;
+
+            for (ushort i = 0; i < objList.Count; i++)
+            {
+                objList[i].Index = i;
+            }
+
+        }
+
+        public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
+        {
+            if (isDrawable)
+            {
+                if (isDrawReverse)
+                    objList?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+                else
+                    objList?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+            }
+
+        }
+
+
+        public virtual void AddObj(CmnObj obj)
+        {
+            objList.Add(obj);
+            obj.Index = (UInt16)(objList.Count - 1);
+        }
+
+        public override IEnumerable<CmnObj> GetIEnumerableObjs()
+        {
+            return (IEnumerable<CmnObj>)objList;
+        }
+    }
 
     /* タイル ******************************************************************/
 
