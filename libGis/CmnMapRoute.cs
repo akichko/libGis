@@ -1,4 +1,27 @@
-﻿using System;
+﻿/*============================================================================
+MIT License
+
+Copyright (c) 2021 akichko
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+============================================================================*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -114,6 +137,7 @@ namespace libGis
     }
 
 
+
     public class CostInfoManage
     {
         public int numElementS { get; private set; } = 0;
@@ -166,9 +190,12 @@ namespace libGis
             {
                 for (int i = 0; i < numElementS; i++)
                 {
+                    //どこかにバグありそう
                     //if (unprocessedS[i].statusS == 2)
                     //{
                     //    Delete(i, isStartSide);
+                    //    if (i == numElementS - 1)
+                    //        break;
                     //}
 
                     if (unprocessedS[i].totalCostS < tmpMinCost)
@@ -183,9 +210,12 @@ namespace libGis
             {
                 for (int i = 0; i < numElementD; i++)
                 {
+                    //どこかにバグありそう
                     //if (unprocessedD[i].statusD == 2)
                     //{
                     //    Delete(i, isStartSide);
+                    //    if (i == numElementD - 1)
+                    //        break;
                     //}
                     if (unprocessedD[i].totalCostD < tmpMinCost)
                     {
@@ -421,9 +451,12 @@ namespace libGis
             //計算対象選定　処理未完了＆コスト最小を探す
             int minIndex = unprocessed.GetMinCostIndex(isStartSide);
 
-            if (minIndex < 0) //探索失敗
+            //探索失敗
+            if (minIndex < 0)
             {
                 Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
+
+                //途中状態を出力
 
                 //dicTileCostInfo.Where(x=>x.Value.tile != null)
                 //foreach (var tileCostInfo in dicTileCostInfo) {
@@ -436,18 +469,18 @@ namespace libGis
 
             CostRecord currentCostInfo = unprocessed.GetCostRecord(minIndex, isStartSide);
 
-            if (currentCostInfo == null) //異常
+            //異常
+            if (currentCostInfo == null)
             {
                 Console.WriteLine("Fatal Error");
-                return -1;
+                throw new NotImplementedException();
             }
 
-            //if (currentCostInfo.isGoal) //探索成功
-            if ((!isStartSide && currentCostInfo.next?.statusS == 2) || (isStartSide && currentCostInfo.back?.statusD == 2)) //探索成功
+            //探索成功
+            if ((!isStartSide && currentCostInfo.next?.statusS == 2) || (isStartSide && currentCostInfo.back?.statusD == 2))
             {
                 Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] Goal Found !! (CalcCount = {logCalcCount}, totalCost = {currentCostInfo.totalCostS})");
-                //currentCostInfo.statusS = 2;
-                //currentCostInfo.statusD = 2;
+
                 if (isStartSide)
                     finalRecord = currentCostInfo.back;
                 else
@@ -508,17 +541,20 @@ namespace libGis
             {
                 //探索除外：　Uターンリンク、タイルに応じた使用可能道路種別でない、スタート付近で道路種別が下がる移動、一方通行逆走
 
-                if (nextLinkRef.obj == currentDLinkHdl.obj
-                    || nextLinkRef.obj.SubType > currentCostInfo.tileCostInfo.maxUsableRoadType
-                    || (nextLinkRef.obj.IsOneway && nextLinkRef.obj.Oneway != nextLinkRef.direction))
-                    continue;
-                //.Where(x => x.mapLink != currentLinkHdl.mapLink && x.mapLink.roadType <= currentCostInfo.tileCostInfo.maxUsableRoadType) )
+                //if (nextLinkRef.obj == currentDLinkHdl.obj
+                //    || nextLinkRef.obj.SubType > currentCostInfo.tileCostInfo.maxUsableRoadType
+                //    || (nextLinkRef.obj.IsOneway && nextLinkRef.obj.Oneway != nextLinkRef.direction))
+                //    continue;
+                ////.Where(x => x.mapLink != currentLinkHdl.mapLink && x.mapLink.roadType <= currentCostInfo.tileCostInfo.maxUsableRoadType) )
+
+                ////要改善
+                //if (nextLinkRef.obj.SubType >= 6
+                //    && currentDLinkHdl.obj.SubType < nextLinkRef.obj.SubType
+                //    && currentCostInfo.tileCostInfo.DistFromDestTile > 8000)
+                //    continue;
 
 
-                //要改善
-                if (nextLinkRef.obj.SubType >= 6
-                    && currentDLinkHdl.obj.SubType < nextLinkRef.obj.SubType
-                    && currentCostInfo.tileCostInfo.DistFromDestTile > 8000)
+                if (IsCalcSkip(currentCostInfo, nextLinkRef))
                     continue;
 
 
@@ -578,6 +614,27 @@ namespace libGis
             return 0;
         }
 
+        public virtual bool IsCalcSkip(CostRecord currentCostInfo, CmnObjHandle nextLinkRef)
+        {
+
+            CmnObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
+
+            if (nextLinkRef.IsEqualTo(currentDLinkHdl))
+                return true;
+
+            if (nextLinkRef.SubType > currentCostInfo.tileCostInfo.maxUsableRoadType)
+                return true;
+
+            if(nextLinkRef.IsOneway && nextLinkRef.Oneway != nextLinkRef.direction)
+                return true;
+
+            if (nextLinkRef.SubType >= rankDownRestrictSubType
+                && currentDLinkHdl.SubType < nextLinkRef.SubType
+                && currentCostInfo.tileCostInfo.DistFromDestTile > rankDownRestrictDistance)
+                return true;
+
+            return false;
+        }
 
         public int CalcRoute()
         {

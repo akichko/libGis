@@ -1,4 +1,27 @@
-﻿using System;
+﻿/*============================================================================
+MIT License
+
+Copyright (c) 2021 akichko
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+============================================================================*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,11 +33,11 @@ namespace libGis
     public interface ICmnTileCodeApi
     {
 
-        /* 抽象メソッド ********************************************************/
-
         public byte DefaultLevel { get; }
         public byte MinLevel { get; }
         public byte MaxLevel { get; }
+
+        /* 抽象メソッド ********************************************************/
 
         //XYL => ID
         public uint CalcTileId(int x, int y, byte level);
@@ -51,7 +74,7 @@ namespace libGis
         public uint CalcTileId(int x, int y);
 
         public uint CalcTileId(TileXYL xyl);
-        
+
         //ID => XYL
         public TileXYL CalcTileXYL(uint tileId);
 
@@ -466,7 +489,7 @@ namespace libGis
 
         public virtual int Cost => Geometry != null ? (int)Length : 10; //override推奨
 
-        public virtual byte Oneway => 0xff; //0xff:なし、1:順方向通行、2:逆方向通行
+        public virtual byte Oneway => 0xff; //0xff:なし、1:順方向通行、0:逆方向通行
 
         public virtual bool IsOneway => Oneway == 0xff ? false : true;
 
@@ -478,7 +501,7 @@ namespace libGis
 
         public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 0xff) { return new List<CmnObjRef>(); } //現状はnull返却禁止
 
-        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) { return  new List<CmnObjHdlRef>(); } //現状はnull返却禁止
+        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) { return new List<CmnObjHdlRef>(); } //現状はnull返却禁止
 
         public virtual double GetDistance(LatLon latlon) => latlon.GetDistanceToPolyline(Geometry);
 
@@ -494,7 +517,7 @@ namespace libGis
             return new LatLon(lat, lon);
         }
 
-        
+
         /* 必要に応じて継承クラスを返却するようにオーバーライド */
         public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile, byte direction = 0xff)
         {
@@ -511,7 +534,7 @@ namespace libGis
             listItem.Add(new AttrItemInfo(new string[] { "ObjType", $"{Type}" }, null));
             listItem.Add(new AttrItemInfo(new string[] { "Id", $"{Id}" }, new AttrTag(0, null, null)));
             listItem.Add(new AttrItemInfo(new string[] { "SubType", $"{SubType}" }, null));
-            
+
 
             //形状詳細表示
             if (true)
@@ -532,7 +555,7 @@ namespace libGis
         }
 
 
-        public virtual int DrawData(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
+        public virtual int ExeCallbackFunc(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
         {
             //Graphic, ViewParam が課題           
             return cbGetObjFuncForDraw(this.ToCmnObjHandle(tile));
@@ -579,7 +602,7 @@ namespace libGis
         public bool isDrawReverse = false;
         public bool isGeoSearchable = true;
         public bool isIdSearchable = true;
-        public bool isArray = true;
+        public bool isArray = true; //false -> List
 
         public CmnObj[] objArray;
         public List<CmnObj> objList;
@@ -704,28 +727,28 @@ namespace libGis
 
         }
 
-        public virtual void DrawData(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
+        public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
         {
             if (isDrawable)
             {
                 if (isArray)
                 {
                     if (isDrawReverse)
-                        objArray?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
-                    //Array.ForEach(objArray.Reverse().ToArray(), x => x.DrawData(cbDrawFunc));
+                        objArray?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
                     else
-                        objArray?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
-                    //Array.ForEach(objArray, x => x.DrawData(tile, cbDrawFunc));
+                        objArray?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
                 }
                 else
                 {
                     if (isDrawReverse)
-                        objList?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
+                        objList?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
                     else
-                        objList?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.DrawData(tile, cbDrawFunc));
+                        objList?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
                 }
             }
+
         }
+
 
         public virtual void AddObj(CmnObj obj)
         {
@@ -884,17 +907,17 @@ namespace libGis
 
         //描画用
 
-        public virtual void DrawData(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFFFFFF, UInt16 subType = 0xFFFF)
+        public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFFFFFF, UInt16 subType = 0xFFFF)
         {
-            GetObjGroupList(objType).ForEach(x => x?.DrawData(this, cbDrawFunc, subType));
+            GetObjGroupList(objType).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, subType));
             //cbDrawFunc(Type, SubType, getGeometry());
         }
 
-        public virtual void DrawData(CbGetObjFunc cbDrawFunc, Dictionary<uint, ushort> typeDic)
+        public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, Dictionary<uint, ushort> typeDic)
         {
             foreach(var x in typeDic)
             {
-                GetObjGroup(x.Key)?.DrawData(this, cbDrawFunc, x.Value);
+                GetObjGroup(x.Key)?.ExeDrawFunc(this, cbDrawFunc, x.Value);
             }
         }
 
@@ -978,7 +1001,7 @@ namespace libGis
         public virtual LatLon GetCenterLatLon() => obj.GetCenterLatLon();
         public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile) => obj.ToCmnObjHandle(tile);
         public virtual List<AttrItemInfo> GetAttributeListItem() => obj.GetAttributeListItem(tile);
-        public virtual int DrawData(CbGetObjFunc cbGetObjFuncForDraw) => obj.DrawData(tile, cbGetObjFuncForDraw);
+        public virtual int ExeCallbackFunc(CbGetObjFunc cbGetObjFuncForDraw) => obj.ExeCallbackFunc(tile, cbGetObjFuncForDraw);
         public virtual LatLon[] GetGeometry(int direction) => obj.GetGeometry(direction);
 
     }
@@ -1159,19 +1182,12 @@ namespace libGis
     /* 描画用 ****************************************************************/
 
     public delegate int CbGetObjFunc(CmnObjHandle objHdl);
-    //public delegate int CbGetObjFunc(CmnTile tile, CmnObj cmnObj);
-
-    //public delegate CmnObj CbGetObjFunc();
-
 
     public delegate void CbDrawFunc(Object g, Object viewParam, CmnObj cmnObj);
 
 
     public interface IViewObj
     {
-        //public int DrawData(CbGetObjFunc cbDrawFund);
-        
-        //public CmnObj DrawData(CbGetObjFunc cbDrawFund);
 
         List<AttrItemInfo> GetAttributeListItem(CmnTile tile);
 

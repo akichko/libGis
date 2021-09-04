@@ -1,4 +1,27 @@
-﻿using System;
+﻿/*============================================================================
+MIT License
+
+Copyright (c) 2021 akichko
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+============================================================================*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,7 +48,7 @@ namespace libGis
         
         public int Connect(string connectStr)
         {
-            int ret = mal.ConnectMapData(connectStr);
+            int ret = mal.ConnectMap(connectStr);
             Console.WriteLine("Connected");
 
             return ret;
@@ -33,7 +56,7 @@ namespace libGis
 
         public int Disconnect()
         {
-            int ret = mal.DisconnectMapData();
+            int ret = mal.DisconnectMap();
 
             Console.WriteLine("disconnected");
             return ret;
@@ -222,6 +245,7 @@ namespace libGis
             return tileApi.CalcTileId(latlon);
         }
 
+
         /* オブジェクト検索メソッド ************************************************/
 
         public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt64 objId)
@@ -284,12 +308,14 @@ namespace libGis
 
         }
 
+        //曖昧検索
         public CmnObjHandle SearchObj(CmnSearchKey cmnSearchKey)
         {
             if (cmnSearchKey == null)
                 return null;
 
             //Tile <- offset未対応
+            //そのうちTile情報なしで全タイル検索を実装したい
             CmnTile tile;
             if (cmnSearchKey.tile != null)
                 tile = cmnSearchKey.tile;
@@ -462,6 +488,10 @@ namespace libGis
             //List<CmnObjHandle> routeHdlList = routeMgr.GetRouteHdlList();
             LatLon[] routeGeometry = routeMgr.GetResult();
 
+
+            Console.WriteLine($"maxQueue = {routeMgr.dykstra.logMaxQueue} (average = {routeMgr.dykstra.logUnprocessedCount.Take(routeMgr.dykstra.logCalcCount).Average():F2})");
+
+
             return routeGeometry;
         }
 
@@ -491,9 +521,9 @@ namespace libGis
     {
         bool IsConnected { get; }
 
-        int ConnectMapData(string connectStr);
+        int ConnectMap(string connectStr);
         
-        int DisconnectMapData();
+        int DisconnectMap();
 
         List<uint> GetMapTileIdList();
 
