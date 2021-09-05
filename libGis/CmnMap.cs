@@ -623,14 +623,7 @@ namespace libGis
         //}
 
 
-        public virtual CmnObj[] GetObjArray()
-        {
-            if (isArray)
-                return ObjArray;
-
-            else
-                return objList?.ToArray();
-        }
+        public abstract CmnObj[] GetObjArray();
 
         public abstract CmnObj GetObj(UInt64 objId); //全走査。２分木探索等したい場合はオーバーライド
 
@@ -708,20 +701,10 @@ namespace libGis
         {
             if (isDrawable)
             {
-                if (isArray)
-                {
-                    if (isDrawReverse)
+                if (isDrawReverse)
                         GetIEnumerableObjs()?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
                     else
                         GetIEnumerableObjs()?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-                }
-                else
-                {
-                    if (isDrawReverse)
-                        objList?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-                    else
-                        objList?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-                }
             }
 
         }
@@ -742,19 +725,24 @@ namespace libGis
     }
 
 
+
     public class CmnObjGroupArray : CmnObjGroup
     {
 
-        public bool isArray = true; //false -> List
+        //public bool isArray = true; //false -> List
 
         public CmnObj[] objArray;
 
 
-        public CmnObjGroupArray(UInt32 type) : base(type) { }
+        public CmnObjGroupArray(UInt32 type) : base(type)
+        {
+            isArray = true;
+        }
 
 
         public CmnObjGroupArray(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
         {
+            isArray = true;
             this.loadedSubType = loadedSubType;
             this.objArray = objArray;
         }
@@ -762,7 +750,7 @@ namespace libGis
         public override CmnObj[] ObjArray => objArray;
         
 
-        public virtual CmnObj[] GetObjArray()
+        public override CmnObj[] GetObjArray()
         {
             return objArray;
         }
@@ -820,17 +808,17 @@ namespace libGis
             }
         }
 
-        public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
-        {
-            if (isDrawable)
-            {
-                if (isDrawReverse)
-                    objArray?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-                else
-                    objArray?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-            }
+        //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
+        //{
+        //    if (isDrawable)
+        //    {
+        //        if (isDrawReverse)
+        //            objArray?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+        //        else
+        //            objArray?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+        //    }
 
-        }
+        //}
 
 
         public virtual void AddObj(CmnObj obj)
@@ -847,12 +835,15 @@ namespace libGis
 
     public class CmnObjGroupList : CmnObjGroup
     {
-        public bool isArray = true; //false -> List
+        //public bool isArray = true; //false -> List
 
         public List<CmnObj> objList;
 
 
-        public CmnObjGroupList(UInt32 type) : base(type) { }
+        public CmnObjGroupList(UInt32 type) : base(type)
+        {
+            isArray = false;
+        }
 
 
         public CmnObjGroupList(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
@@ -863,7 +854,7 @@ namespace libGis
 
         public override CmnObj[] ObjArray => objList.ToArray();
 
-        public virtual CmnObj[] GetObjArray()
+        public override CmnObj[] GetObjArray()
         {     
             return objList?.ToArray();
         }
@@ -886,25 +877,25 @@ namespace libGis
                 return objList[objIndex];
         }
 
-        public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
-        {
-            if (!isGeoSearchable)
-                return null;
+        //public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
+        //{
+        //    if (!isGeoSearchable)
+        //        return null;
 
-            CmnObjDistance nearestObjDistance;
+        //    CmnObjDistance nearestObjDistance;
 
-            nearestObjDistance = objList
-                ?.Where(x => x.SubType <= maxSubType)
-                .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
-                .OrderBy(x => x.distance)
-                .FirstOrDefault();
+        //    nearestObjDistance = objList
+        //        ?.Where(x => x.SubType <= maxSubType)
+        //        .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+        //        .OrderBy(x => x.distance)
+        //        .FirstOrDefault();
 
-            if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
-                return null;
+        //    if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
+        //        return null;
 
-            return nearestObjDistance;
+        //    return nearestObjDistance;
 
-        }
+        //}
 
 
         //不要ならoverrideで無効化
@@ -920,17 +911,17 @@ namespace libGis
 
         }
 
-        public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
-        {
-            if (isDrawable)
-            {
-                if (isDrawReverse)
-                    objList?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-                else
-                    objList?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-            }
+        //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
+        //{
+        //    if (isDrawable)
+        //    {
+        //        if (isDrawReverse)
+        //            objList?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+        //        else
+        //            objList?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+        //    }
 
-        }
+        //}
 
 
         public virtual void AddObj(CmnObj obj)

@@ -49,7 +49,10 @@ namespace libGis
         public int Connect(string connectStr)
         {
             int ret = mal.ConnectMap(connectStr);
-            Console.WriteLine("Connected");
+            if(ret == 0)
+                Console.WriteLine("Connected");
+            else
+                Console.WriteLine("Connect Error!");
 
             return ret;
         }
@@ -63,11 +66,7 @@ namespace libGis
 
         }
 
-        public bool IsConnected
-        {
-            get { return mal.IsConnected; }
-
-        }
+        public bool IsConnected => mal.IsConnected;
 
 
         /* データ操作メソッド ******************************************************/

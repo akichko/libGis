@@ -54,6 +54,7 @@ namespace libGis
 
         public LatLon GetOffsetLatLon(double meterToEast, double meterToNorth) => CalcOffsetLatLon(this, meterToEast, meterToNorth);
 
+        public (double x, double y) GetOffsetXY(LatLon toLatLon) => CalcOffsetXY(this, toLatLon);
 
         public new string ToString()
         {
@@ -120,45 +121,21 @@ namespace libGis
 
         public static double CalcDistanceOfPointAndLine(LatLon P, LatLon L1, LatLon L2)
         {
-            LatLon L1ofLatP = new LatLon(P.lat, L1.lon);
-            LatLon L1ofLonP = new LatLon(L1.lat, P.lon);
-            LatLon L2ofLatP = new LatLon(P.lat, L2.lon);
-            LatLon L2ofLonP = new LatLon(L2.lat, P.lon);
+            (double sX, double sY) = CalcOffsetXY(P, L1);
+            (double eX, double eY) = CalcOffsetXY(P, L2);
 
-
-            double x1 = CalcDistanceBetween(P, L1ofLatP) * Math.Sign(L1.lon - P.lon);
-            double y1 = CalcDistanceBetween(P, L1ofLonP) * Math.Sign(L1.lat - P.lat);
-            double x2 = CalcDistanceBetween(P, L2ofLatP) * Math.Sign(L2.lon - P.lon);
-            double y2 = CalcDistanceBetween(P, L2ofLonP) * Math.Sign(L2.lat - P.lat);
-
-            return CalcDistanceOfPointAndLine(0.0, 0.0, x1, y1, x2, y2);
-
+            return CalcDistanceOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
         }
 
-        private static double CalcDistanceOfPointAndLine(double xP, double yP, double x1, double y1, double x2, double y2)
+        public static double CalcOffsetOfPointAndLine(LatLon P, LatLon L1, LatLon L2)
         {
-            //xP,yP が点
-            double a = x2 - x1;
-            double b = y2 - y1;
-            double a2 = a * a;
-            double b2 = b * b;
-            double r2 = a2 + b2;
-            double tt = -(a * (x1 - xP) + b * (y1 - yP));
+            (double sX, double sY) = CalcOffsetXY(P, L1);
+            (double eX, double eY) = CalcOffsetXY(P, L2);
 
-            if (tt < 0) // P < S
-            {
-                return Math.Sqrt((x1 - xP) * (x1 - xP) + (y1 - yP) * (y1 - yP));
-            }
-            else if (tt > r2) // E < P
-            {
-                return Math.Sqrt((x2 - xP) * (x2 - xP) + (y2 - yP) * (y2 - yP));
-            }
-            else // S < P < E
-            {
-                double f1 = a * (y1 - yP) - b * (x1 - xP);
-                return Math.Sqrt((f1 * f1) / r2);
-            }
+            double ratio = CalcOffsetRatioOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
+            return CalcDistanceBetween(L1, L2) * ratio;
         }
+
 
         public static LatLon CalcOffsetLatLon(LatLon latlon, double meterToEast, double meterToNorth)
         {
@@ -175,7 +152,20 @@ namespace libGis
             return baseLatLon + (toLatLon - baseLatLon) * offsetMeter / lineDistance;
         }
 
-        public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)  //開発中
+     
+        public static (double x, double y) CalcOffsetXY(LatLon B, LatLon T) // B: base, T:target
+        {
+            LatLon TofLatB = new LatLon(B.lat, T.lon);
+            LatLon TofLonB = new LatLon(T.lat, B.lon);
+
+            double x = CalcDistanceBetween(B, TofLatB) * Math.Sign(T.lon - B.lon);
+            double y = CalcDistanceBetween(B, TofLonB) * Math.Sign(T.lat - B.lat);
+
+            return (x, y);
+
+        }
+
+        public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)
         {
             if (polyline == null || polyline.Length <= 1)
                 return null;
@@ -202,10 +192,13 @@ namespace libGis
                 offset += polyline[i].GetDistanceTo(polyline[i + 1]);
             }
 
-            //　小数点以下はいつか作る
-            //offset += CalcNarestOffset(latlon, polyline[nearestIndex], polyline[nearestIndex + 1])
+            //補間点内計算
+            double lastOffset = CalcOffsetOfPointAndLine(latlon, polyline[nearestIndex], polyline[nearestIndex + 1]);
 
-            return new PolyLinePos(polyline[nearestIndex], (float)nearestIndex, offset);
+            offset += lastOffset;
+            LatLon nearestLatLon = CalcOffsetLatLon(polyline[nearestIndex], polyline[nearestIndex + 1], lastOffset);
+
+            return new PolyLinePos(nearestLatLon, (float)nearestIndex, offset);
 
         }
 
@@ -297,6 +290,60 @@ namespace libGis
         }
 
 
+        //private静的メソッド
+
+        private static double CalcDistanceOfPointAndLine(double pX, double pY, double sX, double sY, double eX, double eY)
+        {
+            //xP,yP が点
+            double seX = eX - sX;
+            double seY = eY - sY;
+            double seX2 = seX * seX;
+            double seY2 = seY * seY;
+            double r2 = seX2 + seY2;
+            double tt = -(seX * (sX - pX) + seY * (sY - pY));
+
+            if (tt < 0) // P < S
+            {
+                return Math.Sqrt((sX - pX) * (sX - pX) + (sY - pY) * (sY - pY));
+            }
+            else if (tt > r2) // E < P
+            {
+                return Math.Sqrt((eX - pX) * (eX - pX) + (eY - pY) * (eY - pY));
+            }
+            else // S < P < E
+            {
+                double f1 = seX * (sY - pY) - seY * (sX - pX);
+                return Math.Sqrt((f1 * f1) / r2);
+            }
+        }
+
+        private static double CalcOffsetRatioOfPointAndLine(double pX, double pY, double sX, double sY, double eX, double eY)
+        {
+            //xP,yP が点
+            double seX = eX - sX;
+            double seY = eY - sY;
+            double seX2 = seX * seX;
+            double seY2 = seY * seY;
+            double r2 = seX2 + seY2;
+            double tt = -(seX * (sX - pX) + seY * (sY - pY));
+
+            if (tt < 0) // P < S
+            {
+                return 0.0;
+            }
+            else if (tt > r2) // E < P
+            {
+                return 1.0;
+            }
+            else // S < P < E
+            {
+                double spX = pX - sX;
+                double spY = pY - sY;
+                return ((seX * spX) + (seY * spY)) / ((seX * seX) + (seX * seX));
+            }
+        }
+
+
         //演算子オーバーライド
 
         public static LatLon operator +(LatLon a, LatLon b)
@@ -348,5 +395,11 @@ namespace libGis
             this.z = z;
         }
 
+    }
+
+    public class XYd
+    {
+        double x;
+        double y;
     }
 }
