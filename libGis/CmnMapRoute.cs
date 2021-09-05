@@ -45,31 +45,20 @@ namespace libGis
         public CostRecord back;
         public CostRecord next;
 
-        public UInt64 LinkId
-        {
-            get { return tileCostInfo.linkArray[linkIndex].Id; }
-        }
+        public int TotalCost(bool isStartSide) => isStartSide ? totalCostS : totalCostD;
+        public int Status(bool isStartSide) => isStartSide ? statusS : statusD;
 
-        public CmnObj MapLink
-        {
-            get { return tileCostInfo.linkArray[linkIndex]; }
-        }
+        public UInt64 LinkId => tileCostInfo.linkArray[linkIndex].Id;
+
+        public CmnObj MapLink => tileCostInfo.linkArray[linkIndex];
 
         public uint TileId => tileCostInfo.tileId;
 
         public int Cost => (int)MapLink.Cost;
 
-        public CmnObjHandle LinkHdl
-        {
-            get { return tileCostInfo.linkArray[linkIndex].ToCmnObjHandle(tileCostInfo.tile); }
-            //get { return new CmnObjHandle(tileCostInfo.tile, tileCostInfo.linkArray[linkIndex]); }
-        }
+        public CmnObjHandle LinkHdl => tileCostInfo.linkArray[linkIndex].ToCmnObjHandle(tileCostInfo.tile);
 
-        public CmnObjHandle DLinkHdl
-        {
-            get { return tileCostInfo.linkArray[linkIndex].ToCmnObjHandle(tileCostInfo.tile, linkDirection); }
-            //get { return new CmnDirObjHandle(tileCostInfo.tile, tileCostInfo.linkArray[linkIndex], linkDirection); }
-        }
+        public CmnObjHandle DLinkHdl => tileCostInfo.linkArray[linkIndex].ToCmnObjHandle(tileCostInfo.tile, linkDirection);
     }
 
 
@@ -137,8 +126,116 @@ namespace libGis
     }
 
 
+    public class CostRecordManage
+    {
+        public int numElement { get; private set; } = 0;
+        CostRecord[] unprocessed;
 
-    public class CostInfoManage
+        public int minCost = 0;
+
+        public CostRecordManage(int maxNum)
+        {
+            unprocessed = new CostRecord[maxNum];
+        }
+
+        public void Add(CostRecord costRecord)
+        {
+            unprocessed[numElement] = costRecord;
+            numElement++;
+        }
+
+        public void Delete(int index)
+        {
+            unprocessed[index] = unprocessed[numElement - 1];
+            numElement--;
+        }
+
+        public int GetMinCostIndex(bool isStartSide)
+        {
+            int tmpMinCost = int.MaxValue;
+            int tmpMinIndex = -1;
+            for (int i = 0; i < numElement; i++)
+            {
+                //どこかにバグありそう
+                //if (unprocessedS[i].statusS == 2)
+                //{
+                //    Delete(i, isStartSide);
+                //    if (i == numElementS - 1)
+                //        break;
+                //}
+
+                if (unprocessed[i].TotalCost(isStartSide) < tmpMinCost)
+                {
+                    tmpMinCost = unprocessed[i].TotalCost(isStartSide);
+                    tmpMinIndex = i;
+                }
+            }
+            minCost = tmpMinCost;
+            return tmpMinIndex;
+        }
+
+        public CostRecord GetCostRecord(int index)
+        {
+            return unprocessed[index];
+        }
+
+    }
+
+    public class CostRecordManageOD
+    {
+        CostRecordManage costMgrO;
+        CostRecordManage costMgrD;
+
+        public CostRecordManageOD(int maxNum)
+        {
+            costMgrO = new CostRecordManage(maxNum);
+            costMgrD = new CostRecordManage(maxNum);
+        }
+
+        private CostRecordManage GetCostMgr(bool isStartSide)
+        {
+            if (isStartSide)
+                return costMgrO;
+            else
+                return costMgrD;
+        }
+
+        public void Add(CostRecord costRecord, bool isStartSide)
+        {
+            GetCostMgr(isStartSide).Add(costRecord);
+        }
+
+        public void Delete(int index, bool isStartSide)
+        {
+            GetCostMgr(isStartSide).Delete(index);
+        }
+
+        public int GetMinCostIndex(bool isStartSide)
+        {
+            return GetCostMgr(isStartSide).GetMinCostIndex(isStartSide);
+        }
+
+        public CostRecord GetCostRecord(int index, bool isStartSide)
+        {
+            return GetCostMgr(isStartSide).GetCostRecord(index);
+        }
+
+        public bool IsNextStartSide()
+        {
+            if (costMgrO.minCost < costMgrD.minCost)
+                return true;
+            else
+                return false;
+        }
+
+        public int GetTotalElement()
+        {
+            return costMgrO.numElement + costMgrD.numElement;
+        }
+    }
+
+
+    public class CostInfoManage //削除予定
     {
         public int numElementS { get; private set; } = 0;
         public int numElementD { get; private set; } = 0;
@@ -236,13 +333,25 @@ namespace libGis
                 return unprocessedD[index];
         }
 
+        public bool IsNextStartSide()
+        {
+            if (minCostS < minCostD)
+                return true;
+            else
+                return false;
+        }
+
+        public int GetTotalElement()
+        {
+            return numElementS + numElementD;
+        }
     }
 
 
     public class Dykstra
     {
         public Dictionary<uint, TileCostInfo> dicTileCostInfo;
-        CostInfoManage unprocessed;
+        CostRecordManageOD unprocessed;
         List<CostRecord> goalInfo;
 
         CostRecord finalRecord; //双方向ダイクストラの終了ポイント
@@ -270,7 +379,7 @@ namespace libGis
             dicTileCostInfo = new Dictionary<uint, TileCostInfo>();
             goalInfo = new List<CostRecord>();
 
-            unprocessed = new CostInfoManage(10000);
+            unprocessed = new CostRecordManageOD(10000);
             logUnprocessedCount = new int[1000000];
             //logTickCountList = new int[1000000];
 
@@ -441,11 +550,11 @@ namespace libGis
         public int CalcRouteStep()
         {
             //処理側決定
-            bool isStartSide;
-            if (unprocessed.minCostS < unprocessed.minCostD)
-                isStartSide = true;
-            else
-                isStartSide = false;
+            bool isStartSide = unprocessed.IsNextStartSide();
+            //if (unprocessed.minCostS < unprocessed.minCostD)
+            //    isStartSide = true;
+            //else
+            //    isStartSide = false;
 
 
             //計算対象選定　処理未完了＆コスト最小を探す
@@ -651,10 +760,10 @@ namespace libGis
                 //logTickCountList[logCalcCount] = nowTickCount - pastTickCount;
                 pastTickCount = nowTickCount;
 
-                logUnprocessedCount[logCalcCount] = unprocessed.numElementS + unprocessed.numElementD;
+                logUnprocessedCount[logCalcCount] = unprocessed.GetTotalElement();
 
-                if (unprocessed.numElementS + unprocessed.numElementD > logMaxQueue)
-                    logMaxQueue = unprocessed.numElementS + unprocessed.numElementD;
+                if (unprocessed.GetTotalElement() > logMaxQueue)
+                    logMaxQueue = unprocessed.GetTotalElement();
 
                 logCalcCount++;
 
