@@ -29,10 +29,49 @@ using System.Threading.Tasks;
 
 namespace libGis
 {
+    public class TileMng{
+        private Dictionary<uint, CmnTile> tileDic;
+
+        public TileMng()
+        {
+            tileDic = new Dictionary<uint, CmnTile>();
+        }
+        public bool ContainsTile(uint tileId)
+        {
+            return tileDic.ContainsKey(tileId);
+        }
+
+        public CmnTile GetTile(uint tileId)
+        {
+
+            if (tileDic.ContainsKey(tileId))
+                return tileDic[tileId];
+            else
+                return null;            
+        }
+
+        public void AddTile(uint tileId, CmnTile tile)
+        {
+            tileDic.Add(tileId, tile);
+        }
+
+        public bool RemoveTile(uint tileId)
+        {
+            return tileDic.Remove(tileId);
+        }
+        public List<CmnTile> GetTileList()
+        {
+            return tileDic.Select(x => x.Value).ToList();
+        }
+
+    }
+
     public abstract class CmnMapMgr
     {
         public ICmnTileCodeApi tileApi;
-        protected Dictionary<uint, CmnTile> tileDic;
+        //protected Dictionary<uint, CmnTile> tileDic;
+        protected TileMng tileMng;
+        
         protected ICmnMapAccess mal;
 
         //抽象メソッド
@@ -41,7 +80,8 @@ namespace libGis
         public CmnMapMgr(ICmnTileCodeApi tileCodeApi)
         {
             this.tileApi = tileCodeApi;
-            tileDic = new Dictionary<uint, CmnTile>();
+            //tileDic = new Dictionary<uint, CmnTile>();
+            tileMng = new TileMng();
         }
 
         /* 地図データ接続 ************************************************************/
@@ -80,14 +120,16 @@ namespace libGis
             CmnTile tmpTile;
             bool isNew = false;
 
-            if (tileDic.ContainsKey(tileId))
+            tmpTile = tileMng.GetTile(tileId);
+            //if (tileDic.ContainsKey(tileId))
+            if (tmpTile != null)
             {
-                tmpTile = tileDic[tileId];
+                    //tmpTile = tileDic[tileId];
 
-                //更新必要有無チェック
+                    //更新必要有無チェック
 
-                //未読み込み（NULL）のObgGroupがあるか
-                int numObjGrToBeRead = mal.GetMapContentTypeList()
+                    //未読み込み（NULL）のObgGroupがあるか
+                    int numObjGrToBeRead = mal.GetMapContentTypeList()
                     .Where(x => (reqType & x) == x)
                     .Select(x => tmpTile.GetObjGroup(x))
                     .Count(x => x == null || x.loadedSubType < reqMaxSubType);
@@ -119,7 +161,8 @@ namespace libGis
 
 
             if (isNew)
-                tileDic.Add(tileId, tmpTile);
+                tileMng.AddTile(tileId, tmpTile);
+            //tileDic.Add(tileId, tmpTile);
 
             return 0;
 
@@ -174,10 +217,10 @@ namespace libGis
 
         //}
 
-        public bool UnloadTile(uint tileId)
-        {
-            return tileDic.Remove(tileId);
-        }
+        public bool UnloadTile(uint tileId) => tileMng.RemoveTile(tileId);
+        //{
+        //    return tileDic.Remove(tileId);
+        //}
 
 
         public int AddObj(uint tileId, UInt32 objType, CmnObj obj)
@@ -189,13 +232,13 @@ namespace libGis
 
         /* タイル検索メソッド ******************************************************/
 
-        public CmnTile SearchTile(uint tileId)
-        {
-            if (tileDic.ContainsKey(tileId))
-                return tileDic[tileId];
-            else
-                return null;
-        }
+        public CmnTile SearchTile(uint tileId) => tileMng.GetTile(tileId);
+        //{
+            //if (tileDic.ContainsKey(tileId))
+            //    return tileDic[tileId];
+            //else
+            //    return null;
+        //}
 
         public CmnTile SearchTile(LatLon latlon)
         {
@@ -215,8 +258,10 @@ namespace libGis
                 {
                     uint tmpTileId = tileApi.CalcTileId(x, y);
 
-                    if (tileDic.ContainsKey(tmpTileId))
-                        retTileList.Add(tileDic[tmpTileId]);
+                    if (tileMng.ContainsTile(tmpTileId))
+                        retTileList.Add(tileMng.GetTile(tmpTileId));
+                    //if (tileDic.ContainsKey(tmpTileId))
+                    //    retTileList.Add(tileDic[tmpTileId]);
                     else
                         continue;
                 }
@@ -226,10 +271,10 @@ namespace libGis
 
         }
 
-        public List<CmnTile> GetLoadedTileList()
-        {
-            return tileDic.Select(x => x.Value).ToList();
-        }
+        public List<CmnTile> GetLoadedTileList() => tileMng.GetTileList();
+        //{
+        //    return tileDic.Select(x => x.Value).ToList();
+        //}
 
         public List<uint> GetMapTileIdList()
         {

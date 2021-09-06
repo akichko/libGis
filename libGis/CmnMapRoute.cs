@@ -598,7 +598,7 @@ namespace libGis
             }
 
             //処理済みデータ
-            if ((isStartSide && currentCostInfo.statusS == 2) || (!isStartSide && currentCostInfo.statusD == 2))
+            if (currentCostInfo.Status(isStartSide) == 2)
             {
                 unprocessed.Delete(minIndex, isStartSide);
                 return 0;

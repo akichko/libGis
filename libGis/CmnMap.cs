@@ -637,30 +637,11 @@ namespace libGis
             if (!isGeoSearchable)
                 return null;
 
-            CmnObjDistance nearestObjDistance;
-
-            nearestObjDistance = GetIEnumerableObjs()
+            CmnObjDistance nearestObjDistance = GetIEnumerableObjs()
                 ?.Where(x => x.SubType <= maxSubType)
                 .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();
-
-            //if (isArray)
-            //{
-            //    nearestObjDistance = objArray
-            //        ?.Where(x => x.SubType <= maxSubType)
-            //        .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
-            //        .OrderBy(x => x.distance)
-            //        .FirstOrDefault();
-            //}
-            //else
-            //{
-            //    nearestObjDistance = objList
-            //        ?.Where(x => x.SubType <= maxSubType)
-            //        .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
-            //        .OrderBy(x => x.distance)
-            //        .FirstOrDefault();
-            //}
 
             if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
                 return null;
@@ -941,7 +922,7 @@ namespace libGis
     public abstract class CmnTile : CmnObj
     {
         public CmnTileCode tileCode;
-        protected Dictionary<UInt32, CmnObjGroup> objDic;
+        protected Dictionary<UInt32, CmnObjGroup> objGroupDic;
 
         //プロパティ
 
@@ -956,7 +937,7 @@ namespace libGis
 
         public CmnTile()
         {
-            objDic = new Dictionary<UInt32, CmnObjGroup>();
+            objGroupDic = new Dictionary<UInt32, CmnObjGroup>();
 
             //継承先ではtileInfoをnewすること
         }
@@ -972,7 +953,7 @@ namespace libGis
         {
             UInt32 objType = objGroup.Type;
             //上書き
-            objDic[objType] = objGroup;
+            objGroupDic[objType] = objGroup;
 
             return 0;
         }
@@ -991,15 +972,15 @@ namespace libGis
 
         public virtual CmnObjGroup GetObjGroup(UInt32 objType)
         {
-            if (objDic.ContainsKey(objType))
-                return objDic[objType];
+            if (objGroupDic.ContainsKey(objType))
+                return objGroupDic[objType];
             else
                 return null;
         }
 
         private List<CmnObjGroup> GetObjGroupList(UInt32 objTypeBits = 0xFFFFFFFF)
         {
-            return objDic
+            return objGroupDic
                 .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
                 .Select(x => x.Value)
                 .ToList();
@@ -1007,7 +988,7 @@ namespace libGis
 
         private List<UInt32> GetObjTypeList(UInt32 objTypeBits = 0xFFFFFFFF)
         {
-            return objDic
+            return objGroupDic
                 .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
                 .Select(x => x.Key)
                 .ToList();
