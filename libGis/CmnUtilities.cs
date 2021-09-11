@@ -158,6 +158,18 @@ namespace libGis
             type.ForEach(x => dic.Add(x, null));
             return this;
         }
+        public HierarchicalFilter<KeyType, KeySubType> DelRule(KeyType type)
+        {
+            dic.Remove(type);
+            return this;
+        }
+
+        public HierarchicalFilter<KeyType, KeySubType> DelRule(List<KeyType> type)
+        {
+            type.ForEach(x => dic.Remove(x));
+            return this;
+        }
+
 
     }
 
@@ -165,6 +177,12 @@ namespace libGis
     public class CmnObjFilter : HierarchicalFilter<uint, ushort>
     {
         public CmnObjFilter(bool defaultBool = false) : base(defaultBool) { }
+
+        public CmnObjFilter AddRule(uint type, RangeFilter<ushort> subFilter)
+        {
+            dic[type] = subFilter;
+            return this;
+        }
 
     }
 }

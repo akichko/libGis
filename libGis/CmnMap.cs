@@ -472,7 +472,7 @@ namespace libGis
 
         public abstract UInt64 Id { get; }
 
-        public abstract UInt32 Type { get; } //ビットフラグ形式
+        public abstract UInt32 Type { get; } //ビットフラグ形式(廃止予定)
 
         /* 仮想プロパティ =====================================================*/
 
@@ -490,9 +490,9 @@ namespace libGis
 
         public virtual int Cost => Geometry != null ? (int)Length : 10; //override推奨
 
-        public virtual byte Oneway => 0xff; //0xff:なし、1:順方向通行、0:逆方向通行
+        public virtual DirectionCode Oneway => DirectionCode.None;
 
-        public virtual bool IsOneway => Oneway == 0xff ? false : true;
+        public virtual bool IsOneway => Oneway == DirectionCode.None ? false : true;
 
         /* 抽象メソッド：現状なし */
 
@@ -500,9 +500,9 @@ namespace libGis
 
         public virtual List<CmnObjRef> GetObjAllRefList() { return new List<CmnObjRef>(); } //現状はnull返却禁止
 
-        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, byte direction = 0xff) { return new List<CmnObjRef>(); } //現状はnull返却禁止
+        public virtual List<CmnObjRef> GetObjAllRefList(CmnTile tile, DirectionCode direction = DirectionCode.None) { return new List<CmnObjRef>(); } //現状はnull返却禁止
 
-        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, byte direction = 1) { return new List<CmnObjHdlRef>(); } //現状はnull返却禁止
+        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, CmnTile tile, DirectionCode direction = DirectionCode.Positive) { return new List<CmnObjHdlRef>(); } //現状はnull返却禁止
 
         public virtual double GetDistance(LatLon latlon) => latlon.GetDistanceToPolyline(Geometry);
 
@@ -520,14 +520,14 @@ namespace libGis
 
 
         /* 必要に応じて継承クラスを返却するようにオーバーライド */
-        public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile, byte direction = 0xff)
+        public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile, DirectionCode direction = DirectionCode.None)
         {
             return new CmnObjHandle(tile, this, direction);
         }
 
         /* 描画用 ----------------------------------------------------------*/
 
-        public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile)
+        public virtual List<AttrItemInfo> GetAttributeListItem(CmnTile tile, bool detail = false)
         {
             List<AttrItemInfo> listItem = new List<AttrItemInfo>();
 
@@ -536,9 +536,18 @@ namespace libGis
             listItem.Add(new AttrItemInfo(new string[] { "Id", $"{Id}" }, new AttrTag(0, null, null)));
             listItem.Add(new AttrItemInfo(new string[] { "SubType", $"{SubType}" }, null));
 
+            listItem.AddRange(GetAttributeListItemGeometry(tile, detail));
+
+
+            return new List<AttrItemInfo>();
+        }
+
+        public virtual List<AttrItemInfo> GetAttributeListItemGeometry(CmnTile tile, bool detail = false)
+        {
+            List<AttrItemInfo> listItem = new List<AttrItemInfo>();
 
             //形状詳細表示
-            if (true)
+            if (detail)
             {
                 for (int i = 0; i < Geometry.Length; i++)
                 {
@@ -549,12 +558,11 @@ namespace libGis
             else
             {
                 listItem.Add(new AttrItemInfo(new string[] { $"geometry[0]", $"({Geometry[0].ToString()})" }, new AttrTag(0, null, Geometry[0])));
-                listItem.Add(new AttrItemInfo(new string[] { $"geometry[Geometry.Length - 1]", $"({Geometry[Geometry.Length - 1].ToString()})" }, new AttrTag(0, null, Geometry[Geometry.Length - 1])));
+                listItem.Add(new AttrItemInfo(new string[] { $"geometry[{Geometry.Length - 1}]", $"({Geometry[Geometry.Length - 1].ToString()})" }, new AttrTag(0, null, Geometry[Geometry.Length - 1])));
 
             }
-            return new List<AttrItemInfo>();
+            return listItem;
         }
-
 
         public virtual int ExeCallbackFunc(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
         {
@@ -563,9 +571,9 @@ namespace libGis
         }
 
 
-        public virtual LatLon[] GetGeometry(int direction)
+        public virtual LatLon[] GetGeometry(DirectionCode direction)
         {
-            if (direction == 0)
+            if (direction == DirectionCode.Negative)
                 return Geometry.Reverse().ToArray();
             else
                 return Geometry;
@@ -603,10 +611,10 @@ namespace libGis
         public bool isDrawReverse = false;
         public bool isGeoSearchable = true;
         public bool isIdSearchable = true;
-        public bool isArray = true; //false -> List
+        //public bool isArray = true; //false -> List
 
         public abstract CmnObj[] ObjArray { get; }
-        public List<CmnObj> objList;
+        //public List<CmnObj> objList;
         public UInt16 loadedSubType = 0;
 
         //コンストラクタ
@@ -686,31 +694,7 @@ namespace libGis
         }
 
         //不要ならoverrideで無効化
-        public virtual void SetIndex()
-        {
-            if (isArray)
-            {
-                CmnObj[] objArray = GetObjArray();
-                if (objArray == null)
-                    return;
-
-                for (ushort i = 0; i < objArray.Length; i++)
-                {
-                    objArray[i].Index = i;
-                }
-            }
-            else
-            {
-                if (objList == null)
-                    return;
-
-                for (ushort i = 0; i < objList.Count; i++)
-                {
-                    objList[i].Index = i;
-                }
-            }
-
-        }
+        public virtual void SetIndex() { }
 
         //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
         //{
@@ -730,7 +714,6 @@ namespace libGis
             if (!isDrawable)
                 return;
 
-
             GetIEnumerableObjs(isDrawReverse)
                 ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
                 .ToList()
@@ -748,15 +731,6 @@ namespace libGis
 
         public virtual void AddObj(CmnObj obj)
         {
-            if (!isArray)
-            {
-                objList.Add(obj);
-                obj.Index = (UInt16)(objList.Count - 1);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
         }
     }
 
@@ -772,13 +746,13 @@ namespace libGis
 
         public CmnObjGroupArray(UInt32 type) : base(type)
         {
-            isArray = true;
+            //isArray = true;
         }
 
 
         public CmnObjGroupArray(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
         {
-            isArray = true;
+            //isArray = true;
             this.loadedSubType = loadedSubType;
             this.objArray = objArray;
         }
@@ -833,7 +807,7 @@ namespace libGis
 
 
         //不要ならoverrideで無効化
-        public virtual void SetIndex()
+        public override void SetIndex()
         {
             if (objArray == null)
                 return;
@@ -881,7 +855,7 @@ namespace libGis
 
         public CmnObjGroupList(UInt32 type) : base(type)
         {
-            isArray = false;
+            //isArray = false;
         }
 
 
@@ -938,7 +912,7 @@ namespace libGis
 
 
         //不要ならoverrideで無効化
-        public virtual void SetIndex()
+        public override void SetIndex()
         {
             if (objList == null)
                 return;
@@ -1057,13 +1031,13 @@ namespace libGis
         }
 
         //削除予定
-        private List<CmnObjGroup> GetObjGroupList(UInt32 objTypeBits = 0xFFFFFFFF)
-        {
-            return objGroupDic
-                .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
-                .Select(x => x.Value)
-                .ToList();
-        }
+        //private List<CmnObjGroup> GetObjGroupList(UInt32 objTypeBits = 0xFFFFFFFF)
+        //{
+        //    return objGroupDic
+        //        .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
+        //        .Select(x => x.Value)
+        //        .ToList();
+        //}
 
         //private List<CmnObjGroup> GetObjGroupList(List<UInt32> objTypeList = null)
         //{
@@ -1154,7 +1128,7 @@ namespace libGis
         {
 
             var ret = GetObjGroupList(filter)
-                .Select(x => GetNearestObj(latlon, x.Type, filter?.GetSubFilter(x.Type)))
+                .Select(x => x.GetNearestObj(latlon, filter?.GetSubFilter(x.Type))?.ToCmnObjHdlDistance(this))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();
@@ -1237,19 +1211,19 @@ namespace libGis
     {
         public CmnTile tile;
         public CmnObj obj;
-        public byte direction = 0xff;
+        public DirectionCode direction = DirectionCode.None;
 
         /* コンストラクタ・データ生成 ==============================================*/
 
         //public CmnObjHandle() { }
-        public CmnObjHandle(CmnTile tile, CmnObj obj, byte direction = 0xff)
+        public CmnObjHandle(CmnTile tile, CmnObj obj, DirectionCode direction = DirectionCode.None)
         {
             this.tile = tile;
             this.obj = obj;
             this.direction = direction;
         }
 
-        public CmnObjHandle SetDirection(byte direction)
+        public CmnObjHandle SetDirection(DirectionCode direction)
         {
             this.direction = direction;
             return this;
@@ -1281,19 +1255,19 @@ namespace libGis
         public virtual UInt16 Index => obj.Index;
         public virtual double Length => obj.Length;
         public virtual int Cost => obj.Cost;
-        public virtual byte Oneway => obj.Oneway;
+        public virtual DirectionCode Oneway => obj.Oneway;
         public virtual bool IsOneway => obj.IsOneway;
 
         /* メソッド =====================================================*/
         public virtual List<CmnObjRef> GetObjAllRefList() => obj.GetObjAllRefList(tile);
-        public virtual List<CmnObjRef> GetObjAllRefList(byte direction = 0xff) => obj.GetObjAllRefList(tile, direction);
-        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, byte direction = 0xff) => obj.GetObjRefHdlList(refType, tile, direction);
+        public virtual List<CmnObjRef> GetObjAllRefList(DirectionCode direction = DirectionCode.None) => obj.GetObjAllRefList(tile, direction);
+        public virtual List<CmnObjHdlRef> GetObjRefHdlList(int refType, DirectionCode direction = DirectionCode.None) => obj.GetObjRefHdlList(refType, tile, direction);
         public virtual double GetDistance(LatLon latlon) => obj.GetDistance(latlon);
         public virtual LatLon GetCenterLatLon() => obj.GetCenterLatLon();
         public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile) => obj.ToCmnObjHandle(tile);
         public virtual List<AttrItemInfo> GetAttributeListItem() => obj.GetAttributeListItem(tile);
         public virtual int ExeCallbackFunc(CbGetObjFunc cbGetObjFuncForDraw) => obj.ExeCallbackFunc(tile, cbGetObjFuncForDraw);
-        public virtual LatLon[] GetGeometry(int direction) => obj.GetGeometry(direction);
+        public virtual LatLon[] GetGeometry(DirectionCode direction) => obj.GetGeometry(direction);
 
     }
 
@@ -1424,7 +1398,7 @@ namespace libGis
         public CmnObj obj;
         public UInt64 objId = 0xffffffffffffffff;
         public UInt16 objIndex = 0xffff;
-        public byte objDirection = 0xff;
+        public DirectionCode objDirection = DirectionCode.None;
         public UInt16 subType = 0xffff;
 
         public CmnSearchKey(UInt32 objType)
@@ -1480,7 +1454,7 @@ namespace libGis
     public interface IViewObj
     {
 
-        List<AttrItemInfo> GetAttributeListItem(CmnTile tile);
+        List<AttrItemInfo> GetAttributeListItem(CmnTile tile, bool detail);
 
         
     }
@@ -1512,6 +1486,26 @@ namespace libGis
     }
 
 
+
+    public enum DirectionCode : byte
+    {
+        Negative = 0, //逆方向。終点⇒始点
+        Positive = 1, //順方向。始点⇒終点
+        None = 0xff   //方向なし
+    }
+
+    public static class DirectionCodeExtend
+    {
+        public static DirectionCode Reverse(this DirectionCode param)
+        {
+            if (param == DirectionCode.Positive)
+                return DirectionCode.Negative;
+            else if (param == DirectionCode.Negative)
+                return DirectionCode.Positive;
+            else
+                return param;
+        }
+    }
 
     //サンプル。使うかどうかは自由
 

@@ -40,7 +40,7 @@ namespace libGis
 
         public TileCostInfo tileCostInfo; //親参照
         public ushort linkIndex;
-        public byte linkDirection;
+        public DirectionCode linkDirection;
 
         public CostRecord back;
         public CostRecord next;
@@ -103,8 +103,8 @@ namespace libGis
                 //使用時に設定すれば高速化かも
                 costInfo[i][0].linkIndex = i;
                 costInfo[i][1].linkIndex = i;
-                costInfo[i][0].linkDirection = 0;
-                costInfo[i][1].linkDirection = 1;
+                costInfo[i][0].linkDirection = DirectionCode.Negative;
+                costInfo[i][1].linkDirection = DirectionCode.Positive;
             }
 
             isLoaded = true;
@@ -398,7 +398,7 @@ namespace libGis
 
         /****** 設定 ******************************************************************************/
 
-        public int SetStartCost(CmnObjHandle linkHdl, int offset, byte direction = 0xff)
+        public int SetStartCost(CmnObjHandle linkHdl, int offset, DirectionCode direction = DirectionCode.None)
         {
             //TileObjId start = new TileObjId(mapPos.tileId, mapPos.linkId);
             //MapLink sMapLink = mapMgr.SearchMapLink(start);
@@ -406,12 +406,12 @@ namespace libGis
             //offsetが暫定
             CostRecord costRec;
             //順方向
-            if (direction == 1 || direction == 0xff)
+            if (direction == DirectionCode.Positive || direction == DirectionCode.None)
             {
-                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, 1);
+                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, DirectionCode.Positive);
 
                 costRec.linkIndex = linkHdl.obj.Index;
-                costRec.linkDirection = 1;
+                costRec.linkDirection = DirectionCode.Positive;
                 costRec.totalCostS = (int)(linkHdl.obj.Cost * ( - 0.3));
                 costRec.totalCostD = int.MaxValue;
                 costRec.statusS = 1;
@@ -419,12 +419,12 @@ namespace libGis
             }
 
             //逆方向
-            if (direction == 0 || direction == 0xff)
+            if (direction == DirectionCode.Negative || direction == DirectionCode.None)
             {
-                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, 0);
+                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, DirectionCode.Negative);
 
                 costRec.linkIndex = linkHdl.obj.Index;
-                costRec.linkDirection = 0;
+                costRec.linkDirection = DirectionCode.Negative;
                 costRec.totalCostS = (int)(linkHdl.obj.Cost * (0.3 - 1.0));
                 costRec.totalCostD = int.MaxValue;
                 costRec.statusS = 1;
@@ -434,17 +434,17 @@ namespace libGis
             return 0;
         }
 
-        public int SetDestination(CmnObjHandle linkHdl, int offset, byte direction = 0xff)
+        public int SetDestination(CmnObjHandle linkHdl, int offset, DirectionCode direction = DirectionCode.None)
         {
             //offsetが暫定
             CostRecord costRec;
             //順方向
-            if (direction == 1 || direction == 0xff)
+            if (direction == DirectionCode.Positive || direction == DirectionCode.None)
             {
-                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, 1);
+                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, DirectionCode.Positive);
 
                 costRec.linkIndex = linkHdl.obj.Index;
-                costRec.linkDirection = 1;
+                costRec.linkDirection = DirectionCode.Positive;
                 costRec.totalCostS = int.MaxValue;
                 //costRec.totalCostD = offset;
                 costRec.totalCostD = (int)(linkHdl.obj.Cost * (0.3 - 1.0));
@@ -455,12 +455,12 @@ namespace libGis
                 goalInfo.Add(costRec);
             }
             //逆方向
-            if (direction == 0 || direction == 0xff)
+            if (direction == DirectionCode.Negative || direction == DirectionCode.None)
             {
-                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, 0);
+                costRec = GetLinkCostInfo(null, linkHdl.tile.TileId, linkHdl.obj.Index, DirectionCode.Negative);
 
                 costRec.linkIndex = linkHdl.obj.Index;
-                costRec.linkDirection = 0;
+                costRec.linkDirection = DirectionCode.Negative;
                 costRec.totalCostS = int.MaxValue;
                 costRec.totalCostD = (int)(linkHdl.obj.Cost * ( - 0.3));
                 //costRec.totalCostD = (int)linkHdl.obj.Length - offset;
@@ -523,17 +523,17 @@ namespace libGis
             return dicTileCostInfo[tileId];
         }
 
-        public CostRecord GetLinkCostInfo(CostRecord currentInfo, uint tileId, int linkIndex, int linkDirection)
+        public CostRecord GetLinkCostInfo(CostRecord currentInfo, uint tileId, int linkIndex, DirectionCode linkDirection)
         {
             if (currentInfo != null && currentInfo.tileCostInfo.tileId == tileId)
             {
-                return currentInfo.tileCostInfo.costInfo[linkIndex][linkDirection];
+                return currentInfo.tileCostInfo.costInfo[linkIndex][(int)linkDirection];
             }
 
             if (!dicTileCostInfo.ContainsKey(tileId))
                 return null;
 
-            return dicTileCostInfo[tileId].costInfo[linkIndex][linkDirection];
+            return dicTileCostInfo[tileId].costInfo[linkIndex][(int)linkDirection];
 
         }
 
