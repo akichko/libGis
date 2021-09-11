@@ -48,12 +48,12 @@ namespace libGis
         public byte CalcTileLv(uint tileId);
 
         //XYL => LatLon
-        public double CalcTileLon(int tileX, byte level);
-        public double CalcTileLat(int tileY, byte level);
+        //public double CalcTileLon(int tileX, byte level);
+        //public double CalcTileLat(int tileY, byte level);
 
         //LatLon => XYL
-        public int CalcTileX(double lon, byte level);
-        public int CalcTileY(double lat, byte level);
+        //protected int CalcTileX(double lon, byte level);
+        //protected int CalcTileY(double lat, byte level);
 
         /* 通常メソッド **********************************************************/
 
@@ -73,15 +73,15 @@ namespace libGis
         //XYL => ID        
         public uint CalcTileId(int x, int y);
 
-        public uint CalcTileId(TileXYL xyl);
+        //public uint CalcTileId(TileXYL xyl);
 
         //ID => XYL
-        public TileXYL CalcTileXYL(uint tileId);
+        //public TileXYL CalcTileXYL(uint tileId);
 
         //LatLon => XYL
-        public TileXYL CalcTileXYL(LatLon latlon, byte level);
+        //public TileXYL CalcTileXYL(LatLon latlon, byte level);
 
-        public TileXYL CalcTileXYL(LatLon latlon);
+        //public TileXYL CalcTileXYL(LatLon latlon);
 
 
         /* タイル演算 */
@@ -138,8 +138,8 @@ namespace libGis
         public abstract double CalcTileLat(int tileY, byte level);
 
         //LatLon => XYL
-        public abstract int CalcTileX(double lon, byte level);
-        public abstract int CalcTileY(double lat, byte level);
+        protected abstract int CalcTileX(double lon, byte level);
+        protected abstract int CalcTileY(double lat, byte level);
 
         /* 通常メソッド **********************************************************/
 
@@ -434,6 +434,7 @@ namespace libGis
     //}
 
 
+
     public class TileXY
     {
         public int x;
@@ -608,6 +609,7 @@ namespace libGis
         public List<CmnObj> objList;
         public UInt16 loadedSubType = 0;
 
+        //コンストラクタ
 
         public CmnObjGroup(UInt32 type)
         {
@@ -615,13 +617,7 @@ namespace libGis
         }
 
 
-        //public CmnObjGroup(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType)
-        //{
-        //    Type = type;
-        //    this.loadedSubType = loadedSubType;
-        //    this.objArray = objArray;
-        //}
-
+        //抽象メソッド
 
         public abstract CmnObj[] GetObjArray();
 
@@ -630,15 +626,54 @@ namespace libGis
         public abstract CmnObj GetObj(UInt16 objIndex);
 
 
-        public abstract IEnumerable<CmnObj> GetIEnumerableObjs();
+        public abstract IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false);
 
-        public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
+        /* メソッド */
+
+        //public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF, UInt16 minSubType = 0)
+        //{
+        //    if (!isGeoSearchable)
+        //        return null;
+
+        //    CmnObjDistance nearestObjDistance = GetIEnumerableObjs()
+        //        ?.Where(x => (x.SubType >= minSubType) && (x.SubType <= maxSubType))
+        //        .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+        //        .OrderBy(x => x.distance)
+        //        .FirstOrDefault();
+
+        //    if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
+        //        return null;
+
+        //    return nearestObjDistance;
+
+        //}
+
+
+        //public virtual CmnObjDistance GetNearestObj(LatLon latlon, ReqSubType reqSubType)
+        //{
+        //    if (!isGeoSearchable)
+        //        return null;
+
+        //    CmnObjDistance nearestObjDistance = GetIEnumerableObjs()
+        //        ?.Where(x => (x.SubType >= reqSubType.minSubType) && (x.SubType <= reqSubType.maxSubType))
+        //        .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+        //        .OrderBy(x => x.distance)
+        //        .FirstOrDefault();
+
+        //    if (nearestObjDistance == null || nearestObjDistance.distance == double.MaxValue)
+        //        return null;
+
+        //    return nearestObjDistance;
+
+        //}
+
+        public virtual CmnObjDistance GetNearestObj(LatLon latlon, Filter<ushort> subTypeFilter)
         {
             if (!isGeoSearchable)
                 return null;
 
             CmnObjDistance nearestObjDistance = GetIEnumerableObjs()
-                ?.Where(x => x.SubType <= maxSubType)
+                ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
                 .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();
@@ -649,7 +684,6 @@ namespace libGis
             return nearestObjDistance;
 
         }
-
 
         //不要ならoverrideで無効化
         public virtual void SetIndex()
@@ -678,18 +712,39 @@ namespace libGis
 
         }
 
-        public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
+        //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
+        //{
+        //    if (!isDrawable)
+        //        return;
+ 
+        //    if (isDrawReverse)
+        //        GetIEnumerableObjs()?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+        //    else
+        //        GetIEnumerableObjs()?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+
+        //}
+
+
+        public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, Filter<ushort> subTypeFilter)
         {
-            if (isDrawable)
-            {
-                if (isDrawReverse)
-                        GetIEnumerableObjs()?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-                    else
-                        GetIEnumerableObjs()?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-            }
+            if (!isDrawable)
+                return;
+
+
+            GetIEnumerableObjs(isDrawReverse)
+                ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+                .ToList()
+                .ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+
+            //if (isDrawReverse)
+            //    GetIEnumerableObjs()?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+            //        .Reverse()
+            //        .ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+            //else
+            //    GetIEnumerableObjs()?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+            //        .ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
 
         }
-
 
         public virtual void AddObj(CmnObj obj)
         {
@@ -807,8 +862,11 @@ namespace libGis
             throw new NotImplementedException();
         }
 
-        public override IEnumerable<CmnObj> GetIEnumerableObjs()
+        public override IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false)
         {
+            if(reverse)
+                return (IEnumerable<CmnObj>)objArray.Reverse();
+
             return (IEnumerable<CmnObj>)objArray;
         }
     }
@@ -911,8 +969,10 @@ namespace libGis
             obj.Index = (UInt16)(objList.Count - 1);
         }
 
-        public override IEnumerable<CmnObj> GetIEnumerableObjs()
+        public override IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false)
         {
+            if(reverse)
+                return ((IEnumerable<CmnObj>)objList).Reverse();
             return (IEnumerable<CmnObj>)objList;
         }
     }
@@ -925,7 +985,7 @@ namespace libGis
         protected Dictionary<UInt32, CmnObjGroup> objGroupDic;
 
         //プロパティ
-
+        public CmnTileCode TileCode => tileCode;
         override public UInt64 Id => (UInt64)tileCode.TileId;
 
         public uint TileId => tileCode.TileId;
@@ -970,6 +1030,7 @@ namespace libGis
 
         //通常メソッド
 
+
         public virtual CmnObjGroup GetObjGroup(UInt32 objType)
         {
             if (objGroupDic.ContainsKey(objType))
@@ -978,6 +1039,24 @@ namespace libGis
                 return null;
         }
 
+        private List<CmnObjGroup> GetObjGroupList()
+        {
+                return objGroupDic
+                    .Select(x => x.Value)
+                    .Where(x => x != null)
+                    .ToList();
+        }
+
+        private List<CmnObjGroup> GetObjGroupList(Filter<uint> objTypefilter = null)
+        {
+            return objGroupDic
+                .Where(x=>objTypefilter?.CheckPass(x.Key) ?? true)
+                .Select(x => x.Value)
+                .Where(x => x != null)
+                .ToList();
+        }
+
+        //削除予定
         private List<CmnObjGroup> GetObjGroupList(UInt32 objTypeBits = 0xFFFFFFFF)
         {
             return objGroupDic
@@ -986,13 +1065,28 @@ namespace libGis
                 .ToList();
         }
 
-        private List<UInt32> GetObjTypeList(UInt32 objTypeBits = 0xFFFFFFFF)
-        {
-            return objGroupDic
-                .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
-                .Select(x => x.Key)
-                .ToList();
-        }
+        //private List<CmnObjGroup> GetObjGroupList(List<UInt32> objTypeList = null)
+        //{
+        //    if (objTypeList == null)
+        //        return objGroupDic
+        //            .Select(x => x.Value)
+        //            .Where(x => x != null)
+        //            .ToList();
+
+        //    return objTypeList
+        //        ?.Select(x => GetObjGroup(x))
+        //        .Where(x => x != null)
+        //        .ToList();
+        //}
+
+        
+        //private List<UInt32> GetObjTypeList(UInt32 objTypeBits = 0xFFFFFFFF)
+        //{
+        //    return objGroupDic
+        //        .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
+        //        .Select(x => x.Key)
+        //        .ToList();
+        //}
 
         public virtual CmnObj[] GetObjArray(UInt32 objType)
         {
@@ -1021,11 +1115,46 @@ namespace libGis
             return GetObjGroup(objType)?.GetObj(objIndex)?.ToCmnObjHandle(this);
         }
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
+
+        //public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
+        //{
+        //    //?必要か要精査
+        //    var ret = GetObjGroupList(objType)
+        //        ?.Select(x => x?.GetNearestObj(latlon, maxSubType)?.ToCmnObjHdlDistance(this))
+        //        .Where(x => x != null)
+        //        .OrderBy(x => x.distance)
+        //        .FirstOrDefault();
+
+        //    return ret;
+        //}
+
+        //public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, ReqType reqType)
+        //{
+        //    return GetObjGroup(reqType.type)?.GetNearestObj(latlon, reqType)?.ToCmnObjHdlDistance(this);
+        //}
+
+
+        //public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, ReqType[] reqTypeArray)
+        //{
+        //    var ret = reqTypeArray
+        //        .Select(x=> GetNearestObj(latlon, x))
+        //        .Where(x => x != null)
+        //        .OrderBy(x => x.distance)
+        //        .FirstOrDefault();
+
+        //    return ret;
+        //}
+
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, uint objType, Filter<ushort> subTypeFilter)
         {
-            //?必要か要精査
-            var ret = GetObjGroupList(objType)
-                ?.Select(x => x?.GetNearestObj(latlon, maxSubType)?.ToCmnObjHdlDistance(this))
+            return GetObjGroup(objType)?.GetNearestObj(latlon, subTypeFilter)?.ToCmnObjHdlDistance(this);
+        }
+
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, CmnObjFilter filter)
+        {
+
+            var ret = GetObjGroupList(filter)
+                .Select(x => GetNearestObj(latlon, x.Type, filter?.GetSubFilter(x.Type)))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();
@@ -1059,25 +1188,35 @@ namespace libGis
 
         //描画用
 
-        public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFFFFFF, UInt16 subType = 0xFFFF)
+
+        /* 削除予定 */
+        //public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFFFFFF, UInt16 subType = 0xFFFF)
+        //{
+        //    GetObjGroupList(objType).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, subType));
+        //    //cbDrawFunc(Type, SubType, getGeometry());
+        //}
+
+        //public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, Dictionary<uint, ushort> typeDic)
+        //{
+        //    foreach(var x in typeDic)
+        //    {
+        //        GetObjGroup(x.Key)?.ExeDrawFunc(this, cbDrawFunc, x.Value);
+        //    }
+        //}
+
+        public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, CmnObjFilter filter)
         {
-            GetObjGroupList(objType).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, subType));
+            GetObjGroupList(filter).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type)));
             //cbDrawFunc(Type, SubType, getGeometry());
         }
 
-        public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, Dictionary<uint, ushort> typeDic)
-        {
-            foreach(var x in typeDic)
-            {
-                GetObjGroup(x.Key)?.ExeDrawFunc(this, cbDrawFunc, x.Value);
-            }
-        }
 
         public virtual void AddObj(UInt32 objType, CmnObj obj)
         {
             GetObjGroup(objType)?.AddObj(obj);
         }
 
+        //削除予定
         public static bool CheckObjTypeMatch(UInt32 objType, UInt32 objTypeBits)
         {
             if ((objTypeBits & objType) != 0)

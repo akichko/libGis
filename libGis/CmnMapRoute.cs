@@ -864,6 +864,8 @@ namespace libGis
     public class RoutingMapType
     {
         public UInt32 roadNwObjType; //探索に必要な地図コンテンツ。リンクだけとは限らない
+        //public ReqType[] roadNwObjReqType;
+        public CmnObjFilter roadNwObjFilter;
         public UInt32 roadGeometryObjType; //結果表示用
         public UInt32 linkObjType; //リンク（コスト・方向あり）
 
@@ -930,12 +932,16 @@ public class CmnRouteMgr
             uint startTileId = mapMgr.tileApi.CalcTileId(orgLatLon);
             List<uint> tileIdListS = mapMgr.tileApi.CalcTileIdAround(orgLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListS.ForEach(x => mapMgr.LoadTile(x));
-            orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, routingMapType.roadNwObjType);
+            //orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, routingMapType.roadNwObjType);
+            //orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjReqType,1);
+            orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjFilter, 1);
 
             uint destTileId = mapMgr.tileApi.CalcTileId(dstLatLon);
             List<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListD.ForEach(x => mapMgr.LoadTile(x));        
-            dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, routingMapType.roadNwObjType);
+            //dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, routingMapType.roadNwObjType);
+            //dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjReqType, 1);
+            dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjFilter, 1);
 
             if (orgHdl == null || dstHdl == null)
                 return -1;

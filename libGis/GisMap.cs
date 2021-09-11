@@ -53,7 +53,7 @@ namespace libGis
         }
 
         // LatLon -> XYL
-        public override int CalcTileX(double lon, byte level)
+        protected override int CalcTileX(double lon, byte level)
         {
             if (lon < 0) lon += 360.0;
 
@@ -62,7 +62,7 @@ namespace libGis
             return (int)x;
         }
 
-        public override int CalcTileY(double lat, byte level)
+        protected override int CalcTileY(double lat, byte level)
         {
             if (lat < 0) lat += 180.0;
 

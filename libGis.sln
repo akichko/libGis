@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "libGis", "libGis\libGis.csproj", "{5BB1FB33-A634-46E1-8055-072946E5A26B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "libGis", "libGis\libGis.csproj", "{5BB1FB33-A634-46E1-8055-072946E5A26B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "libGisTests", "libGisTests\libGisTests.csproj", "{8730A65B-C584-442F-BD01-FCE62F10CB56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{5BB1FB33-A634-46E1-8055-072946E5A26B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5BB1FB33-A634-46E1-8055-072946E5A26B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5BB1FB33-A634-46E1-8055-072946E5A26B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8730A65B-C584-442F-BD01-FCE62F10CB56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8730A65B-C584-442F-BD01-FCE62F10CB56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8730A65B-C584-442F-BD01-FCE62F10CB56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8730A65B-C584-442F-BD01-FCE62F10CB56}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

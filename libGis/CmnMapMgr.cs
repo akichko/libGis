@@ -50,9 +50,9 @@ namespace libGis
                 return null;            
         }
 
-        public void AddTile(uint tileId, CmnTile tile)
+        public void AddTile(CmnTile tile)
         {
-            tileDic.Add(tileId, tile);
+            tileDic.Add(tile.TileId, tile);
         }
 
         public bool RemoveTile(uint tileId)
@@ -66,12 +66,82 @@ namespace libGis
 
     }
 
+    //いずれ切替
+    public class TileMng2
+    {
+        private Dictionary<uint, CmnTile> tileDic;
+
+        public TileMng2()
+        {
+            tileDic = new Dictionary<uint, CmnTile>();
+        }
+        public bool ContainsTile(CmnTileCode tileCode)
+        {
+            return tileDic.ContainsKey(tileCode.TileId);
+        }
+
+        public CmnTile GetTile(CmnTileCode tileCode)
+        {
+
+            if (tileDic.ContainsKey(tileCode.TileId))
+                return tileDic[tileCode.TileId];
+            else
+                return null;
+        }
+
+        public void AddTile(CmnTile tile)
+        {
+            tileDic.Add(tile.TileId, tile);
+        }
+
+        public bool RemoveTile(CmnTileCode tileCode)
+        {
+            return tileDic.Remove(tileCode.TileId);
+        }
+        public List<CmnTile> GetTileList()
+        {
+            return tileDic.Select(x => x.Value).ToList();
+        }
+
+    }
+
+    //public class ReqType : ReqSubType
+    //{
+    //    public uint type;
+
+    //    public ReqType(uint type, ushort maxSubType = ushort.MaxValue, ushort minSubType = 0) : base(maxSubType, minSubType)
+    //    {
+    //        this.type = type;
+    //    }
+
+    //    public ReqType[] ToArray()
+    //    {
+    //        ReqType[] ret = new ReqType[1];
+    //        ret[0] = this;
+    //        return ret;
+    //    }
+    //}
+
+    //public class ReqSubType
+    //{
+    //    public ushort maxSubType = ushort.MaxValue;
+    //    public ushort minSubType = 0;
+
+    //    public ReqSubType() { }
+
+    //    public ReqSubType(ushort maxSubType = ushort.MaxValue, ushort minSubType = 0)
+    //    {
+    //        this.maxSubType = maxSubType;
+    //        this.minSubType = minSubType;
+    //    }
+    //}
+
+
+
     public abstract class CmnMapMgr
     {
         public ICmnTileCodeApi tileApi;
-        //protected Dictionary<uint, CmnTile> tileDic;
-        protected TileMng tileMng;
-        
+        protected TileMng tileMng;        
         protected ICmnMapAccess mal;
 
         //抽象メソッド
@@ -80,7 +150,6 @@ namespace libGis
         public CmnMapMgr(ICmnTileCodeApi tileCodeApi)
         {
             this.tileApi = tileCodeApi;
-            //tileDic = new Dictionary<uint, CmnTile>();
             tileMng = new TileMng();
         }
 
@@ -117,10 +186,9 @@ namespace libGis
         {
             if (!IsConnected) return -1;
 
-            CmnTile tmpTile;
             bool isNew = false;
 
-            tmpTile = tileMng.GetTile(tileId);
+            CmnTile tmpTile = tileMng.GetTile(tileId);
             //if (tileDic.ContainsKey(tileId))
             if (tmpTile != null)
             {
@@ -161,7 +229,7 @@ namespace libGis
 
 
             if (isNew)
-                tileMng.AddTile(tileId, tmpTile);
+                tileMng.AddTile(tmpTile);
             //tileDic.Add(tileId, tmpTile);
 
             return 0;
@@ -218,10 +286,7 @@ namespace libGis
         //}
 
         public bool UnloadTile(uint tileId) => tileMng.RemoveTile(tileId);
-        //{
-        //    return tileDic.Remove(tileId);
-        //}
-
+       
 
         public int AddObj(uint tileId, UInt32 objType, CmnObj obj)
         {
@@ -233,12 +298,7 @@ namespace libGis
         /* タイル検索メソッド ******************************************************/
 
         public CmnTile SearchTile(uint tileId) => tileMng.GetTile(tileId);
-        //{
-            //if (tileDic.ContainsKey(tileId))
-            //    return tileDic[tileId];
-            //else
-            //    return null;
-        //}
+        
 
         public CmnTile SearchTile(LatLon latlon)
         {
@@ -260,8 +320,6 @@ namespace libGis
 
                     if (tileMng.ContainsTile(tmpTileId))
                         retTileList.Add(tileMng.GetTile(tmpTileId));
-                    //if (tileDic.ContainsKey(tmpTileId))
-                    //    retTileList.Add(tileDic[tmpTileId]);
                     else
                         continue;
                 }
@@ -271,10 +329,28 @@ namespace libGis
 
         }
 
+
+        public List<CmnTile> SearchTiles(LatLon latlon, int searchRange = 1)
+        {
+            List<CmnTile> searchTileList;
+
+            //seachRange = Max -> 全タイルから検索
+            if (searchRange == int.MaxValue)
+            {
+                searchTileList = GetLoadedTileList();
+            }
+            else
+            {
+                uint tileId = tileApi.CalcTileId(latlon);
+
+                searchTileList = SearchTiles(tileId, searchRange, searchRange);
+
+            }
+            return searchTileList;
+        }
+
         public List<CmnTile> GetLoadedTileList() => tileMng.GetTileList();
-        //{
-        //    return tileDic.Select(x => x.Value).ToList();
-        //}
+      
 
         public List<uint> GetMapTileIdList()
         {
@@ -295,52 +371,54 @@ namespace libGis
         public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt64 objId)
         {
             return SearchTile(tileId)?.GetObjHandle(objType, objId);
-
-            //CmnTile tmpTile = SearchTile(tileId);
-            //if (tmpTile == null)
-            //    return null;
-            //CmnObj tmpObj = tmpTile.GetObj(objType, objId);
-            //if (tmpObj == null)
-            //    return null;
-
-            //return new CmnObjHandle(tmpTile, tmpObj);
-
         }
 
         public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt16 objIndex)
         {
             return SearchTile(tileId)?.GetObjHandle(objType, objIndex);
-
-            //CmnTile tmpTile = SearchTile(tileId);
-            //if (tmpTile == null)
-            //    return null;
-            //CmnObj tmpObj = tmpTile.GetObj(objType, objIndex);
-            //if (tmpObj == null)
-            //    return null;
-
-            //return new CmnObjHandle(tmpTile, tmpObj);
-
         }
 
-        public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
+        //削除予定
+        //public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
+        //{
+        //    List<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
+
+        //    CmnObjHdlDistance nearestObj = searchTileList
+        //        .Select(x => x?.GetNearestObj(latlon, objType, maxSubType))
+        //        .Where(x => x != null)
+        //        .OrderBy(x => x.distance)
+        //        .FirstOrDefault();
+
+        //    if (nearestObj == null)
+        //        return null;
+
+        //    return nearestObj.objHdl;
+
+        //}
+
+        //public CmnObjHandle SearchObj(LatLon latlon, ReqType[] reqTypeArray, int searchRange = 1)
+        //{
+        //    List<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
+
+        //    CmnObjHdlDistance nearestObj = searchTileList
+        //        .Select(x => x.GetNearestObj(latlon, reqTypeArray))
+        //        .Where(x => x != null)
+        //        .OrderBy(x => x.distance)
+        //        .FirstOrDefault();
+
+        //    if (nearestObj == null)
+        //        return null;
+
+        //    return nearestObj.objHdl;
+
+        //}
+
+        public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange = 1)
         {
-            List<CmnTile> searchTileList;
-
-            //seachRange = Max -> 全タイルから検索
-            if (searchRange == int.MaxValue)
-            {
-                searchTileList = GetLoadedTileList();
-            }
-            else
-            {
-                uint tileId = tileApi.CalcTileId(latlon);
-
-                searchTileList = SearchTiles(tileId, searchRange, searchRange);
-
-            }
+            List<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
 
             CmnObjHdlDistance nearestObj = searchTileList
-                .Select(x => x?.GetNearestObj(latlon, objType, maxSubType))
+                .Select(x => x.GetNearestObj(latlon, filter))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();
