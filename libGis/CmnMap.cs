@@ -33,19 +33,19 @@ namespace libGis
     public interface ICmnTileCodeApi
     {
 
-        public byte DefaultLevel { get; }
-        public byte MinLevel { get; }
-        public byte MaxLevel { get; }
+        byte DefaultLevel { get; }
+        byte MinLevel { get; }
+        byte MaxLevel { get; }
 
         /* 抽象メソッド ********************************************************/
 
         //XYL => ID
-        public uint CalcTileId(int x, int y, byte level);
+        uint CalcTileId(int x, int y, byte level);
 
         //ID => XYL
-        public int CalcTileX(uint tileId);
-        public int CalcTileY(uint tileId);
-        public byte CalcTileLv(uint tileId);
+        int CalcTileX(uint tileId);
+        int CalcTileY(uint tileId);
+        byte CalcTileLv(uint tileId);
 
         //XYL => LatLon
         //public double CalcTileLon(int tileX, byte level);
@@ -60,18 +60,18 @@ namespace libGis
         /* タイルコード変換 */
 
         //ID => LatLon
-        public LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center);
+        LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center);
 
         //XYL => LatLon
-        public LatLon CalcLatLon(TileXYL xyl);
+        LatLon CalcLatLon(TileXYL xyl);
 
         //LatLon => ID
-        public uint CalcTileId(LatLon latlon, byte level);
+        uint CalcTileId(LatLon latlon, byte level);
 
-        public uint CalcTileId(LatLon latlon);
+        uint CalcTileId(LatLon latlon);
 
         //XYL => ID        
-        public uint CalcTileId(int x, int y);
+        uint CalcTileId(int x, int y);
 
         //public uint CalcTileId(TileXYL xyl);
 
@@ -85,26 +85,26 @@ namespace libGis
 
 
         /* タイル演算 */
-        public uint CalcOffsetTileId(uint baseTileId, Int16 offsetX, Int16 offsetY);
+        uint CalcOffsetTileId(uint baseTileId, Int16 offsetX, Int16 offsetY);
 
-        public double CalcTileLengthX(uint tileId);
-        public double CalcTileLengthY(uint tileId);
-
-
-        public double CalcTileDistance(uint tileIdA, uint tileIdB);
-
-        public double CalcTileMinDistance(uint tileIdA, uint tileIdB);
-
-        public List<uint> CalcTileIdAround(uint tileId, int tileRangeX, int tileRangeY);
-
-        public List<uint> CalcTileIdAround(LatLon latlon, double radius, byte level);
-
-        public TileXY CalcTileOffset(uint baseTileId, uint tileId);
-
-        public TileXY CalcTileAbsOffset(uint tileIdA, uint tileIdB);
+        double CalcTileLengthX(uint tileId);
+        double CalcTileLengthY(uint tileId);
 
 
-        public List<uint> CalcTileEllipse(uint tileIdA, uint tileIdB, double ratio);
+        double CalcTileDistance(uint tileIdA, uint tileIdB);
+
+        double CalcTileMinDistance(uint tileIdA, uint tileIdB);
+
+        List<uint> CalcTileIdAround(uint tileId, int tileRangeX, int tileRangeY);
+
+        List<uint> CalcTileIdAround(LatLon latlon, double radius, byte level);
+
+        TileXY CalcTileOffset(uint baseTileId, uint tileId);
+
+        TileXY CalcTileAbsOffset(uint tileIdA, uint tileIdB);
+
+
+        List<uint> CalcTileEllipse(uint tileIdA, uint tileIdB, double ratio);
 
 
     }
@@ -633,6 +633,8 @@ namespace libGis
 
         public abstract CmnObj GetObj(UInt16 objIndex);
 
+        public abstract void SetObjArray(CmnObj[] objArray);
+
 
         public abstract IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false);
 
@@ -714,10 +716,15 @@ namespace libGis
             if (!isDrawable)
                 return;
 
-            GetIEnumerableObjs(isDrawReverse)
-                ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
-                .ToList()
-                .ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+            foreach(var x in GetIEnumerableObjs(isDrawReverse)?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true))
+            {
+                x.ExeCallbackFunc(tile, cbDrawFunc);
+            }
+
+            //GetIEnumerableObjs(isDrawReverse)
+            //    ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+            //    .ToList()
+            //    .ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
 
             //if (isDrawReverse)
             //    GetIEnumerableObjs()?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
@@ -843,6 +850,11 @@ namespace libGis
 
             return (IEnumerable<CmnObj>)objArray;
         }
+
+        public override void SetObjArray(CmnObj[] objArray)
+        {
+            this.objArray = objArray;
+        }
     }
 
 
@@ -949,6 +961,11 @@ namespace libGis
                 return ((IEnumerable<CmnObj>)objList).Reverse();
             return (IEnumerable<CmnObj>)objList;
         }
+
+        public override void SetObjArray(CmnObj[] objArray)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     /* タイル ******************************************************************/
@@ -1013,21 +1030,21 @@ namespace libGis
                 return null;
         }
 
-        private List<CmnObjGroup> GetObjGroupList()
-        {
-                return objGroupDic
-                    .Select(x => x.Value)
-                    .Where(x => x != null)
-                    .ToList();
-        }
-
-        private List<CmnObjGroup> GetObjGroupList(Filter<uint> objTypefilter = null)
+        private IEnumerable<CmnObjGroup> GetObjGroupList()
         {
             return objGroupDic
-                .Where(x=>objTypefilter?.CheckPass(x.Key) ?? true)
                 .Select(x => x.Value)
-                .Where(x => x != null)
-                .ToList();
+                .Where(x => x != null);
+                    //.ToList();
+        }
+
+        private IEnumerable<CmnObjGroup> GetObjGroupList(Filter<uint> objTypefilter = null)
+        {
+            return objGroupDic
+                .Where(x => objTypefilter?.CheckPass(x.Key) ?? true)
+                .Select(x => x.Value)
+                .Where(x => x != null);
+                //.ToList();
         }
 
         //削除予定
@@ -1180,7 +1197,12 @@ namespace libGis
 
         public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, CmnObjFilter filter)
         {
-            GetObjGroupList(filter).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type)));
+            foreach (var x in GetObjGroupList(filter))
+            {
+                x.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type));
+            }
+            //GetObjGroupList(filter).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type)));
+
             //cbDrawFunc(Type, SubType, getGeometry());
         }
 
