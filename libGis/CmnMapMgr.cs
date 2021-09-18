@@ -429,21 +429,27 @@ namespace Akichko.libGis
 
         //}
 
-        public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange = 1)
+        public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange, int timeStamp)
         {
-            IEnumerable<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
-
-            CmnObjHdlDistance nearestObj = searchTileList
-                .Select(x => x.GetNearestObj(latlon, filter))
+            return SearchTiles(latlon, searchRange)
+                .Select(x => x.GetNearestObj(latlon, filter, timeStamp))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
-                .FirstOrDefault();
+                .FirstOrDefault()
+                ?.objHdl;
 
-            if (nearestObj == null)
-                return null;
+            //IEnumerable<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
 
-            return nearestObj.objHdl;
+            //CmnObjHdlDistance nearestObj = searchTileList
+            //    .Select(x => x.GetNearestObj(latlon, filter))
+            //    .Where(x => x != null)
+            //    .OrderBy(x => x.distance)
+            //    .FirstOrDefault();
 
+            //if (nearestObj == null)
+            //    return null;
+
+            //return nearestObj.objHdl;
         }
 
         //曖昧検索

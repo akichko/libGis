@@ -486,6 +486,10 @@ namespace Akichko.libGis
 
         public virtual double Length => Geometry != null ? LatLon.CalcLength(Geometry) : 0;
 
+        public virtual bool Enable => true; //論理削除など
+
+
+
         /* 経路計算用 ----------------------------------------------------------*/
 
         public virtual int Cost => Geometry != null ? (int)Length : 10; //override推奨
@@ -524,6 +528,9 @@ namespace Akichko.libGis
         {
             return new CmnObjHandle(tile, this, direction);
         }
+
+
+        public virtual bool CheckTimeStamp(int timeStamp) => true;
 
         /* 描画用 ----------------------------------------------------------*/
 
@@ -687,13 +694,14 @@ namespace Akichko.libGis
 
         //}
 
-        public virtual CmnObjDistance GetNearestObj(LatLon latlon, Filter<ushort> subTypeFilter)
+        public virtual CmnObjDistance GetNearestObj(LatLon latlon, Filter<ushort> subTypeFilter, int timeStamp)
         {
             if (!isGeoSearchable)
                 return null;
 
             CmnObjDistance nearestObjDistance = GetIEnumerableObjs()
                 ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+                .Where(x => x.CheckTimeStamp(timeStamp))
                 .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();
@@ -748,6 +756,7 @@ namespace Akichko.libGis
 
         public virtual void AddObj(CmnObj obj)
         {
+            throw new NotImplementedException();
         }
     }
 
@@ -797,8 +806,8 @@ namespace Akichko.libGis
         {
             if (objArray == null || objIndex >= objArray.Length)
                 return null;
-            else
-                return objArray[objIndex];
+            
+            return objArray[objIndex];
         }
 
         //public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF)
@@ -1116,16 +1125,16 @@ namespace Akichko.libGis
         //    return ret;
         //}
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, uint objType, Filter<ushort> subTypeFilter)
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, uint objType, Filter<ushort> subTypeFilter, int timeStamp)
         {
-            return GetObjGroup(objType)?.GetNearestObj(latlon, subTypeFilter)?.ToCmnObjHdlDistance(this);
+            return GetObjGroup(objType)?.GetNearestObj(latlon, subTypeFilter, timeStamp)?.ToCmnObjHdlDistance(this);
         }
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, CmnObjFilter filter)
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, CmnObjFilter filter, int timeStamp)
         {
 
             var ret = GetObjGroupList(filter)
-                .Select(x => x.GetNearestObj(latlon, filter?.GetSubFilter(x.Type))?.ToCmnObjHdlDistance(this))
+                .Select(x => x.GetNearestObj(latlon, filter?.GetSubFilter(x.Type), timeStamp)?.ToCmnObjHdlDistance(this))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
                 .FirstOrDefault();

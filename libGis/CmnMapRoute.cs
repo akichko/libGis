@@ -588,7 +588,7 @@ namespace Akichko.libGis
 
         /****** 経路計算メイン ******************************************************************************/
 
-        public int CalcRouteStep()
+        public ResultCode CalcRouteStep()
         {
             //処理側決定
             bool isStartSide = unprocessed.IsNextStartSide();
@@ -626,7 +626,7 @@ namespace Akichko.libGis
             if (currentCostInfo == null)
             {
                 Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
-
+                return ResultCode.NotFound;
                 //Console.WriteLine("Fatal Error");
                 //throw new NotImplementedException();
             }
@@ -640,7 +640,7 @@ namespace Akichko.libGis
                     finalRecord = currentCostInfo.back;
                 else
                     finalRecord = currentCostInfo.next;
-                return -1;
+                return ResultCode .Sccess;
             }
 
             //処理済みデータ　⇒キュー取り出し時に削除
@@ -766,7 +766,7 @@ namespace Akichko.libGis
             //キュー取り出し時に削除
             //unprocessed.Delete(minIndex, isStartSide);
 
-            return 0;
+            return ResultCode.Continue;
         }
 
         public virtual bool IsCalcSkip(CostRecord currentCostInfo, CmnObjHandle nextLinkRef)
@@ -794,9 +794,9 @@ namespace Akichko.libGis
             return false;
         }
 
-        public int CalcRoute()
+        public ResultCode CalcRoute()
         {
-            int ret;
+            ResultCode ret;
 
             int pastTickCount = Environment.TickCount;
             int nowTickCount;
@@ -816,10 +816,10 @@ namespace Akichko.libGis
 
                 logCalcCount++;
 
-                if (ret != 0) break;
+                if (ret != ResultCode.Continue)
+                    break;
             }
-
-            return 0;
+            return ret;
         }
 
 
@@ -929,11 +929,30 @@ namespace Akichko.libGis
         public Int32 backLinkRefType; //前リンクの参照タイプ
     }
 
+    public class RouteResult
+    {
+        public ResultCode resultCode;
+        public List<CostRecord> routeResult;
 
-/****** 経路計算マネージャ ******************************************************************************/
+        public RouteResult(ResultCode resultCode, List<CostRecord> routeResult)
+        {
+            this.resultCode = resultCode;
+            this.routeResult = routeResult;
+        }
+    }
+
+    public enum ResultCode
+    {
+        Sccess = 0,
+        Continue,
+        NotFound,
+        CalcError
+    }
+
+    /****** 経路計算マネージャ ******************************************************************************/
 
 
-public class CmnRouteMgr
+    public class CmnRouteMgr
     {
 
         protected CmnMapMgr mapMgr;
@@ -990,14 +1009,14 @@ public class CmnRouteMgr
             tileIdListS.ForEach(x => mapMgr.LoadTile(x, null));
             //orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, routingMapType.roadNwObjType);
             //orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjReqType,1);
-            orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjFilter, 1);
+            orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjFilter, 1, -1);
 
             uint destTileId = mapMgr.tileApi.CalcTileId(dstLatLon);
             List<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListD.ForEach(x => mapMgr.LoadTile(x, null));        
             //dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, routingMapType.roadNwObjType);
             //dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjReqType, 1);
-            dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjFilter, 1);
+            dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjFilter, 1, -1);
 
             if (orgHdl == null || dstHdl == null)
                 return -1;
@@ -1035,15 +1054,15 @@ public class CmnRouteMgr
 
 
         //ダイクストラ計算
-        public int CalcRoute()
+        public RouteResult CalcRoute()
         {
             //計算
-            dykstra.CalcRoute();
+            ResultCode ret = dykstra.CalcRoute();
 
             //結果出力
             List<CostRecord> result = dykstra.MakeRouteInfo();
 
-            return 0;
+            return new RouteResult(ret, result);
         }
 
 
