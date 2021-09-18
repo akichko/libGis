@@ -27,7 +27,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace libGis
+namespace Akichko.libGis
 {
     public class LatLon
     {

@@ -27,7 +27,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace libGis
+namespace Akichko.libGis
 {
     public abstract class Filter<KeyType>
     {
@@ -40,6 +40,7 @@ namespace libGis
         bool boolOutOfRange = false; //ƒŒƒ“ƒWŠO
         KeyType min;
         KeyType max;
+        public KeyType SubTypeRangeMax => max;
 
         public RangeFilter(KeyType min, KeyType max, bool boolOutOfRange = false)
         {
@@ -54,6 +55,7 @@ namespace libGis
             else
                 return boolOutOfRange;
         }
+
     }
 
 
@@ -183,6 +185,8 @@ namespace libGis
             dic[type] = subFilter;
             return this;
         }
+
+        public ushort SubTypeRangeMax(uint type) => ((RangeFilter<ushort>)dic[type])?.SubTypeRangeMax ?? ushort.MaxValue;
 
     }
 }

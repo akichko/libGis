@@ -28,7 +28,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 
-namespace libGis
+namespace Akichko.libGis
 {
     public interface ICmnTileCodeApi
     {
@@ -76,12 +76,12 @@ namespace libGis
         //public uint CalcTileId(TileXYL xyl);
 
         //ID => XYL
-        //public TileXYL CalcTileXYL(uint tileId);
+        public TileXYL CalcTileXYL(uint tileId);
 
         //LatLon => XYL
-        //public TileXYL CalcTileXYL(LatLon latlon, byte level);
+        public TileXYL CalcTileXYL(LatLon latlon, byte level);
 
-        //public TileXYL CalcTileXYL(LatLon latlon);
+        public TileXYL CalcTileXYL(LatLon latlon);
 
 
         /* タイル演算 */
@@ -640,6 +640,16 @@ namespace libGis
 
         /* メソッド */
 
+        public bool IsContentsLoaded(ushort subType)
+        {
+            if (loadedSubType >= subType)
+                return true;
+            else
+                return false;
+        }
+
+
+
         //public virtual CmnObjDistance GetNearestObj(LatLon latlon, UInt16 maxSubType = 0xFFFF, UInt16 minSubType = 0)
         //{
         //    if (!isGeoSearchable)
@@ -716,15 +726,15 @@ namespace libGis
             if (!isDrawable)
                 return;
 
-            foreach(var x in GetIEnumerableObjs(isDrawReverse)?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true))
-            {
-                x.ExeCallbackFunc(tile, cbDrawFunc);
-            }
+            //foreach(var x in GetIEnumerableObjs(isDrawReverse)?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true))
+            //{
+            //    x.ExeCallbackFunc(tile, cbDrawFunc);
+            //}
 
-            //GetIEnumerableObjs(isDrawReverse)
-            //    ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
-            //    .ToList()
-            //    .ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
+            GetIEnumerableObjs(isDrawReverse)
+                ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+                .ToList()
+                .ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
 
             //if (isDrawReverse)
             //    GetIEnumerableObjs()?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
@@ -1047,37 +1057,7 @@ namespace libGis
                 //.ToList();
         }
 
-        //削除予定
-        //private List<CmnObjGroup> GetObjGroupList(UInt32 objTypeBits = 0xFFFFFFFF)
-        //{
-        //    return objGroupDic
-        //        .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
-        //        .Select(x => x.Value)
-        //        .ToList();
-        //}
 
-        //private List<CmnObjGroup> GetObjGroupList(List<UInt32> objTypeList = null)
-        //{
-        //    if (objTypeList == null)
-        //        return objGroupDic
-        //            .Select(x => x.Value)
-        //            .Where(x => x != null)
-        //            .ToList();
-
-        //    return objTypeList
-        //        ?.Select(x => GetObjGroup(x))
-        //        .Where(x => x != null)
-        //        .ToList();
-        //}
-
-        
-        //private List<UInt32> GetObjTypeList(UInt32 objTypeBits = 0xFFFFFFFF)
-        //{
-        //    return objGroupDic
-        //        .Where(x => CheckObjTypeMatch(x.Key, objTypeBits))
-        //        .Select(x => x.Key)
-        //        .ToList();
-        //}
 
         public virtual CmnObj[] GetObjArray(UInt32 objType)
         {
@@ -1197,7 +1177,7 @@ namespace libGis
 
         public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, CmnObjFilter filter)
         {
-            foreach (var x in GetObjGroupList(filter))
+            foreach (var x in GetObjGroupList(filter) ?? Enumerable.Empty<CmnObjGroup>())
             {
                 x.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type));
             }
@@ -1221,6 +1201,19 @@ namespace libGis
                 return false;
         }
 
+        public bool IsContentsLoaded(UInt32 objType, ushort subType)
+        {
+            //CmnObjGroup objGroup = GetObjGroup(objType);
+            //if (objGroup == null)
+            //    return false;
+            //if (objGroup.loadedSubType >= subType)
+            //    return true;
+            //else
+            //    return false;
+
+            return GetObjGroup(objType)?.IsContentsLoaded(subType) ?? false;
+
+        }
 
     }
 

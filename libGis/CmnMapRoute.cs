@@ -27,7 +27,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace libGis
+namespace Akichko.libGis
 {
     public class CostRecord
     {
@@ -46,7 +46,34 @@ namespace libGis
         public CostRecord next;
 
         public int TotalCost(bool isStartSide) => isStartSide ? totalCostS : totalCostD;
+
+        public void SetTotalCost(bool isStartSide, int value)
+        {
+            if (isStartSide)
+                totalCostS = value;
+            else
+                totalCostD = value;
+        }
+        
         public int Status(bool isStartSide) => isStartSide ? statusS : statusD;
+
+        public void SetStatus(bool isStartSide, byte value)
+        {
+            if (isStartSide)
+                statusS = value;
+            else
+                statusD = value;
+        }
+
+        public CostRecord BackCostRecord(bool isStartSide) => isStartSide ? back : next;
+
+        public void SetBackCostRecord(bool isStartSide, CostRecord value)
+        {
+            if (isStartSide)
+                back = value;
+            else
+                next = value;
+        }
 
         public UInt64 LinkId => tileCostInfo.linkArray[linkIndex].Id;
 
@@ -156,13 +183,13 @@ namespace libGis
             int tmpMinIndex = -1;
             for (int i = 0; i < numElement; i++)
             {
-                //どこかにバグありそう
-                //if (unprocessedS[i].statusS == 2)
-                //{
-                //    Delete(i, isStartSide);
-                //    if (i == numElementS - 1)
-                //        break;
-                //}
+                //まだバグ残っているかも
+                if (unprocessed[i].Status(isStartSide) == 2)
+                {
+                    Delete(i);
+                    if (i == numElement)
+                        break;
+                }
 
                 if (unprocessed[i].TotalCost(isStartSide) < tmpMinCost)
                 {
@@ -219,6 +246,20 @@ namespace libGis
         {
             return GetCostMgr(isStartSide).GetCostRecord(index);
         }
+
+        public CostRecord GetMinCostRecord(bool isStartSide)
+        {
+            int index = GetCostMgr(isStartSide).GetMinCostIndex(isStartSide);
+            if (index < 0)
+                return null;
+
+            CostRecord ret = GetCostMgr(isStartSide).GetCostRecord(index);
+            Delete(index, isStartSide);
+
+            return ret;
+
+        }
+
 
         public bool IsNextStartSide()
         {
@@ -501,7 +542,7 @@ namespace libGis
             if (tmpTileCostInfo.tile != null)
                 return 0;
 
-            mapMgr.LoadTile(tileId, routingMapType.roadNwObjType, tmpTileCostInfo.maxUsableRoadType);
+            mapMgr.LoadTile(tileId, routingMapType.roadNwObjTypeList, tmpTileCostInfo.maxUsableRoadType);
             CmnTile tmpTile = mapMgr.SearchTile(tileId);
 
             tmpTileCostInfo.SetTileCostInfo(tmpTile, routingMapType.linkObjType);
@@ -557,32 +598,37 @@ namespace libGis
             //    isStartSide = false;
 
 
-            //計算対象選定　処理未完了＆コスト最小を探す
-            int minIndex = unprocessed.GetMinCostIndex(isStartSide);
+            ////計算対象選定　処理未完了＆コスト最小を探す
+            //int minIndex = unprocessed.GetMinCostIndex(isStartSide);
 
-            //探索失敗
-            if (minIndex < 0)
-            {
-                Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
+            ////探索失敗
+            //if (minIndex < 0)
+            //{
+            //    Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
 
-                //途中状態を出力
+            //    //途中状態を出力
 
-                //dicTileCostInfo.Where(x=>x.Value.tile != null)
-                //foreach (var tileCostInfo in dicTileCostInfo) {
-                //    tileCostInfo.
-                //}
-                //routeResult = 
+            //    //dicTileCostInfo.Where(x=>x.Value.tile != null)
+            //    //foreach (var tileCostInfo in dicTileCostInfo) {
+            //    //    tileCostInfo.
+            //    //}
+            //    //routeResult = 
 
-                return -1;
-            }
+            //    return -1;
+            //}
 
-            CostRecord currentCostInfo = unprocessed.GetCostRecord(minIndex, isStartSide);
+            //CostRecord currentCostInfo = unprocessed.GetCostRecord(minIndex, isStartSide);
+
+
+            CostRecord currentCostInfo = unprocessed.GetMinCostRecord(isStartSide);
 
             //異常
             if (currentCostInfo == null)
             {
-                Console.WriteLine("Fatal Error");
-                throw new NotImplementedException();
+                Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
+
+                //Console.WriteLine("Fatal Error");
+                //throw new NotImplementedException();
             }
 
             //探索成功
@@ -597,10 +643,10 @@ namespace libGis
                 return -1;
             }
 
-            //処理済みデータ
+            //処理済みデータ　⇒キュー取り出し時に削除
             if (currentCostInfo.Status(isStartSide) == 2)
             {
-                unprocessed.Delete(minIndex, isStartSide);
+                //unprocessed.Delete(minIndex, isStartSide);
                 return 0;
             }
 
@@ -648,21 +694,7 @@ namespace libGis
             //接続リンクとコスト参照
             foreach (CmnObjHandle nextLinkRef in connectLinkList ?? new List<CmnObjHandle>())
             {
-                //探索除外：　Uターンリンク、タイルに応じた使用可能道路種別でない、スタート付近で道路種別が下がる移動、一方通行逆走
-
-                //if (nextLinkRef.obj == currentDLinkHdl.obj
-                //    || nextLinkRef.obj.SubType > currentCostInfo.tileCostInfo.maxUsableRoadType
-                //    || (nextLinkRef.obj.IsOneway && nextLinkRef.obj.Oneway != nextLinkRef.direction))
-                //    continue;
-                ////.Where(x => x.mapLink != currentLinkHdl.mapLink && x.mapLink.roadType <= currentCostInfo.tileCostInfo.maxUsableRoadType) )
-
-                ////要改善
-                //if (nextLinkRef.obj.SubType >= 6
-                //    && currentDLinkHdl.obj.SubType < nextLinkRef.obj.SubType
-                //    && currentCostInfo.tileCostInfo.DistFromDestTile > 8000)
-                //    continue;
-
-
+                //探索除外
                 if (IsCalcSkip(currentCostInfo, nextLinkRef))
                     continue;
 
@@ -678,10 +710,26 @@ namespace libGis
                 //ゴールフラグの場合は、残コストを足す。足すけど保存NG？ゴール側statusを見るべき？
                 //双方向ダイクストラでは不要
 
+
+#if false //速度が課題
+                //並走レーンをいずれ考慮する場合は、自コストは除外＋車線変更コスト
+                nextTotalCost = currentCostInfo.TotalCost(isStartSide) + currentDLinkHdl.obj.Cost;
+
+                //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
+                if (nextCostInfo.Status(isStartSide) == 0 || nextTotalCost < nextCostInfo.TotalCost(isStartSide))
+                {
+                    nextCostInfo.SetTotalCost(isStartSide, nextTotalCost);
+                    nextCostInfo.SetStatus(isStartSide, 1);
+                    nextCostInfo.SetBackCostRecord(isStartSide, currentCostInfo);
+                    unprocessed.Add(nextCostInfo, isStartSide);
+                }
+                //リンクの探索ステータス更新
+                currentCostInfo.SetStatus(isStartSide, 2);
+
+#else
                 if (isStartSide)
                 {
                     //並走レーンをいずれ考慮する場合は、自コストは除外＋車線変更コスト
-                    //nextTotalCost = currentCostInfo.totalCostS + nextLinkRef.obj.Cost;
                     nextTotalCost = currentCostInfo.totalCostS + currentDLinkHdl.obj.Cost;
 
                     //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
@@ -689,7 +737,6 @@ namespace libGis
                     {
                         nextCostInfo.totalCostS = nextTotalCost;
                         nextCostInfo.statusS = 1;
-                        //nextCostInfo.tileCostInfo.status = 1;
                         nextCostInfo.back = currentCostInfo;
                         unprocessed.Add(nextCostInfo, isStartSide);
                     }
@@ -699,7 +746,6 @@ namespace libGis
                 }
                 else //目的地側
                 {
-                    //nextTotalCost = currentCostInfo.totalCostD + nextLinkRef.obj.Cost;
                     nextTotalCost = currentCostInfo.totalCostD + currentDLinkHdl.obj.Cost;
 
                     //コストを足した値を、接続リンクの累積コストを見て、より小さければ上書き
@@ -707,7 +753,6 @@ namespace libGis
                     {
                         nextCostInfo.totalCostD = nextTotalCost;
                         nextCostInfo.statusD = 1;
-                        //nextCostInfo.tileCostInfo.status = 1;
                         nextCostInfo.next = currentCostInfo;
                         unprocessed.Add(nextCostInfo, isStartSide);
                     }
@@ -715,28 +760,32 @@ namespace libGis
                     currentCostInfo.statusD = 2;
 
                 }
-
+#endif
             }
 
-            unprocessed.Delete(minIndex, isStartSide);
+            //キュー取り出し時に削除
+            //unprocessed.Delete(minIndex, isStartSide);
 
             return 0;
         }
 
         public virtual bool IsCalcSkip(CostRecord currentCostInfo, CmnObjHandle nextLinkRef)
         {
-
             CmnObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
 
+            //Uターンリンク
             if (nextLinkRef.IsEqualTo(currentDLinkHdl))
                 return true;
 
+            //タイルに応じた使用可能道路種別でない
             if (nextLinkRef.SubType > currentCostInfo.tileCostInfo.maxUsableRoadType)
                 return true;
 
-            if(nextLinkRef.IsOneway && nextLinkRef.Oneway != nextLinkRef.direction)
+            //一方通行逆走
+            if (nextLinkRef.IsOneway && nextLinkRef.Oneway != nextLinkRef.direction)
                 return true;
 
+            //スタート付近で道路種別が下がる移動
             if (nextLinkRef.SubType >= rankDownRestrictSubType
                 && currentDLinkHdl.SubType < nextLinkRef.SubType
                 && currentCostInfo.tileCostInfo.DistFromDestTile > rankDownRestrictDistance)
@@ -810,10 +859,15 @@ namespace libGis
 
         public LatLon[] GetRouteGeometry()
         {
-            routeResult.ForEach(x =>
+            foreach(var x in routeResult.Distinct())
             {
-                mapMgr.LoadTile(x.tileCostInfo.tileId, routingMapType.roadGeometryObjType, x.tileCostInfo.maxUsableRoadType);
-            });
+                mapMgr.LoadTile(x.tileCostInfo.tileId, new List<uint> { routingMapType.roadGeometryObjType }, x.tileCostInfo.maxUsableRoadType);
+            }
+
+            //routeResult.ForEach(x =>
+            //{
+            //    mapMgr.LoadTile(x.tileCostInfo.tileId, routingMapType.roadGeometryObjType, x.tileCostInfo.maxUsableRoadType);
+            //});
 
             List<LatLon> retList = new List<LatLon>();
             retList.Add(routeResult[0].DLinkHdl.DirGeometry[0]);
@@ -864,6 +918,8 @@ namespace libGis
     public class RoutingMapType
     {
         public UInt32 roadNwObjType; //探索に必要な地図コンテンツ。リンクだけとは限らない
+        public List<UInt32> roadNwObjTypeList; //探索に必要な地図コンテンツ。リンクだけとは限らない
+
         //public ReqType[] roadNwObjReqType;
         public CmnObjFilter roadNwObjFilter;
         public UInt32 roadGeometryObjType; //結果表示用
@@ -931,14 +987,14 @@ public class CmnRouteMgr
 
             uint startTileId = mapMgr.tileApi.CalcTileId(orgLatLon);
             List<uint> tileIdListS = mapMgr.tileApi.CalcTileIdAround(orgLatLon, 1000, mapMgr.tileApi.DefaultLevel);
-            tileIdListS.ForEach(x => mapMgr.LoadTile(x));
+            tileIdListS.ForEach(x => mapMgr.LoadTile(x, null));
             //orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, routingMapType.roadNwObjType);
             //orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjReqType,1);
             orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjFilter, 1);
 
             uint destTileId = mapMgr.tileApi.CalcTileId(dstLatLon);
             List<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
-            tileIdListD.ForEach(x => mapMgr.LoadTile(x));        
+            tileIdListD.ForEach(x => mapMgr.LoadTile(x, null));        
             //dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, routingMapType.roadNwObjType);
             //dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjReqType, 1);
             dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjFilter, 1);

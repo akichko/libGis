@@ -25,9 +25,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace libGis
+namespace Akichko.libGis
 {
     public class TileMng{
         private Dictionary<uint, CmnTile> tileDic;
@@ -144,6 +145,8 @@ namespace libGis
         protected TileMng tileMng;        
         protected ICmnMapAccess mal;
 
+        Semaphore semaphore = new Semaphore(0, 1, "tileMng");
+
         //抽象メソッド
         //現状なし。MAL側
 
@@ -182,7 +185,8 @@ namespace libGis
 
         public abstract CmnTile CreateTile(uint tileId);
 
-        public virtual int LoadTile(uint tileId, UInt32 reqType = 0xFFFFFFFF, UInt16 reqMaxSubType = 0xFFFF)
+        //削除予定？
+        public virtual int LoadTile(uint tileId, UInt32 reqType, UInt16 reqMaxSubType = 0xFFFF)
         {
             if (!IsConnected) return -1;
 
@@ -192,14 +196,15 @@ namespace libGis
             //if (tileDic.ContainsKey(tileId))
             if (tmpTile != null)
             {
-                    //tmpTile = tileDic[tileId];
+                //tmpTile = tileDic[tileId];
 
-                    //更新必要有無チェック
+                //更新必要有無チェック
 
-                    //未読み込み（NULL）のObgGroupがあるか
-                    int numObjGrToBeRead = mal.GetMapContentTypeList()
+                //未読み込み（NULL）のObgGroupがあるか
+                int numObjGrToBeRead = mal.GetMapContentTypeList()
                     .Where(x => (reqType & x) == x)
                     .Select(x => tmpTile.GetObjGroup(x))
+                    //.Where(x => x == null)
                     .Count(x => x == null || x.loadedSubType < reqMaxSubType);
 
 
@@ -236,54 +241,63 @@ namespace libGis
 
         }
 
+        public virtual int LoadTile(uint tileId, CmnObjFilter filter = null)
+        {
+            if (!IsConnected)
+                return -1;
 
-        //public int LoadTile(uint tileId, bool multiContents = true, UInt16 reqType = 0xFFFF, UInt16 reqMaxSubType = 0xFFFF)
-        //{
-        //    if (!IsConnected) return -1;
+            //タイル読み込み
+            CmnTile tmpTile = tileMng.GetTile(tileId);
+            if (tmpTile == null)
+            {
+                //タイルがなければ作成
+                tmpTile = CreateTile(tileId);
+                tileMng.AddTile(tmpTile);
+            }
 
-        //    CmnTile tmpTile;
-        //    bool isNew = false;
+            //ObjGroup読み込み
+            List<CmnObjGroup> tmpObjGrList = mal.GetMapContentTypeList()
+                .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
+                .Select(type => mal.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
+                .ToList<CmnObjGroup>();
 
-        //    if (tileDic.ContainsKey(tileId))
-        //    {
-        //        tmpTile = tileDic[tileId];  
-        //    }
-        //    else
-        //    {
-        //        tmpTile = mal.CreateTile(tileId);
-        //        isNew = true;
-        //    }
+            //インデックス付与（仮）
+            tmpObjGrList.ForEach(x => x.SetIndex());
 
-        //    List<UInt16> objTypeList;
-        //    if (multiContents)
-        //        objTypeList = mal.GetMapContentTypeList();
-        //    else
-        //    {
-        //        objTypeList = new List<UInt16>();
-        //        objTypeList.Add(reqType);
-        //    }
+            //タイル更新
+            tmpTile.UpdateObjGroupList(tmpObjGrList);
 
-        //    foreach (UInt32 objType in objTypeList)
-        //    {
-        //        if ((reqType & objType) == objType)
-        //        {
-        //            //既存データチェック
-        //            CmnObjGroup currentMapContents = tmpTile.GetObjGroup(objType);
-        //            if (currentMapContents != null && currentMapContents.loadedSubType >= reqMaxSubType)
-        //            {
-        //                continue;
-        //            }
+            return 0;
+        }
 
-        //            tmpTile.UpdateObjGroup(objType, mal.LoadObjGroup(tileId, objType, reqMaxSubType));
-        //        }
-        //    }
+        public virtual int LoadTile(uint tileId, List<uint> reqTypeList, UInt16 reqMaxSubType = 0xFFFF)
+        {
+            if (!IsConnected)
+                return -1;
 
-        //    if (isNew)
-        //        tileDic.Add(tileId, tmpTile);
+            //タイル読み込み
+            CmnTile tmpTile = tileMng.GetTile(tileId);
+            if (tmpTile == null)
+            {
+                //タイルがなければ作成
+                tmpTile = CreateTile(tileId);
+                tileMng.AddTile(tmpTile);
+            }
 
-        //    return 0;
+            //ObjGroup読み込み
+            List<CmnObjGroup> tmpObjGrList = reqTypeList
+                .Where(type => !tmpTile.IsContentsLoaded(type, reqMaxSubType))
+                .Select(type => mal.LoadObjGroup(tileId, type, reqMaxSubType))
+                .ToList<CmnObjGroup>();
 
-        //}
+            //インデックス付与（仮）
+            tmpObjGrList.ForEach(x => x.SetIndex());
+
+            //タイル更新
+            tmpTile.UpdateObjGroupList(tmpObjGrList);
+
+            return 0;
+        }
 
         public bool UnloadTile(uint tileId) => tileMng.RemoveTile(tileId);
        
@@ -306,11 +320,13 @@ namespace libGis
             return SearchTile(tileId);
         }
 
-        public List<CmnTile> SearchTiles(uint tileId, int rangeX, int rangeY)
+        public IEnumerable<CmnTile> SearchTiles(uint tileId, int rangeX, int rangeY)
         {
             int tileX = tileApi.CalcTileX(tileId);
             int tileY = tileApi.CalcTileY(tileId);
             List<CmnTile> retTileList = new List<CmnTile>();
+
+            
 
             for (int x = tileX - rangeX; x <= tileX + rangeX; x++)
             {
@@ -330,9 +346,9 @@ namespace libGis
         }
 
 
-        public List<CmnTile> SearchTiles(LatLon latlon, int searchRange = 1)
+        public IEnumerable<CmnTile> SearchTiles(LatLon latlon, int searchRange = 1)
         {
-            List<CmnTile> searchTileList;
+            IEnumerable<CmnTile> searchTileList;
 
             //seachRange = Max -> 全タイルから検索
             if (searchRange == int.MaxValue)
@@ -349,7 +365,7 @@ namespace libGis
             return searchTileList;
         }
 
-        public List<CmnTile> GetLoadedTileList() => tileMng.GetTileList();
+        public IEnumerable<CmnTile> GetLoadedTileList() => tileMng.GetTileList();
       
 
         public List<uint> GetMapTileIdList()
@@ -415,7 +431,7 @@ namespace libGis
 
         public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange = 1)
         {
-            List<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
+            IEnumerable<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
 
             CmnObjHdlDistance nearestObj = searchTileList
                 .Select(x => x.GetNearestObj(latlon, filter))
@@ -655,6 +671,7 @@ namespace libGis
                 
         List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt32 type = 0xFFFFFFFF, UInt16 subType = 0xFFFF);
 
+        
         CmnObjGroup LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
     }
 
