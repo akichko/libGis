@@ -504,8 +504,11 @@ namespace Akichko.libGis
 
 
         //関連オブジェクト取得（全て）。必要に応じてオーバーライド
-        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, byte direction = 0xff)
+        public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, DirectionCode direction = DirectionCode.None)
         {
+            if (objHdl == null)
+                return null;
+
             List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
 
             List<CmnObjRef> tmpObjRefList = objHdl.GetObjAllRefList(); //Objの参照先一覧

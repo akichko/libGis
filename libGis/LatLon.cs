@@ -136,6 +136,14 @@ namespace Akichko.libGis
             return CalcDistanceBetween(L1, L2) * ratio;
         }
 
+        public static double CalcOffsetRatioOfPointAndLine(LatLon P, LatLon L1, LatLon L2)
+        {
+            (double sX, double sY) = CalcOffsetXY(P, L1);
+            (double eX, double eY) = CalcOffsetXY(P, L2);
+
+            double ratio = CalcOffsetRatioOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
+            return ratio;
+        }
 
         public static LatLon CalcOffsetLatLon(LatLon latlon, double meterToEast, double meterToNorth)
         {
@@ -167,7 +175,7 @@ namespace Akichko.libGis
 
         public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)
         {
-            if (polyline == null || polyline.Length <= 1)
+            if (latlon == null || polyline == null || polyline.Length <= 1)
                 return null;
 
             double minDistance = Double.MaxValue;
@@ -193,12 +201,16 @@ namespace Akichko.libGis
             }
 
             //補間点内計算
-            double lastOffset = CalcOffsetOfPointAndLine(latlon, polyline[nearestIndex], polyline[nearestIndex + 1]);
+            double lastOffsetRatio = CalcOffsetRatioOfPointAndLine(latlon, polyline[nearestIndex], polyline[nearestIndex + 1]);
+
+
+            double lastOffset = CalcDistanceBetween(polyline[nearestIndex], polyline[nearestIndex + 1]) * lastOffsetRatio;
+            //double lastOffset = CalcOffsetOfPointAndLine(latlon, polyline[nearestIndex], polyline[nearestIndex + 1]);
 
             offset += lastOffset;
             LatLon nearestLatLon = CalcOffsetLatLon(polyline[nearestIndex], polyline[nearestIndex + 1], lastOffset);
 
-            return new PolyLinePos(nearestLatLon, (float)nearestIndex, offset);
+            return new PolyLinePos(nearestLatLon, (float)(nearestIndex + lastOffsetRatio), offset);
 
         }
 
@@ -339,7 +351,7 @@ namespace Akichko.libGis
             {
                 double spX = pX - sX;
                 double spY = pY - sY;
-                return ((seX * spX) + (seY * spY)) / ((seX * seX) + (seX * seX));
+                return ((seX * spX) + (seY * spY)) / ((seX * seX) + (seY * seY));
             }
         }
 
@@ -371,9 +383,9 @@ namespace Akichko.libGis
 
     public class PolyLinePos  //開発中
     {
-        LatLon latLon; //最近傍点
-        float index; //形状点番号
-        double shapeOffset; //始点からの距離
+        public LatLon latLon; //最近傍点
+        public float index; //形状点番号
+        public double shapeOffset; //始点からの距離
 
         public PolyLinePos(LatLon latlon, float index, double shapeOffset)
         {

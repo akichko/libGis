@@ -189,4 +189,54 @@ namespace Akichko.libGis
         public ushort SubTypeRangeMax(uint type) => ((RangeFilter<ushort>)dic[type])?.SubTypeRangeMax ?? ushort.MaxValue;
 
     }
+
+
+    public static class Extensions
+    {
+        public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> function)
+        {
+            foreach(TSource x in source)
+            {
+                function(x);
+            }
+        }
+
+        public static void ForEach<TSource>(this IEnumerable<TSource> source)
+        {
+        }
+
+        public static TSource WhereMin<TSource, U>(this IEnumerable<TSource> source, Func<TSource, U> selector)
+        {
+            return WhereMost(source, selector, (a, b) => Comparer<U>.Default.Compare(a, b) < 0);
+        }
+
+        public static TSource WhereMax<TSource, U>(this IEnumerable<TSource> source, Func<TSource, U> selector)
+        {
+            return WhereMost(source, selector, (a, b) => Comparer<U>.Default.Compare(a, b) > 0);
+        }
+
+        private static TSource WhereMost<TSource, U>(IEnumerable<TSource> source, Func<TSource, U> selector, Func<U, U, bool> comparer)
+        {
+            var list = new LinkedList<TSource>();
+            TSource ret = default;
+            U prevKey = default(U);
+
+            foreach (var item in source)
+            {
+                var key = selector(item);
+                if (list.Count == 0 || comparer(key, prevKey))
+                {
+                    ret = item;
+                    prevKey = key;
+                }
+                else if (Comparer<U>.Default.Compare(key, prevKey) == 0)
+                {
+                    ret = item;
+                }
+            }
+            return ret;
+        }
+
+    }
+
 }

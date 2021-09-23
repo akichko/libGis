@@ -85,7 +85,7 @@ namespace Akichko.libGis
 
 
         /* タイル演算 */
-        uint CalcOffsetTileId(uint baseTileId, Int16 offsetX, Int16 offsetY);
+        uint CalcOffsetTileId(uint baseTileId, int offsetX, int offsetY);
 
         double CalcTileLengthX(uint tileId);
         double CalcTileLengthY(uint tileId);
@@ -237,7 +237,7 @@ namespace Akichko.libGis
 
 
         /* タイル演算 */
-        public virtual uint CalcOffsetTileId(uint baseTileId, Int16 offsetX, Int16 offsetY)
+        public virtual uint CalcOffsetTileId(uint baseTileId, int offsetX, int offsetY)
         {
             return CalcTileId(CalcTileX(baseTileId) + offsetX, CalcTileY(baseTileId) + offsetY, CalcTileLv(baseTileId));
         }
@@ -647,6 +647,15 @@ namespace Akichko.libGis
 
         /* メソッド */
 
+        public virtual IEnumerable<CmnObj> GetIEnumerableDrawObjs(Filter<ushort> subTypeFilter)
+        {
+            if (!isDrawable)
+                return null;
+
+            return GetIEnumerableObjs(isDrawReverse)
+                ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true);
+        }
+
         public bool IsContentsLoaded(ushort subType)
         {
             if (loadedSubType >= subType)
@@ -729,30 +738,17 @@ namespace Akichko.libGis
         //}
 
 
-        public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, Filter<ushort> subTypeFilter)
-        {
-            if (!isDrawable)
-                return;
+        //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, Filter<ushort> subTypeFilter)
+        //{
+        //    if (!isDrawable)
+        //        return;
 
-            //foreach(var x in GetIEnumerableObjs(isDrawReverse)?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true))
-            //{
-            //    x.ExeCallbackFunc(tile, cbDrawFunc);
-            //}
+        //    GetIEnumerableObjs(isDrawReverse)
+        //        ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+        //        .ToList()
+        //        .ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
 
-            GetIEnumerableObjs(isDrawReverse)
-                ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
-                .ToList()
-                .ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-
-            //if (isDrawReverse)
-            //    GetIEnumerableObjs()?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
-            //        .Reverse()
-            //        .ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-            //else
-            //    GetIEnumerableObjs()?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
-            //        .ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-
-        }
+        //}
 
         public virtual void AddObj(CmnObj obj)
         {
@@ -879,15 +875,10 @@ namespace Akichko.libGis
 
     public class CmnObjGroupList : CmnObjGroup
     {
-        //public bool isArray = true; //false -> List
-
         public List<CmnObj> objList;
 
 
-        public CmnObjGroupList(UInt32 type) : base(type)
-        {
-            //isArray = false;
-        }
+        public CmnObjGroupList(UInt32 type) : base(type) { }
 
 
         public CmnObjGroupList(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
@@ -898,10 +889,7 @@ namespace Akichko.libGis
 
         public override CmnObj[] ObjArray => objList.ToArray();
 
-        public override CmnObj[] GetObjArray()
-        {     
-            return objList?.ToArray();
-        }
+        public override CmnObj[] GetObjArray() => objList?.ToArray();
 
         public override CmnObj GetObj(UInt64 objId) //全走査。２分木探索等したい場合はオーバーライド
         {
@@ -1057,7 +1045,7 @@ namespace Akichko.libGis
                     //.ToList();
         }
 
-        private IEnumerable<CmnObjGroup> GetObjGroupList(Filter<uint> objTypefilter = null)
+        public IEnumerable<CmnObjGroup> GetObjGroupList(Filter<uint> objTypefilter = null)
         {
             return objGroupDic
                 .Where(x => objTypefilter?.CheckPass(x.Key) ?? true)
@@ -1142,27 +1130,6 @@ namespace Akichko.libGis
             return ret;
         }
 
-        //public CmnObjDistance GetNearestObj2(LatLon latlon, UInt32 objType = 0xFFFF, UInt16 maxSubType = 0xFFFF)
-        //{
-        //    CmnObjDistance nearestObjDistance = new CmnObjDistance(null, double.MaxValue);
-
-        //    foreach (var (type, objArray) in objDic)
-        //    {
-        //        if (type != objType)
-        //            continue;
-
-        //        CmnObjDistance tmpObjDistance = objArray
-        //            .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
-        //            .OrderBy(x => x.distance)
-        //            .FirstOrDefault();
-
-        //        if (tmpObjDistance.distance < nearestObjDistance.distance)
-        //            nearestObjDistance = tmpObjDistance;
-        //    }
-
-        //    return nearestObjDistance;
-
-        //}
 
 
 
@@ -1184,16 +1151,16 @@ namespace Akichko.libGis
         //    }
         //}
 
-        public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, CmnObjFilter filter)
-        {
-            foreach (var x in GetObjGroupList(filter) ?? Enumerable.Empty<CmnObjGroup>())
-            {
-                x.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type));
-            }
-            //GetObjGroupList(filter).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type)));
+        //public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, CmnObjFilter filter)
+        //{
+        //    foreach (var x in GetObjGroupList(filter) ?? Enumerable.Empty<CmnObjGroup>())
+        //    {
+        //        x.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type));
+        //    }
+        //    //GetObjGroupList(filter).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type)));
 
-            //cbDrawFunc(Type, SubType, getGeometry());
-        }
+        //    //cbDrawFunc(Type, SubType, getGeometry());
+        //}
 
 
         public virtual void AddObj(UInt32 objType, CmnObj obj)
@@ -1210,19 +1177,9 @@ namespace Akichko.libGis
                 return false;
         }
 
-        public bool IsContentsLoaded(UInt32 objType, ushort subType)
-        {
-            //CmnObjGroup objGroup = GetObjGroup(objType);
-            //if (objGroup == null)
-            //    return false;
-            //if (objGroup.loadedSubType >= subType)
-            //    return true;
-            //else
-            //    return false;
+        public bool IsContentsLoaded(UInt32 objType, ushort subType) =>
+            GetObjGroup(objType)?.IsContentsLoaded(subType) ?? false;
 
-            return GetObjGroup(objType)?.IsContentsLoaded(subType) ?? false;
-
-        }
 
     }
 

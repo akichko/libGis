@@ -181,21 +181,40 @@ namespace Akichko.libGis
         {
             int tmpMinCost = int.MaxValue;
             int tmpMinIndex = -1;
+
             for (int i = 0; i < numElement; i++)
             {
                 //まだバグ残っているかも
-                if (unprocessed[i].Status(isStartSide) == 2)
-                {
-                    Delete(i);
-                    if (i == numElement)
-                        break;
-                }
-
+                //if (unprocessed[i].Status(isStartSide) == 2)
+                //{
+                //    Delete(i);
+                //    if (i == numElement)
+                //        break;
+                //}
+#if false
                 if (unprocessed[i].TotalCost(isStartSide) < tmpMinCost)
                 {
                     tmpMinCost = unprocessed[i].TotalCost(isStartSide);
                     tmpMinIndex = i;
                 }
+#else
+                if (isStartSide)
+                {
+                    if (unprocessed[i].totalCostS < tmpMinCost)
+                    {
+                        tmpMinCost = unprocessed[i].totalCostS;
+                        tmpMinIndex = i;
+                    }
+                }
+                else
+                {
+                    if (unprocessed[i].totalCostD < tmpMinCost)
+                    {
+                        tmpMinCost = unprocessed[i].totalCostD;
+                        tmpMinIndex = i;
+                    }
+                }
+#endif
             }
             minCost = tmpMinCost;
             return tmpMinIndex;
@@ -204,6 +223,18 @@ namespace Akichko.libGis
         public CostRecord GetCostRecord(int index)
         {
             return unprocessed[index];
+        }
+
+        public CostRecord GetMinCostRecord(bool isStartSide)
+        {
+            if (isStartSide)
+            {
+                return unprocessed.OrderBy(x => x.totalCostS).FirstOrDefault();
+            }
+            else
+            {
+                return unprocessed.OrderBy(x => x.totalCostD).FirstOrDefault();
+            }
         }
 
     }
@@ -640,14 +671,14 @@ namespace Akichko.libGis
                     finalRecord = currentCostInfo.back;
                 else
                     finalRecord = currentCostInfo.next;
-                return ResultCode .Sccess;
+                return ResultCode.Sccess;
             }
 
             //処理済みデータ　⇒キュー取り出し時に削除
             if (currentCostInfo.Status(isStartSide) == 2)
             {
                 //unprocessed.Delete(minIndex, isStartSide);
-                return 0;
+                return ResultCode.Continue;
             }
 
             //出発地側か目的地側か
