@@ -29,18 +29,54 @@ using System.Threading.Tasks;
 
 namespace Akichko.libGis
 {
+
+    public abstract class CostInfo2
+    {
+        public int totalCost; //経路始点～当該リンクまでのコスト
+        public byte status = 0; //0:未開始　1:計算中　2:探索終了
+        public CostRecord back;
+
+        public abstract DirectionCode Direction { get; }
+    }
+
+    public class CostInfoPositive : CostInfo2
+    {
+        public override DirectionCode Direction => DirectionCode.Positive;
+    }
+    public class CostInfoNegative : CostInfo2
+    {
+        public override DirectionCode Direction => DirectionCode.Negative;
+    }
+
+
+    public class LinkCostInfo2
+    {
+        ushort linkIndex;
+        CostInfoPositive costInfo;
+    }
+
+
+    public class CostInfoHandle
+    {
+        uint tileId;
+        uint linkId;
+        DirectionCode direction;
+    }
+
+
+
     public class CostRecord
     {
+        public TileCostInfo tileCostInfo; //親参照
+        public ushort linkIndex; //リンク参照用
+        public DirectionCode linkDirection;
+
         public int totalCostS; //経路始点～当該リンクまでのコスト
         public int totalCostD; //目的地側から計算した残りコスト
 
         public byte statusS = 0; //0:未開始　1:計算中　2:探索終了
         public byte statusD = 0; //0:未開始　1:計算中　2:探索終了  終点側
         //public bool isGoal = false; //以降は目的地側から計算済み
-
-        public TileCostInfo tileCostInfo; //親参照
-        public ushort linkIndex;
-        public DirectionCode linkDirection;
 
         public CostRecord back;
         public CostRecord next;
@@ -469,7 +505,6 @@ namespace Akichko.libGis
 
 
         /****** 設定 ******************************************************************************/
-
         public int SetStartCost(CmnObjHandle linkHdl, int offset, DirectionCode direction = DirectionCode.None)
         {
             //TileObjId start = new TileObjId(mapPos.tileId, mapPos.linkId);
@@ -963,12 +998,12 @@ namespace Akichko.libGis
     public class RouteResult
     {
         public ResultCode resultCode;
-        public List<CostRecord> routeResult;
+        public List<CostRecord> route;
 
         public RouteResult(ResultCode resultCode, List<CostRecord> routeResult)
         {
             this.resultCode = resultCode;
-            this.routeResult = routeResult;
+            this.route = routeResult;
         }
     }
 
@@ -1023,7 +1058,7 @@ namespace Akichko.libGis
 
         //データ準備
 
-        public int Prepare(bool allCache)
+        public virtual int Prepare(bool allCache)
         {
             //探索レベルを決める？
             //CalcSearchLevel();
@@ -1085,7 +1120,7 @@ namespace Akichko.libGis
 
 
         //ダイクストラ計算
-        public RouteResult CalcRoute()
+        public virtual RouteResult CalcRoute()
         {
             //計算
             ResultCode ret = dykstra.CalcRoute();
@@ -1191,7 +1226,7 @@ namespace Akichko.libGis
 
         /* 結果出力 *****************/
 
-        public List<CmnObjHandle> GetRouteHdlList()
+        public virtual List<CmnObjHandle> GetRouteHdlList()
         {
             routeHdlList = dykstra.routeResult.Select(x=>x.DLinkHdl).ToList();
             return routeHdlList;
@@ -1200,7 +1235,7 @@ namespace Akichko.libGis
   
 
 
-        public LatLon[] GetResult()
+        public virtual LatLon[] GetResult()
         {
             //dykstra.routeResult.ForEach(x =>
             //{

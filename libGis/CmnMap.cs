@@ -795,7 +795,6 @@ namespace Akichko.libGis
             return objArray
                 ?.Where(x => x.Id == objId)
                 .FirstOrDefault();
-
         }
 
         public override CmnObj GetObj(UInt16 objIndex)
@@ -956,7 +955,7 @@ namespace Akichko.libGis
         //}
 
 
-        public virtual void AddObj(CmnObj obj)
+        public override void AddObj(CmnObj obj)
         {
             objList.Add(obj);
             obj.Index = (UInt16)(objList.Count - 1);

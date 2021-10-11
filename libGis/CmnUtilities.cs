@@ -29,26 +29,26 @@ using System.Threading.Tasks;
 
 namespace Akichko.libGis
 {
-    public abstract class Filter<KeyType>
+    public abstract class Filter<TKey>
     {
-        public abstract bool CheckPass(KeyType target);
+        public abstract bool CheckPass(TKey target);
     }
 
 
-    public class RangeFilter<KeyType> : Filter<KeyType> where KeyType : IComparable
+    public class RangeFilter<TKey> : Filter<TKey> where TKey : IComparable
     {
         bool boolOutOfRange = false; //レンジ外
-        KeyType min;
-        KeyType max;
-        public KeyType SubTypeRangeMax => max;
+        TKey min;
+        TKey max;
+        public TKey SubTypeRangeMax => max;
 
-        public RangeFilter(KeyType min, KeyType max, bool boolOutOfRange = false)
+        public RangeFilter(TKey min, TKey max, bool boolOutOfRange = false)
         {
             this.min = min;
             this.max = max;
         }
 
-        public override bool CheckPass(KeyType target)
+        public override bool CheckPass(TKey target)
         {
             if (target.CompareTo(min) >= 0 && target.CompareTo(max) <= 0)
                 return !boolOutOfRange;
@@ -61,19 +61,19 @@ namespace Akichko.libGis
 
 
 
-    public class DicFilter<KeyType> : Filter<KeyType>
+    public class DicFilter<TKey> : Filter<TKey>
     {
         bool defaultBool = false; //辞書に存在しない対象
 
-        Dictionary<KeyType, bool> dic;
+        Dictionary<TKey, bool> dic;
 
         public DicFilter(bool defaultBool)
         {
             this.defaultBool = defaultBool;
-            dic = new Dictionary<KeyType, bool>();
+            dic = new Dictionary<TKey, bool>();
         }
 
-        public override bool CheckPass(KeyType target)
+        public override bool CheckPass(TKey target)
         {
             if (!dic.ContainsKey(target))
                 return defaultBool;
@@ -84,17 +84,17 @@ namespace Akichko.libGis
     }
 
 
-    public class ListFilter<KeyType> : Filter<KeyType>
+    public class ListFilter<TKey> : Filter<TKey>
     {
         bool boolNotInList = false; //リスト外
-        List<KeyType> list;
+        List<TKey> list;
 
         public ListFilter(bool boolOutOfList = false)
         {
             this.boolNotInList = boolOutOfList;
         }
 
-        public override bool CheckPass(KeyType target)
+        public override bool CheckPass(TKey target)
         {
             int index = list.IndexOf(target);
             if (index > 0)
@@ -103,7 +103,7 @@ namespace Akichko.libGis
                 return boolNotInList;
         }
 
-        public ListFilter<KeyType> AddList(KeyType key)
+        public ListFilter<TKey> AddList(TKey key)
         {
             list.Add(key);
             return this;
@@ -112,19 +112,19 @@ namespace Akichko.libGis
     }
 
 
-    public class HierarchicalFilter<KeyType, KeySubType> : Filter<KeyType>
+    public class HierarchicalFilter<TKey, TSubKey> : Filter<TKey>
     {
         protected bool boolNotInList = false; //辞書に存在しない対象
-        protected Dictionary<KeyType, Filter<KeySubType>> dic;
+        protected Dictionary<TKey, Filter<TSubKey>> dic;
 
         public HierarchicalFilter(bool boolNotInList = false)
         {
             this.boolNotInList = boolNotInList;
-            dic = new Dictionary<KeyType, Filter<KeySubType>>();
+            dic = new Dictionary<TKey, Filter<TSubKey>>();
         }
 
 
-        public override bool CheckPass(KeyType target)
+        public override bool CheckPass(TKey target)
         {
             if (!dic.ContainsKey(target))
                 return boolNotInList;
@@ -132,7 +132,7 @@ namespace Akichko.libGis
             return true;
         }
 
-        public bool CheckPass(KeyType targetType, KeySubType targetSubType)
+        public bool CheckPass(TKey targetType, TSubKey targetSubType)
         {
             if (!dic.ContainsKey(targetType))
                 return boolNotInList;
@@ -140,7 +140,7 @@ namespace Akichko.libGis
             return dic[targetType]?.CheckPass(targetSubType) ?? true;
         }
 
-        public Filter<KeySubType> GetSubFilter(KeyType targetType)
+        public Filter<TSubKey> GetSubFilter(TKey targetType)
         {
             if (!dic.ContainsKey(targetType))
                 //???
@@ -149,24 +149,24 @@ namespace Akichko.libGis
             return dic[targetType];
         }
 
-        public HierarchicalFilter<KeyType, KeySubType> AddRule(KeyType type, Filter<KeySubType> subFilter)
+        public HierarchicalFilter<TKey, TSubKey> AddRule(TKey type, Filter<TSubKey> subFilter)
         {
             dic.Add(type, subFilter);
             return this;
         }
 
-        public HierarchicalFilter<KeyType, KeySubType> AddRule(List<KeyType> type)
+        public HierarchicalFilter<TKey, TSubKey> AddRule(List<TKey> type)
         {
             type.ForEach(x => dic.Add(x, null));
             return this;
         }
-        public HierarchicalFilter<KeyType, KeySubType> DelRule(KeyType type)
+        public HierarchicalFilter<TKey, TSubKey> DelRule(TKey type)
         {
             dic.Remove(type);
             return this;
         }
 
-        public HierarchicalFilter<KeyType, KeySubType> DelRule(List<KeyType> type)
+        public HierarchicalFilter<TKey, TSubKey> DelRule(List<TKey> type)
         {
             type.ForEach(x => dic.Remove(x));
             return this;
@@ -174,6 +174,10 @@ namespace Akichko.libGis
 
 
     }
+
+
+
+
 
 
     public class CmnObjFilter : HierarchicalFilter<uint, ushort>
@@ -191,6 +195,7 @@ namespace Akichko.libGis
     }
 
 
+    //拡張メソッド
     public static class Extensions
     {
         public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> function)
@@ -199,42 +204,6 @@ namespace Akichko.libGis
             {
                 function(x);
             }
-        }
-
-        public static void ForEach<TSource>(this IEnumerable<TSource> source)
-        {
-        }
-
-        public static TSource WhereMin<TSource, U>(this IEnumerable<TSource> source, Func<TSource, U> selector)
-        {
-            return WhereMost(source, selector, (a, b) => Comparer<U>.Default.Compare(a, b) < 0);
-        }
-
-        public static TSource WhereMax<TSource, U>(this IEnumerable<TSource> source, Func<TSource, U> selector)
-        {
-            return WhereMost(source, selector, (a, b) => Comparer<U>.Default.Compare(a, b) > 0);
-        }
-
-        private static TSource WhereMost<TSource, U>(IEnumerable<TSource> source, Func<TSource, U> selector, Func<U, U, bool> comparer)
-        {
-            var list = new LinkedList<TSource>();
-            TSource ret = default;
-            U prevKey = default(U);
-
-            foreach (var item in source)
-            {
-                var key = selector(item);
-                if (list.Count == 0 || comparer(key, prevKey))
-                {
-                    ret = item;
-                    prevKey = key;
-                }
-                else if (Comparer<U>.Default.Compare(key, prevKey) == 0)
-                {
-                    ret = item;
-                }
-            }
-            return ret;
         }
 
     }

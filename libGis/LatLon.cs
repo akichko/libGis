@@ -54,7 +54,7 @@ namespace Akichko.libGis
 
         public LatLon GetOffsetLatLon(double meterToEast, double meterToNorth) => CalcOffsetLatLon(this, meterToEast, meterToNorth);
 
-        public (double x, double y) GetOffsetXY(LatLon toLatLon) => CalcOffsetXY(this, toLatLon);
+        public (double meterToEast, double meterToNorth) GetOffsetXY(LatLon toLatLon) => CalcOffsetXY(this, toLatLon);
 
         public new string ToString()
         {
@@ -161,15 +161,15 @@ namespace Akichko.libGis
         }
 
      
-        public static (double x, double y) CalcOffsetXY(LatLon B, LatLon T) // B: base, T:target
+        public static (double meterToEast, double meterToNorth) CalcOffsetXY(LatLon B, LatLon T) // B: base, T:target
         {
             LatLon TofLatB = new LatLon(B.lat, T.lon);
             LatLon TofLonB = new LatLon(T.lat, B.lon);
 
-            double x = CalcDistanceBetween(B, TofLatB) * Math.Sign(T.lon - B.lon);
-            double y = CalcDistanceBetween(B, TofLonB) * Math.Sign(T.lat - B.lat);
+            double meterToEast = CalcDistanceBetween(B, TofLatB) * Math.Sign(T.lon - B.lon);
+            double meterToNorth = CalcDistanceBetween(B, TofLonB) * Math.Sign(T.lat - B.lat);
 
-            return (x, y);
+            return (meterToEast, meterToNorth);
 
         }
 
@@ -202,16 +202,28 @@ namespace Akichko.libGis
 
             //補間点内計算
             double lastOffsetRatio = CalcOffsetRatioOfPointAndLine(latlon, polyline[nearestIndex], polyline[nearestIndex + 1]);
-
-
             double lastOffset = CalcDistanceBetween(polyline[nearestIndex], polyline[nearestIndex + 1]) * lastOffsetRatio;
-            //double lastOffset = CalcOffsetOfPointAndLine(latlon, polyline[nearestIndex], polyline[nearestIndex + 1]);
-
+            
             offset += lastOffset;
             LatLon nearestLatLon = CalcOffsetLatLon(polyline[nearestIndex], polyline[nearestIndex + 1], lastOffset);
 
             return new PolyLinePos(nearestLatLon, (float)(nearestIndex + lastOffsetRatio), offset);
 
+        }
+
+
+        public static double CalcLengthAlongLine(LatLon[] polyline, int indexNo, float lastIndexRatio)
+        {
+            double offset = 0;
+            for (int i = 0; i < indexNo; i++)
+            {
+                offset += polyline[i].GetDistanceTo(polyline[i + 1]);
+            }
+
+            double lastOffset = CalcDistanceBetween(polyline[indexNo], polyline[indexNo + 1]) * lastIndexRatio;
+            offset += lastOffset;
+
+            return offset;
         }
 
         public static LatLon Parse(string s)
@@ -409,9 +421,4 @@ namespace Akichko.libGis
 
     }
 
-    public class XYd
-    {
-        double x;
-        double y;
-    }
 }
