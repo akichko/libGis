@@ -505,7 +505,7 @@ namespace Akichko.libGis
 
 
         /****** 設定 ******************************************************************************/
-        public int SetStartCost(CmnObjHandle linkHdl, int offset, DirectionCode direction = DirectionCode.None)
+        public int SetStartCost(CmnObjHandle linkHdl, double offset, DirectionCode direction = DirectionCode.None)
         {
             //TileObjId start = new TileObjId(mapPos.tileId, mapPos.linkId);
             //MapLink sMapLink = mapMgr.SearchMapLink(start);
@@ -519,8 +519,8 @@ namespace Akichko.libGis
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = DirectionCode.Positive;
-                costRec.totalCostS = (int)(linkHdl.obj.Cost * ( - 0.3));
-                costRec.totalCostD = int.MaxValue;
+                costRec.totalCostS = (int)(linkHdl.obj.Cost * ( - offset / linkHdl.Length));
+                //costRec.totalCostD = int.MaxValue;
                 costRec.statusS = 1;
                 unprocessed.Add(costRec, true);
             }
@@ -532,8 +532,8 @@ namespace Akichko.libGis
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = DirectionCode.Negative;
-                costRec.totalCostS = (int)(linkHdl.obj.Cost * (0.3 - 1.0));
-                costRec.totalCostD = int.MaxValue;
+                costRec.totalCostS = (int)(linkHdl.obj.Cost * (offset / linkHdl.Length - 1.0));
+                //costRec.totalCostD = int.MaxValue;
                 costRec.statusS = 1;
                 unprocessed.Add(costRec, true);
             }
@@ -541,7 +541,7 @@ namespace Akichko.libGis
             return 0;
         }
 
-        public int SetDestination(CmnObjHandle linkHdl, int offset, DirectionCode direction = DirectionCode.None)
+        public int SetDestination(CmnObjHandle linkHdl, double offset, DirectionCode direction = DirectionCode.None)
         {
             //offsetが暫定
             CostRecord costRec;
@@ -552,9 +552,9 @@ namespace Akichko.libGis
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = DirectionCode.Positive;
-                costRec.totalCostS = int.MaxValue;
+                //costRec.totalCostS = int.MaxValue;
                 //costRec.totalCostD = offset;
-                costRec.totalCostD = (int)(linkHdl.obj.Cost * (0.3 - 1.0));
+                costRec.totalCostD = (int)(linkHdl.obj.Cost * (offset / linkHdl.Length - 1.0));
                 costRec.statusD = 1;
                 unprocessed.Add(costRec, false);
 
@@ -568,8 +568,8 @@ namespace Akichko.libGis
 
                 costRec.linkIndex = linkHdl.obj.Index;
                 costRec.linkDirection = DirectionCode.Negative;
-                costRec.totalCostS = int.MaxValue;
-                costRec.totalCostD = (int)(linkHdl.obj.Cost * ( - 0.3));
+                //costRec.totalCostS = int.MaxValue;
+                costRec.totalCostD = (int)(linkHdl.obj.Cost * ( -offset / linkHdl.Length));
                 //costRec.totalCostD = (int)linkHdl.obj.Length - offset;
                 costRec.statusD = 1;
                 unprocessed.Add(costRec, false);
@@ -706,7 +706,7 @@ namespace Akichko.libGis
                     finalRecord = currentCostInfo.back;
                 else
                     finalRecord = currentCostInfo.next;
-                return ResultCode.Sccess;
+                return ResultCode.Success;
             }
 
             //処理済みデータ　⇒キュー取り出し時に削除
@@ -720,9 +720,8 @@ namespace Akichko.libGis
 
             CmnObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
 
-            List<CmnObjHandle> connectLinkList = null;
             List<CmnObjHdlRef> objHdlRefList;
-            List<uint> noDataTileIdList;
+            //List<uint> noDataTileIdList;
 
             //接続リンク取得
             while (true)
@@ -738,7 +737,7 @@ namespace Akichko.libGis
                 }
 
                 //初期設定の読み込み可能範囲内タイル
-                noDataTileIdList = objHdlRefList
+                List<uint> noDataTileIdList = objHdlRefList
                     //.Where(x => x.noData)
                     .Select(x => (x.objHdl?.tile?.TileId ?? x.nextRef?.key?.tileId) ?? 0xffffffff)
                     .Where(x => x != 0xffffffff && dicTileCostInfo.ContainsKey(x) && !dicTileCostInfo[x].isLoaded)
@@ -751,15 +750,20 @@ namespace Akichko.libGis
                     break;
             }
 
-            connectLinkList = objHdlRefList
-                .Select(x => (CmnObjHandle)x.objHdl)
-                .Where(x => x != null)
-                .ToList();
+            IEnumerable<CmnObjHandle> connectLinkList = objHdlRefList
+                .Select(x => x.objHdl)
+                .Where(x => x != null);
 
 
             //接続リンクとコスト参照
             foreach (CmnObjHandle nextLinkRef in connectLinkList ?? new List<CmnObjHandle>())
             {
+                //方向なしの場合に方向決定
+                if(nextLinkRef.direction == DirectionCode.None)
+                {
+                    nextLinkRef.direction = nextLinkRef.obj.GetDirection(currentCostInfo.MapLink);
+                }
+
                 //探索除外
                 if (IsCalcSkip(currentCostInfo, nextLinkRef))
                     continue;
@@ -907,11 +911,11 @@ namespace Akichko.libGis
             }
             routeList.Reverse();
 
-            tmpCostRecord = finalRecord;
-            if (tmpCostRecord.next != null) //重複登録排除
-            {
-                tmpCostRecord = tmpCostRecord.next;
-            }
+            tmpCostRecord = finalRecord.next;
+            //if (tmpCostRecord.next != null) //重複登録排除
+            //{
+            //    tmpCostRecord = tmpCostRecord.next;
+            //}
 
             while (tmpCostRecord != null)
             {
@@ -1009,7 +1013,7 @@ namespace Akichko.libGis
 
     public enum ResultCode
     {
-        Sccess = 0,
+        Success = 0,
         Continue,
         NotFound,
         CalcError
@@ -1076,13 +1080,15 @@ namespace Akichko.libGis
             //orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, routingMapType.roadNwObjType);
             //orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjReqType,1);
             orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjFilter, 1, -1);
-
+            PolyLinePos orgLinkPos = LatLon.CalcNearestPoint(orgLatLon, orgHdl.Geometry);
+            
             uint destTileId = mapMgr.tileApi.CalcTileId(dstLatLon);
             List<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListD.ForEach(x => mapMgr.LoadTile(x, null));        
             //dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, routingMapType.roadNwObjType);
             //dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjReqType, 1);
             dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjFilter, 1, -1);
+            PolyLinePos dstLinkPos = LatLon.CalcNearestPoint(dstLatLon, dstHdl.Geometry);
 
             if (orgHdl == null || dstHdl == null)
                 return -1;
@@ -1110,8 +1116,8 @@ namespace Akichko.libGis
             dykstra.AddTileInfo(orgHdl.tile.TileId);
             dykstra.AddTileInfo(dstHdl.tile.TileId);
 
-            dykstra.SetStartCost(orgHdl, 10, orgHdl.obj.Oneway);
-            dykstra.SetDestination(dstHdl, 10, dstHdl.obj.Oneway);
+            dykstra.SetStartCost(orgHdl, orgLinkPos.shapeOffset, orgHdl.obj.Oneway);
+            dykstra.SetDestination(dstHdl, dstLinkPos.shapeOffset, dstHdl.obj.Oneway);
 
 
             return 0;

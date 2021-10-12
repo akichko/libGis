@@ -258,7 +258,7 @@ namespace Akichko.libGis
             //ObjGroup読み込み
             List<CmnObjGroup> tmpObjGrList = mapAccess.GetMapContentTypeList()
                 .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
-                .Select(type => mapAccess.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
+                .SelectMany(type => mapAccess.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
                 .ToList<CmnObjGroup>();
 
             //インデックス付与（仮）
@@ -287,7 +287,7 @@ namespace Akichko.libGis
             //ObjGroup読み込み
             List<CmnObjGroup> tmpObjGrList = reqTypeList
                 .Where(type => !tmpTile.IsContentsLoaded(type, reqMaxSubType))
-                .Select(type => mapAccess.LoadObjGroup(tileId, type, reqMaxSubType))
+                .SelectMany(type => mapAccess.LoadObjGroup(tileId, type, reqMaxSubType))
                 .ToList<CmnObjGroup>();
 
             //インデックス付与（仮）
@@ -476,10 +476,19 @@ namespace Akichko.libGis
             else if (cmnSearchKey.objIndex != 0xffff)
                 return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objIndex)?.SetDirection(cmnSearchKey.objDirection);
             //ID検索
-            else
+            else if (cmnSearchKey.objId != 0xffffffffffffffff)
                 return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId)?.SetDirection(cmnSearchKey.objDirection);
+            else if (cmnSearchKey.matchFunc != null)
+                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.matchFunc)?.SetDirection(cmnSearchKey.objDirection);
+            else
+                return null;
+
+        }
 
 
+        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, Func<CmnObj, bool> selector)
+        {
+            return SearchTile(tileId)?.GetObjHandle(objType, selector);
         }
 
 
@@ -674,7 +683,7 @@ namespace Akichko.libGis
         List<UInt32> GetMapContentTypeList();
         //CmnTile CreateTile(uint tileId);                
         List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt32 type = 0xFFFFFFFF, UInt16 subType = 0xFFFF);        
-        CmnObjGroup LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
+        List<CmnObjGroup> LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
     }
 
 

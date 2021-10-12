@@ -586,8 +586,14 @@ namespace Akichko.libGis
                 return Geometry;
         }
 
+        public virtual DirectionCode GetDirection(CmnObj obj)
+        {
+            //objとの関連から方向取得
+            return DirectionCode.None;
+        }
     }
 
+    delegate bool Judge<T>(T obj);
 
     //属性表示用
     public class AttrItemInfo
@@ -639,6 +645,18 @@ namespace Akichko.libGis
         public abstract CmnObj GetObj(UInt64 objId); //全走査。２分木探索等したい場合はオーバーライド
 
         public abstract CmnObj GetObj(UInt16 objIndex);
+
+        public CmnObj GetObj(Func<CmnObj, bool> selector)
+        {
+            foreach(var obj in ObjArray)
+            {
+                if (selector(obj))
+                {
+                    return obj;
+                }
+            }
+            return null;
+        }
 
         public abstract void SetObjArray(CmnObj[] objArray);
 
@@ -1082,6 +1100,10 @@ namespace Akichko.libGis
             return GetObjGroup(objType)?.GetObj(objIndex)?.ToCmnObjHandle(this);
         }
 
+        public virtual CmnObjHandle GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
+        {
+            return GetObjGroup(objType)?.GetObj(selector)?.ToCmnObjHandle(this);
+        }
 
         //public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
         //{
@@ -1380,6 +1402,7 @@ namespace Akichko.libGis
         public UInt16 objIndex = 0xffff;
         public DirectionCode objDirection = DirectionCode.None;
         public UInt16 subType = 0xffff;
+        public Func<CmnObj, bool> matchFunc;
 
         public CmnSearchKey(UInt32 objType)
         {
