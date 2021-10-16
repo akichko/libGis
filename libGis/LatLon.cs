@@ -50,7 +50,7 @@ namespace Akichko.libGis
 
         public double GetDistanceToPolyline(LatLon[] polyline) => CalcDistanceBetween(this, polyline);
 
-        public double GetDistanceToPolyline(List<LatLon> polyline) => GetDistanceToPolyline(polyline.ToArray());
+        public double GetDistanceToPolyline(List<LatLon> polyline) => CalcDistanceBetween(this, polyline.ToArray());
 
         public LatLon GetOffsetLatLon(double meterToEast, double meterToNorth) => CalcOffsetLatLon(this, meterToEast, meterToNorth);
 

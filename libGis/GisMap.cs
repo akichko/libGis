@@ -244,7 +244,30 @@ namespace Akichko.libGis
 
 
 
+    public class NoTileCode : CmnTileCode
+    {
+        public override byte DefaultLevel => 1;
 
+        public override byte MinLevel => 1;
+
+        public override byte MaxLevel => 1;
+
+        public override uint CalcTileId(int x, int y, byte level) => 0xffffffff;
+
+        public override double CalcTileLat(int tileY, byte level) => 0.0;
+
+        public override double CalcTileLon(int tileX, byte level) => 0.0;
+
+        public override byte CalcTileLv(uint tileId) => 1;
+
+        public override int CalcTileX(uint tileId) => 0;
+
+        public override int CalcTileY(uint tileId) => 0;
+
+        protected override int CalcTileX(double lon, byte level) => 0;
+
+        protected override int CalcTileY(double lat, byte level) => 0;
+    }
 
 
 }

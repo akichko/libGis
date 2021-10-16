@@ -148,7 +148,7 @@ namespace Akichko.libGis
         {
             this.tileId = tile.TileId;
             this.tile = tile;
-            linkArray = tile.GetObjArray(linkObjType);
+            linkArray = tile.GetObjArray(linkObjType) ?? Array.Empty<CmnObj>();
 
             //データ上限求める
 
@@ -658,10 +658,6 @@ namespace Akichko.libGis
         {
             //処理側決定
             bool isStartSide = unprocessed.IsNextStartSide();
-            //if (unprocessed.minCostS < unprocessed.minCostD)
-            //    isStartSide = true;
-            //else
-            //    isStartSide = false;
 
 
             ////計算対象選定　処理未完了＆コスト最小を探す
@@ -1039,12 +1035,19 @@ namespace Akichko.libGis
         //結果格納
         public List<CmnObjHandle> routeHdlList;
 
+        public CmnRouteMgr() { }
+
         public CmnRouteMgr(CmnMapMgr mapMgr)
         {
             dykstra = new Dykstra(mapMgr);
             this.mapMgr = mapMgr;
         }
 
+        public void SetMapMgr(CmnMapMgr mapMgr)
+        {
+            dykstra = new Dykstra(mapMgr);
+            this.mapMgr = mapMgr;
+        }
 
         //public int SetOrgin(CmnDirObjHandle handle)
         //{

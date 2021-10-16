@@ -59,6 +59,16 @@ namespace Akichko.libGis
     }
 
 
+    //public override RangeFilter<ushort> GetFilter(uint number)
+    //{
+    //    RangeFilter<ushort> subFilter;
+    //    if (number == 0)
+    //        subFilter = null;
+    //    else
+    //        subFilter = new RangeFilter<ushort>(0, (ushort)number);
+
+    //    return subFilter;
+    //}
 
 
     public class DicFilter<TKey> : Filter<TKey>
@@ -184,13 +194,36 @@ namespace Akichko.libGis
     {
         public CmnObjFilter(bool defaultBool = false) : base(defaultBool) { }
 
+        public CmnObjFilter(List<uint> typeList, ushort maxSubType = 0xFFFF) : base(false) 
+        {
+            foreach(var type in typeList)
+            {
+                if (maxSubType == 0xffff)
+                    dic[type] = null;
+                else
+                    dic[type] = new RangeFilter<ushort>(0, maxSubType);
+            }
+
+        }
+
         public CmnObjFilter AddRule(uint type, RangeFilter<ushort> subFilter)
         {
             dic[type] = subFilter;
             return this;
         }
 
-        public ushort SubTypeRangeMax(uint type) => ((RangeFilter<ushort>)dic[type])?.SubTypeRangeMax ?? ushort.MaxValue;
+        public List<uint> GetTypeList()
+        {
+            return dic.Select(x => x.Key).ToList();
+        }
+
+        public ushort SubTypeRangeMax(uint type)
+        {
+            if (dic.ContainsKey(type))
+                  return ((RangeFilter<ushort>)dic[type])?.SubTypeRangeMax ?? ushort.MaxValue;
+            else
+                return ushort.MaxValue;
+        }
 
     }
 

@@ -76,12 +76,12 @@ namespace Akichko.libGis
         //public uint CalcTileId(TileXYL xyl);
 
         //ID => XYL
-        public TileXYL CalcTileXYL(uint tileId);
+        TileXYL CalcTileXYL(uint tileId);
 
         //LatLon => XYL
-        public TileXYL CalcTileXYL(LatLon latlon, byte level);
+        TileXYL CalcTileXYL(LatLon latlon, byte level);
 
-        public TileXYL CalcTileXYL(LatLon latlon);
+        TileXYL CalcTileXYL(LatLon latlon);
 
 
         /* タイル演算 */
