@@ -586,7 +586,7 @@ namespace Akichko.libGis
                 return Geometry;
         }
 
-        public virtual DirectionCode GetDirection(CmnObj obj)
+        public virtual DirectionCode GetDirection(CmnObj obj, bool from)
         {
             //objとの関連から方向取得
             return DirectionCode.None;
@@ -624,10 +624,9 @@ namespace Akichko.libGis
         public bool isDrawReverse = false;
         public bool isGeoSearchable = true;
         public bool isIdSearchable = true;
-        //public bool isArray = true; //false -> List
 
         public abstract CmnObj[] ObjArray { get; }
-        //public List<CmnObj> objList;
+        public abstract IEnumerable<CmnObj> Objs { get; }
         public UInt16 loadedSubType = 0;
 
         //コンストラクタ
@@ -640,28 +639,47 @@ namespace Akichko.libGis
 
         //抽象メソッド
 
-        public abstract CmnObj[] GetObjArray();
-
-        public abstract CmnObj GetObj(UInt64 objId); //全走査。２分木探索等したい場合はオーバーライド
-
         public abstract CmnObj GetObj(UInt16 objIndex);
 
-        public CmnObj GetObj(Func<CmnObj, bool> selector)
+        public virtual CmnObj GetObj(UInt64 objId) //全走査。２分木探索等したい場合はオーバーライド
         {
-            foreach(var obj in ObjArray)
+            if (!isIdSearchable)
+                return null;
+
+            return Objs
+                ?.Where(x => x.Id == objId)
+                .FirstOrDefault();
+        }
+
+
+
+        public IEnumerable<CmnObj> GetObjs(Func<CmnObj, bool> selector)
+        {
+            List<CmnObj> retList = new List<CmnObj>();
+            foreach(var obj in Objs)
             {
                 if (selector(obj))
                 {
-                    return obj;
+                    retList.Add(obj);
                 }
             }
-            return null;
+            return retList;
         }
 
-        public abstract void SetObjArray(CmnObj[] objArray);
+
+        public virtual void SetObjArray(CmnObj[] objArray)
+        {
+            throw new NotImplementedException();
+        }
 
 
-        public abstract IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false);
+        public virtual IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false)
+        {
+            if (reverse)
+                return Objs.Reverse();
+
+            return Objs;
+        }
 
         /* メソッド */
 
@@ -778,43 +796,20 @@ namespace Akichko.libGis
 
     public class CmnObjGroupArray : CmnObjGroup
     {
-
-        //public bool isArray = true; //false -> List
-
         public CmnObj[] objArray;
 
-
-        public CmnObjGroupArray(UInt32 type) : base(type)
-        {
-            //isArray = true;
-        }
-
+        public CmnObjGroupArray(UInt32 type) : base(type) { }
 
         public CmnObjGroupArray(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
         {
-            //isArray = true;
             this.loadedSubType = loadedSubType;
             this.objArray = objArray;
         }
 
         public override CmnObj[] ObjArray => objArray;
+
+        public override IEnumerable<CmnObj> Objs => objArray;
         
-
-        public override CmnObj[] GetObjArray()
-        {
-            return objArray;
-        }
-
-        public override CmnObj GetObj(UInt64 objId) //全走査。２分木探索等したい場合はオーバーライド
-        {
-            if (!isIdSearchable)
-                return null;
-
-            return objArray
-                ?.Where(x => x.Id == objId)
-                .FirstOrDefault();
-        }
-
         public override CmnObj GetObj(UInt16 objIndex)
         {
             if (objArray == null || objIndex >= objArray.Length)
@@ -870,19 +865,6 @@ namespace Akichko.libGis
         //}
 
 
-        public virtual void AddObj(CmnObj obj)
-        {       
-            throw new NotImplementedException();
-        }
-
-        public override IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false)
-        {
-            if(reverse)
-                return (IEnumerable<CmnObj>)objArray.Reverse();
-
-            return (IEnumerable<CmnObj>)objArray;
-        }
-
         public override void SetObjArray(CmnObj[] objArray)
         {
             this.objArray = objArray;
@@ -894,29 +876,15 @@ namespace Akichko.libGis
     {
         public List<CmnObj> objList;
 
-
         public CmnObjGroupList(UInt32 type) : base(type) { }
-
-
         public CmnObjGroupList(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
         {
             this.loadedSubType = loadedSubType;
             this.objList = objArray.ToList();
         }
 
-        public override CmnObj[] ObjArray => objList.ToArray();
-
-        public override CmnObj[] GetObjArray() => objList?.ToArray();
-
-        public override CmnObj GetObj(UInt64 objId) //全走査。２分木探索等したい場合はオーバーライド
-        {
-            if (!isIdSearchable)
-                return null;
-
-            return objList
-                ?.Where(x => x.Id == objId)
-                .FirstOrDefault();
-        }
+        public override CmnObj[] ObjArray => objList?.ToArray();
+        public override IEnumerable<CmnObj> Objs => objList;
 
         public override CmnObj GetObj(UInt16 objIndex)
         {
@@ -979,17 +947,6 @@ namespace Akichko.libGis
             obj.Index = (UInt16)(objList.Count - 1);
         }
 
-        public override IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false)
-        {
-            if(reverse)
-                return ((IEnumerable<CmnObj>)objList).Reverse();
-            return (IEnumerable<CmnObj>)objList;
-        }
-
-        public override void SetObjArray(CmnObj[] objArray)
-        {
-            throw new NotImplementedException();
-        }
     }
 
     /* タイル ******************************************************************/
@@ -1075,20 +1032,20 @@ namespace Akichko.libGis
 
         public virtual CmnObj[] GetObjArray(UInt32 objType)
         {
-            return GetObjGroup(objType)?.GetObjArray();
+            return GetObjGroup(objType)?.ObjArray;
         }
 
         //非推奨。GetObjHandle推奨
-        public CmnObj GetObj(UInt32 objType, UInt64 objId)
-        {
-            return GetObjGroup(objType)?.GetObj(objId);
-        }
+        //public CmnObj GetObj(UInt32 objType, UInt64 objId)
+        //{
+        //    return GetObjGroup(objType)?.GetObj(objId);
+        //}
 
-        //非推奨。GetObjHandle推奨
-        public CmnObj GetObj(UInt32 objType, UInt16 objIndex)
-        {
-            return GetObjGroup(objType)?.GetObj(objIndex);
-        }
+        ////非推奨。GetObjHandle推奨
+        //public CmnObj GetObj(UInt32 objType, UInt16 objIndex)
+        //{
+        //    return GetObjGroup(objType)?.GetObj(objIndex);
+        //}
 
         public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt64 objId)
         {
@@ -1102,7 +1059,12 @@ namespace Akichko.libGis
 
         public virtual CmnObjHandle GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
         {
-            return GetObjGroup(objType)?.GetObj(selector)?.ToCmnObjHandle(this);
+            return GetObjGroup(objType)?.GetObjs(selector).FirstOrDefault()?.ToCmnObjHandle(this);
+        }
+
+        public virtual IEnumerable<CmnObjHandle> GetObjHandles(UInt32 objType, Func<CmnObj, bool> selector)
+        {
+            return GetObjGroup(objType)?.GetObjs(selector).Select(x=>x.ToCmnObjHandle(this));
         }
 
         //public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
@@ -1151,11 +1113,7 @@ namespace Akichko.libGis
             return ret;
         }
 
-
-
-
         //描画用
-
 
         /* 削除予定 */
         //public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFFFFFF, UInt16 subType = 0xFFFF)

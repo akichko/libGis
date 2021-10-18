@@ -716,7 +716,7 @@ namespace Akichko.libGis
 
             CmnObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
 
-            List<CmnObjHdlRef> objHdlRefList;
+            IEnumerable<CmnObjHdlRef> objHdlRefList;
             //List<uint> noDataTileIdList;
 
             //接続リンク取得
@@ -757,7 +757,7 @@ namespace Akichko.libGis
                 //方向なしの場合に方向決定
                 if(nextLinkRef.direction == DirectionCode.None)
                 {
-                    nextLinkRef.direction = nextLinkRef.obj.GetDirection(currentCostInfo.MapLink);
+                    nextLinkRef.direction = nextLinkRef.obj.GetDirection(currentCostInfo.MapLink, isStartSide);
                 }
 
                 //探索除外
@@ -1078,7 +1078,7 @@ namespace Akichko.libGis
             RoutingMapType routingMapType = mapMgr.RoutingMapType;
 
             uint startTileId = mapMgr.tileApi.CalcTileId(orgLatLon);
-            List<uint> tileIdListS = mapMgr.tileApi.CalcTileIdAround(orgLatLon, 1000, mapMgr.tileApi.DefaultLevel);
+            IEnumerable<uint> tileIdListS = mapMgr.tileApi.CalcTileIdAround(orgLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListS.ForEach(x => mapMgr.LoadTile(x, null));
             //orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, routingMapType.roadNwObjType);
             //orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjReqType,1);
@@ -1086,7 +1086,7 @@ namespace Akichko.libGis
             PolyLinePos orgLinkPos = LatLon.CalcNearestPoint(orgLatLon, orgHdl.Geometry);
             
             uint destTileId = mapMgr.tileApi.CalcTileId(dstLatLon);
-            List<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
+            IEnumerable<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListD.ForEach(x => mapMgr.LoadTile(x, null));        
             //dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, routingMapType.roadNwObjType);
             //dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjReqType, 1);

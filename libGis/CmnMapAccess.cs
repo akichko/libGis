@@ -30,19 +30,18 @@ namespace Akichko.libGis
             throw new NotImplementedException();
         }
 
-        public List<CmnObjGroup> LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue)
+        public IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue)
         {
             throw new NotImplementedException();
         }
 
-        public List<CmnObjGroup> LoadObjGroup2(uint tileId, uint type, ushort subType = ushort.MaxValue)
+
+        public async Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF)
         {
-            throw new NotImplementedException();
+            Task<IEnumerable<CmnObjGroup>> taskRet = Task.Run(() => LoadObjGroup(tileId, type, subType));
+            IEnumerable<CmnObjGroup> ret = await taskRet.ConfigureAwait(false);
+            return ret;
         }
 
-        public Task<List<CmnObjGroup>> LoadObjGroupAsync(uint tileId, uint type, ushort subType = ushort.MaxValue)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

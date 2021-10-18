@@ -246,6 +246,8 @@ namespace Akichko.libGis
 
     public class NoTileCode : CmnTileCode
     {
+        public override uint TileId => 0xffffffff;
+        
         public override byte DefaultLevel => 1;
 
         public override byte MinLevel => 1;

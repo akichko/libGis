@@ -291,7 +291,6 @@ namespace Akichko.libGis
                 tileMng.AddTile(tmpTile);
             }
 
-
             //ObjGroup読み込み
             var task = (filter?.GetTypeList() ?? mapAccess.GetMapContentTypeList())
                 .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
@@ -301,7 +300,7 @@ namespace Akichko.libGis
             List<CmnObjGroup> tmpObjGrList = tmp2.SelectMany(x=>x).ToList();
 
             //インデックス付与（仮）
-            tmpObjGrList.ForEach(x => x.SetIndex());
+            //tmpObjGrList.ForEach(x => x.SetIndex());
 
             //タイル更新
             tmpTile.UpdateObjGroupList(tmpObjGrList);
@@ -310,7 +309,7 @@ namespace Akichko.libGis
         }
 
 
-        public virtual int LoadTile(uint tileId, List<uint> reqTypeList, UInt16 reqMaxSubType = 0xFFFF)
+        public virtual int LoadTile(uint tileId, IEnumerable<uint> reqTypeList, UInt16 reqMaxSubType = 0xFFFF)
         {
             return LoadTile(tileId, new CmnObjFilter(reqTypeList, reqMaxSubType));
         }
@@ -483,19 +482,6 @@ namespace Akichko.libGis
                 .OrderBy(x => x.distance)
                 .FirstOrDefault()
                 ?.objHdl;
-
-            //IEnumerable<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
-
-            //CmnObjHdlDistance nearestObj = searchTileList
-            //    .Select(x => x.GetNearestObj(latlon, filter))
-            //    .Where(x => x != null)
-            //    .OrderBy(x => x.distance)
-            //    .FirstOrDefault();
-
-            //if (nearestObj == null)
-            //    return null;
-
-            //return nearestObj.objHdl;
         }
 
         //曖昧検索
@@ -729,10 +715,10 @@ namespace Akichko.libGis
         List<UInt32> GetMapContentTypeList();
         //CmnTile CreateTile(uint tileId);                
         //List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt32 type = 0xFFFFFFFF, UInt16 subType = 0xFFFF);        
-        List<CmnObjGroup> LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
+        IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
         //List<CmnObjGroup> LoadObjGroup2(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
 
-        Task<List<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
+        Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
     }
 
 

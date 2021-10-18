@@ -194,7 +194,7 @@ namespace Akichko.libGis
     {
         public CmnObjFilter(bool defaultBool = false) : base(defaultBool) { }
 
-        public CmnObjFilter(List<uint> typeList, ushort maxSubType = 0xFFFF) : base(false) 
+        public CmnObjFilter(IEnumerable<uint> typeList, ushort maxSubType = 0xFFFF) : base(false) 
         {
             foreach(var type in typeList)
             {
