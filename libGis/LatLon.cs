@@ -393,7 +393,7 @@ namespace Akichko.libGis
     }
 
 
-    public class PolyLinePos  //開発中
+    public class PolyLinePos
     {
         public LatLon latLon; //最近傍点
         public float index; //形状点番号

@@ -264,7 +264,9 @@ namespace Akichko.libGis
             //ObjGroup読み込み
             List<CmnObjGroup> tmpObjGrList = (filter?.GetTypeList() ?? mapAccess.GetMapContentTypeList())
                 .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
-                .SelectMany(type => mapAccess.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
+                .Select(type => mapAccess.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
+                .Where(x=>x!=null)
+                .SelectMany(x=>x)
                 .ToList<CmnObjGroup>();
 
             //インデックス付与（仮）
@@ -297,7 +299,7 @@ namespace Akichko.libGis
                 .Select(type => mapAccess.LoadObjGroupAsync(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue));
 
             var tmp2 = await Task.WhenAll(task).ConfigureAwait(false);
-            List<CmnObjGroup> tmpObjGrList = tmp2.SelectMany(x=>x).ToList();
+            List<CmnObjGroup> tmpObjGrList = tmp2.Where(x=>x!=null).SelectMany(x=>x).ToList();
 
             //インデックス付与（仮）
             //tmpObjGrList.ForEach(x => x.SetIndex());

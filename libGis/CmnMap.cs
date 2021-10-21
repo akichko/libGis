@@ -540,13 +540,13 @@ namespace Akichko.libGis
 
             //基本属性
             listItem.Add(new AttrItemInfo(new string[] { "ObjType", $"{Type}" }, null));
-            listItem.Add(new AttrItemInfo(new string[] { "Id", $"{Id}" }, new AttrTag(0, null, null)));
             listItem.Add(new AttrItemInfo(new string[] { "SubType", $"{SubType}" }, null));
+            listItem.Add(new AttrItemInfo(new string[] { "Id", $"{Id}" }, new AttrTag(0, null, null)));
 
             listItem.AddRange(GetAttributeListItemGeometry(tile, detail));
 
 
-            return new List<AttrItemInfo>();
+            return listItem;
         }
 
         public virtual List<AttrItemInfo> GetAttributeListItemGeometry(CmnTile tile, bool detail = false)

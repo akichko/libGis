@@ -45,6 +45,9 @@
     <Compile Include="..\libGis\CmnMap.cs">
       <Link>CmnMap.cs</Link>
     </Compile>
+    <Compile Include="..\libGis\CmnMapAccess.cs">
+      <Link>CmnMapAccess.cs</Link>
+    </Compile>
     <Compile Include="..\libGis\CmnMapMgr.cs">
       <Link>CmnMapMgr.cs</Link>
     </Compile>

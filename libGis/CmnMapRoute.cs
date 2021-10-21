@@ -658,30 +658,6 @@ namespace Akichko.libGis
         {
             //処理側決定
             bool isStartSide = unprocessed.IsNextStartSide();
-
-
-            ////計算対象選定　処理未完了＆コスト最小を探す
-            //int minIndex = unprocessed.GetMinCostIndex(isStartSide);
-
-            ////探索失敗
-            //if (minIndex < 0)
-            //{
-            //    Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
-
-            //    //途中状態を出力
-
-            //    //dicTileCostInfo.Where(x=>x.Value.tile != null)
-            //    //foreach (var tileCostInfo in dicTileCostInfo) {
-            //    //    tileCostInfo.
-            //    //}
-            //    //routeResult = 
-
-            //    return -1;
-            //}
-
-            //CostRecord currentCostInfo = unprocessed.GetCostRecord(minIndex, isStartSide);
-
-
             CostRecord currentCostInfo = unprocessed.GetMinCostRecord(isStartSide);
 
             //異常
@@ -689,8 +665,6 @@ namespace Akichko.libGis
             {
                 Console.WriteLine($"[{Environment.TickCount / 1000.0:F3}] All Calculation Finished! Destination Not Found");
                 return ResultCode.NotFound;
-                //Console.WriteLine("Fatal Error");
-                //throw new NotImplementedException();
             }
 
             //探索成功
@@ -712,29 +686,30 @@ namespace Akichko.libGis
                 return ResultCode.Continue;
             }
 
-            //出発地側か目的地側か
 
             CmnObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
 
-            IEnumerable<CmnObjHdlRef> objHdlRefList;
+            List<CmnObjHdlRef> objHdlRefList;
             //List<uint> noDataTileIdList;
 
             //接続リンク取得
             while (true)
             {
-                if (isStartSide)
-                {
-                    //接続リンク。向きは自動判別
-                    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, routingMapType.nextLinkRefType);
-                }
-                else
-                {
-                    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, routingMapType.backLinkRefType);
-                }
+                //if (isStartSide)
+                //{
+                //    //接続リンク。向きは自動判別
+                //    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, routingMapType.nextLinkRefType);
+                //}
+                //else
+                //{
+                //    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, routingMapType.backLinkRefType);
+                //}
+
+                //接続リンク。向きは自動判別
+                objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, isStartSide ? routingMapType.nextLinkRefType : routingMapType.backLinkRefType);
 
                 //初期設定の読み込み可能範囲内タイル
                 List<uint> noDataTileIdList = objHdlRefList
-                    //.Where(x => x.noData)
                     .Select(x => (x.objHdl?.tile?.TileId ?? x.nextRef?.key?.tileId) ?? 0xffffffff)
                     .Where(x => x != 0xffffffff && dicTileCostInfo.ContainsKey(x) && !dicTileCostInfo[x].isLoaded)
                     .ToList();
@@ -777,7 +752,7 @@ namespace Akichko.libGis
                 //双方向ダイクストラでは不要
 
 
-#if false //速度が課題
+#if true //速度が課題
                 //並走レーンをいずれ考慮する場合は、自コストは除外＋車線変更コスト
                 nextTotalCost = currentCostInfo.TotalCost(isStartSide) + currentDLinkHdl.obj.Cost;
 
