@@ -1450,6 +1450,7 @@ namespace Akichko.libGis
 
     public enum DirectionCode : byte
     {
+        //0と1の値が重要
         Negative = 0, //逆方向。終点⇒始点
         Positive = 1, //順方向。始点⇒終点
         None = 0xff   //方向なし

@@ -151,7 +151,7 @@ namespace Akichko.libGis
         protected TileMng tileMng;
         protected ICmnMapAccess mapAccess;
 
-        Semaphore semaphore = new Semaphore(0, 1, "tileMng");
+        SemaphoreSlim semaphore = new SemaphoreSlim(0, 1);
 
         //抽象メソッド
         //現状なし。MAL側
@@ -441,40 +441,6 @@ namespace Akichko.libGis
             return SearchTile(tileId)?.GetObjHandle(objType, objIndex);
         }
 
-        //削除予定
-        //public CmnObjHandle SearchObj(LatLon latlon, int searchRange = 1, bool multiContents = true, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
-        //{
-        //    List<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
-
-        //    CmnObjHdlDistance nearestObj = searchTileList
-        //        .Select(x => x?.GetNearestObj(latlon, objType, maxSubType))
-        //        .Where(x => x != null)
-        //        .OrderBy(x => x.distance)
-        //        .FirstOrDefault();
-
-        //    if (nearestObj == null)
-        //        return null;
-
-        //    return nearestObj.objHdl;
-
-        //}
-
-        //public CmnObjHandle SearchObj(LatLon latlon, ReqType[] reqTypeArray, int searchRange = 1)
-        //{
-        //    List<CmnTile> searchTileList = SearchTiles(latlon, searchRange);
-
-        //    CmnObjHdlDistance nearestObj = searchTileList
-        //        .Select(x => x.GetNearestObj(latlon, reqTypeArray))
-        //        .Where(x => x != null)
-        //        .OrderBy(x => x.distance)
-        //        .FirstOrDefault();
-
-        //    if (nearestObj == null)
-        //        return null;
-
-        //    return nearestObj.objHdl;
-
-        //}
 
         public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange, int timeStamp)
         {
@@ -713,12 +679,12 @@ namespace Akichko.libGis
         bool IsConnected { get; }
         int ConnectMap(string connectStr);
         int DisconnectMap();
-        List<uint> GetMapTileIdList();
         List<UInt32> GetMapContentTypeList();
+        List<uint> GetMapTileIdList();
         //CmnTile CreateTile(uint tileId);                
         //List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt32 type = 0xFFFFFFFF, UInt16 subType = 0xFFFF);        
+
         IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
-        //List<CmnObjGroup> LoadObjGroup2(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
 
         Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
     }
