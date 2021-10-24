@@ -355,6 +355,11 @@ namespace Akichko.libGis
             return 0;
         }
 
+        public int DelObj(uint tileId, UInt32 objType, ulong objId, long endTimeStamp = 0)
+        {
+            SearchTile(tileId)?.DelObj(objType, objId, endTimeStamp);
+            return 0;
+        }
 
         /* タイル検索メソッド ******************************************************/
 
@@ -442,7 +447,7 @@ namespace Akichko.libGis
         }
 
 
-        public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange, int timeStamp)
+        public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange, long timeStamp)
         {
             return SearchTiles(latlon, searchRange)
                 .Select(x => x.GetNearestObj(latlon, filter, timeStamp))

@@ -530,7 +530,7 @@ namespace Akichko.libGis
         }
 
 
-        public virtual bool CheckTimeStamp(int timeStamp) => true;
+        public virtual bool CheckTimeStamp(long timeStamp) => true;
 
         /* 描画用 ----------------------------------------------------------*/
 
@@ -591,6 +591,11 @@ namespace Akichko.libGis
             //objとの関連から方向取得
             return DirectionCode.None;
         }
+
+        public virtual void SetEndTimeStamp(long endTimeStamp)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     delegate bool Judge<T>(T obj);
@@ -641,13 +646,19 @@ namespace Akichko.libGis
 
         public abstract CmnObj GetObj(UInt16 objIndex);
 
-        public virtual CmnObj GetObj(UInt64 objId) //全走査。２分木探索等したい場合はオーバーライド
+        public virtual CmnObj GetObj(UInt64 objId, long timeStamp = long.MaxValue) //全走査。２分木探索等したい場合はオーバーライド
         {
+            //TimeStamp:
+            //全部 -1
+            //有効データ全部　long.MaxValue
+            //時間指定 x
+
             if (!isIdSearchable)
                 return null;
 
             return Objs
                 ?.Where(x => x.Id == objId)
+                .Where(x => x.CheckTimeStamp(timeStamp))
                 .FirstOrDefault();
         }
 
@@ -739,7 +750,7 @@ namespace Akichko.libGis
 
         //}
 
-        public virtual CmnObjDistance GetNearestObj(LatLon latlon, Filter<ushort> subTypeFilter, int timeStamp)
+        public virtual CmnObjDistance GetNearestObj(LatLon latlon, Filter<ushort> subTypeFilter, long timeStamp)
         {
             if (!isGeoSearchable)
                 return null;
@@ -787,6 +798,11 @@ namespace Akichko.libGis
         //}
 
         public virtual void AddObj(CmnObj obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void DelObj(ulong objId, long timeStamp = 0)
         {
             throw new NotImplementedException();
         }
@@ -947,6 +963,15 @@ namespace Akichko.libGis
             obj.Index = (UInt16)(objList.Count - 1);
         }
 
+        public override void DelObj(ulong objId, long endTimeStamp = 0)
+        {
+            //有効データ取得
+            CmnObj obj = GetObj(objId, endTimeStamp);
+
+            //タイムスタンプ設定
+            obj.SetEndTimeStamp(endTimeStamp);
+        }
+
     }
 
     /* タイル ******************************************************************/
@@ -1096,12 +1121,12 @@ namespace Akichko.libGis
         //    return ret;
         //}
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, uint objType, Filter<ushort> subTypeFilter, int timeStamp)
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, uint objType, Filter<ushort> subTypeFilter, long timeStamp)
         {
             return GetObjGroup(objType)?.GetNearestObj(latlon, subTypeFilter, timeStamp)?.ToCmnObjHdlDistance(this);
         }
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, CmnObjFilter filter, int timeStamp)
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, CmnObjFilter filter, long timeStamp)
         {
 
             var ret = GetObjGroupList(filter)
@@ -1147,6 +1172,12 @@ namespace Akichko.libGis
             GetObjGroup(objType)?.AddObj(obj);
         }
 
+        public virtual void DelObj(uint objType, ulong objId, long endTimeStamp = 0)
+        {
+            GetObjGroup(objType)?.DelObj(objId, endTimeStamp);
+
+        }
+
         //削除予定
         public static bool CheckObjTypeMatch(UInt32 objType, UInt32 objTypeBits)
         {
@@ -1158,8 +1189,6 @@ namespace Akichko.libGis
 
         public bool IsContentsLoaded(UInt32 objType, ushort subType) =>
             GetObjGroup(objType)?.IsContentsLoaded(subType) ?? false;
-
-
     }
 
 
