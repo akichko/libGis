@@ -125,7 +125,7 @@ namespace Akichko.libGis
 
 
 
-        public static LatLon S_CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
+        public static LatLon S_CalcLatLon(uint tileId, RectPos tilePos = RectPos.Center)
         {
             double dx;
             double dy;
@@ -136,23 +136,23 @@ namespace Akichko.libGis
 
             switch (tilePos)
             {
-                case ERectPos.SouthWest:
+                case RectPos.SouthWest:
                     dx = tileX << tileLv;
                     dy = tileY << tileLv;
                     break;
-                case ERectPos.SouthEast:
+                case RectPos.SouthEast:
                     dx = (tileX + 1) << tileLv;
                     dy = tileY << tileLv;
                     break;
-                case ERectPos.NorthWest:
+                case RectPos.NorthWest:
                     dx = tileX << tileLv;
                     dy = (tileY + 1) << tileLv;
                     break;
-                case ERectPos.NorthEast:
+                case RectPos.NorthEast:
                     dx = (tileX + 1) << tileLv;
                     dy = (tileY + 1) << tileLv;
                     break;
-                case ERectPos.Center:
+                case RectPos.Center:
                     dx = ((tileX << tileLv) + ((tileX + 1) << tileLv)) * 0.5;
                     dy = ((tileY << tileLv) + ((tileY + 1) << tileLv)) * 0.5;
                     break;

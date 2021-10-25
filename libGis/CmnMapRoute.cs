@@ -763,6 +763,8 @@ namespace Akichko.libGis
                     nextCostInfo.SetStatus(isStartSide, 1);
                     nextCostInfo.SetBackCostRecord(isStartSide, currentCostInfo);
                     unprocessed.Add(nextCostInfo, isStartSide);
+                    //nextCostInfo.linkIndex = nextLinkRef.obj.Index;
+                    //nextCostInfo.linkDirection = nextLinkRef.direction;
                 }
                 //リンクの探索ステータス更新
                 currentCostInfo.SetStatus(isStartSide, 2);

@@ -60,7 +60,7 @@ namespace Akichko.libGis
         /* タイルコード変換 */
 
         //ID => LatLon
-        LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center);
+        LatLon CalcLatLon(uint tileId, RectPos tilePos = RectPos.Center);
 
         //XYL => LatLon
         LatLon CalcLatLon(TileXYL xyl);
@@ -146,29 +146,29 @@ namespace Akichko.libGis
         /* タイルコード変換 */
 
         //ID => LatLon
-        public virtual LatLon CalcLatLon(uint tileId, ERectPos tilePos = ERectPos.Center)
+        public virtual LatLon CalcLatLon(uint tileId, RectPos tilePos = RectPos.Center)
         {
             TileXYL xyl = CalcTileXYL(tileId);
 
             switch (tilePos)
             {
-                case ERectPos.SouthWest:
+                case RectPos.SouthWest:
 
                     return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
 
-                case ERectPos.SouthEast:
+                case RectPos.SouthEast:
 
                     return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
 
-                case ERectPos.NorthWest:
+                case RectPos.NorthWest:
 
                     return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
 
-                case ERectPos.NorthEast:
+                case RectPos.NorthEast:
 
                     return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
 
-                case ERectPos.Center:
+                case RectPos.Center:
 
                     LatLon tmpSW = new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
                     LatLon tmpNE = new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
@@ -265,31 +265,31 @@ namespace Akichko.libGis
             int tileYA = CalcTileY(tileIdA);
             int tileYB = CalcTileY(tileIdB);
 
-            ERectPos posTileA = ERectPos.SouthWest;
-            ERectPos posTileB = ERectPos.SouthWest;
+            RectPos posTileA = RectPos.SouthWest;
+            RectPos posTileB = RectPos.SouthWest;
 
             if (tileXA < tileXB)
             {
-                posTileA = ERectPos.SouthEast;
+                posTileA = RectPos.SouthEast;
                 if (tileYA < tileYB)
-                    posTileA = ERectPos.NorthEast;
+                    posTileA = RectPos.NorthEast;
                 else if (tileYA > tileYB)
-                    posTileB = ERectPos.NorthWest;
+                    posTileB = RectPos.NorthWest;
             }
             else if (tileXB < tileXA)
             {
-                posTileB = ERectPos.SouthEast;
+                posTileB = RectPos.SouthEast;
                 if (tileYB < tileYA)
-                    posTileB = ERectPos.NorthEast;
+                    posTileB = RectPos.NorthEast;
                 else if (tileYB > tileYA)
-                    posTileA = ERectPos.NorthWest;
+                    posTileA = RectPos.NorthWest;
             }
             else //(tileXA == tileXB)
             {
                 if (tileYA < tileYB)
-                    posTileA = ERectPos.NorthWest;
+                    posTileA = RectPos.NorthWest;
                 else if (tileYA > tileYB)
-                    posTileB = ERectPos.NorthWest;
+                    posTileB = RectPos.NorthWest;
             }
 
             return LatLon.CalcDistanceBetween(CalcLatLon(tileIdA, posTileA), CalcLatLon(tileIdB, posTileB));
@@ -416,11 +416,11 @@ namespace Akichko.libGis
         public virtual LatLon[] GetGeometry()
         {
             LatLon[] ret = new LatLon[5];
-            ret[0] = CalcLatLon(TileId, ERectPos.SouthWest);
-            ret[1] = CalcLatLon(TileId, ERectPos.SouthEast);
-            ret[2] = CalcLatLon(TileId, ERectPos.NorthEast);
-            ret[3] = CalcLatLon(TileId, ERectPos.NorthWest);
-            ret[4] = CalcLatLon(TileId, ERectPos.SouthWest);
+            ret[0] = CalcLatLon(TileId, RectPos.SouthWest);
+            ret[1] = CalcLatLon(TileId, RectPos.SouthEast);
+            ret[2] = CalcLatLon(TileId, RectPos.NorthEast);
+            ret[3] = CalcLatLon(TileId, RectPos.NorthWest);
+            ret[4] = CalcLatLon(TileId, RectPos.SouthWest);
 
             return ret;
         }
@@ -772,30 +772,6 @@ namespace Akichko.libGis
         //不要ならoverrideで無効化
         public virtual void SetIndex() { }
 
-        //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
-        //{
-        //    if (!isDrawable)
-        //        return;
- 
-        //    if (isDrawReverse)
-        //        GetIEnumerableObjs()?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-        //    else
-        //        GetIEnumerableObjs()?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-
-        //}
-
-
-        //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, Filter<ushort> subTypeFilter)
-        //{
-        //    if (!isDrawable)
-        //        return;
-
-        //    GetIEnumerableObjs(isDrawReverse)
-        //        ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
-        //        .ToList()
-        //        .ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-
-        //}
 
         public virtual void AddObj(CmnObj obj)
         {
@@ -868,18 +844,6 @@ namespace Akichko.libGis
             }
         }
 
-        //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
-        //{
-        //    if (isDrawable)
-        //    {
-        //        if (isDrawReverse)
-        //            objArray?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-        //        else
-        //            objArray?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-        //    }
-
-        //}
-
 
         public override void SetObjArray(CmnObj[] objArray)
         {
@@ -944,18 +908,6 @@ namespace Akichko.libGis
 
         }
 
-        //public virtual void ExeDrawFunc(CmnTile tile, CbGetObjFunc cbDrawFunc, UInt16 subType = 0xFFFF)
-        //{
-        //    if (isDrawable)
-        //    {
-        //        if (isDrawReverse)
-        //            objList?.Where(x => x.SubType <= subType).Reverse().ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-        //        else
-        //            objList?.Where(x => x.SubType <= subType).ToList().ForEach(x => x.ExeCallbackFunc(tile, cbDrawFunc));
-        //    }
-
-        //}
-
 
         public override void AddObj(CmnObj obj)
         {
@@ -966,9 +918,11 @@ namespace Akichko.libGis
         public override void DelObj(ulong objId, long endTimeStamp = 0)
         {
             //有効データ取得
-            CmnObj obj = GetObj(objId, endTimeStamp);
+            CmnObj obj = GetObj(objId, long.MaxValue);
 
-            //タイムスタンプ設定
+            if (obj == null)
+                return;
+
             obj.SetEndTimeStamp(endTimeStamp);
         }
 
@@ -1466,7 +1420,7 @@ namespace Akichko.libGis
 
     /* コード ****************************************************************/
 
-    public enum ERectPos
+    public enum RectPos
     {
         SouthWest,
         SouthEast,
