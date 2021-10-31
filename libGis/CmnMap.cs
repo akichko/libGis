@@ -152,31 +152,20 @@ namespace Akichko.libGis
 
             switch (tilePos)
             {
-                case RectPos.SouthWest:
+                case RectPos.SouthWest: return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
 
-                    return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
+                case RectPos.SouthEast: return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
 
-                case RectPos.SouthEast:
+                case RectPos.NorthWest: return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
 
-                    return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
-
-                case RectPos.NorthWest:
-
-                    return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
-
-                case RectPos.NorthEast:
-
-                    return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
+                case RectPos.NorthEast: return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
 
                 case RectPos.Center:
-
                     LatLon tmpSW = new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
                     LatLon tmpNE = new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
-
                     return (tmpSW + tmpNE) / 2.0;
 
-                default:
-                    throw new NotImplementedException();
+                default: throw new NotImplementedException();
             }
 
         }
@@ -857,10 +846,11 @@ namespace Akichko.libGis
         public List<CmnObj> objList;
 
         public CmnObjGroupList(UInt32 type) : base(type) { }
-        public CmnObjGroupList(UInt32 type, CmnObj[] objArray, UInt16 loadedSubType) : base(type)
+
+        public CmnObjGroupList(UInt32 type, List<CmnObj> objList, UInt16 loadedSubType) : base(type)
         {
             this.loadedSubType = loadedSubType;
-            this.objList = objArray.ToList();
+            this.objList = objList;
         }
 
         public override CmnObj[] ObjArray => objList?.ToArray();

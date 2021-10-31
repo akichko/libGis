@@ -175,8 +175,13 @@ namespace Akichko.libGis
 
         public static PolyLinePos CalcNearestPoint(LatLon latlon, LatLon[] polyline)
         {
-            if (latlon == null || polyline == null || polyline.Length <= 1)
+            if (latlon == null || polyline == null || polyline.Length < 1)
                 return null;
+
+            if (polyline.Length == 1)
+            {
+                return new PolyLinePos(polyline[0], 0, 0);
+            }
 
             double minDistance = Double.MaxValue;
             

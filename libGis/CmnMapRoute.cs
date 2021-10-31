@@ -1057,16 +1057,12 @@ namespace Akichko.libGis
             uint startTileId = mapMgr.tileApi.CalcTileId(orgLatLon);
             IEnumerable<uint> tileIdListS = mapMgr.tileApi.CalcTileIdAround(orgLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListS.ForEach(x => mapMgr.LoadTile(x, null));
-            //orgHdl = mapMgr.SearchObj(orgLatLon, 1, false, routingMapType.roadNwObjType);
-            //orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjReqType,1);
             orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjFilter, 1, -1);
             PolyLinePos orgLinkPos = LatLon.CalcNearestPoint(orgLatLon, orgHdl.Geometry);
             
             uint destTileId = mapMgr.tileApi.CalcTileId(dstLatLon);
             IEnumerable<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListD.ForEach(x => mapMgr.LoadTile(x, null));        
-            //dstHdl = mapMgr.SearchObj(dstLatLon, 1, false, routingMapType.roadNwObjType);
-            //dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjReqType, 1);
             dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjFilter, 1, -1);
             PolyLinePos dstLinkPos = LatLon.CalcNearestPoint(dstLatLon, dstHdl.Geometry);
 

@@ -447,7 +447,7 @@ namespace Akichko.libGis
         }
 
 
-        public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange, long timeStamp)
+        public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange, long timeStamp = -1)
         {
             return SearchTiles(latlon, searchRange)
                 .Select(x => x.GetNearestObj(latlon, filter, timeStamp))
