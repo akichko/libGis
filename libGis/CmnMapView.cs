@@ -38,13 +38,13 @@ namespace Akichko.libGis
 
             kmlString.AppendLine($"<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             kmlString.AppendLine("<kml xmlns = \"http://www.opengis.net/kml/2.2\" xmlns:gx = \"http://www.google.com/kml/ext/2.2\" xmlns:kml = \"http://www.opengis.net/kml/2.2\" xmlns:atom = \"http://www.w3.org/2005/Atom\">\n");
-            kmlString.AppendLine("<Document>");
-            kmlString.AppendLine("<name>KmlFile</name>");
-            kmlString.AppendLine("<open>1</open>");
-            kmlString.AppendLine("<Placemark>");
-            kmlString.AppendLine("<name>Origin</name>");
-            kmlString.AppendLine($"<Point><coordinates> { start.lon },{ start.lat },0</coordinates></Point>");
-            kmlString.AppendLine("</Placemark>");
+            kmlString.AppendLine($@"<Document>
+<name>KmlFile</name>
+<open>1</open>
+<Placemark>
+<name>Origin</name>
+<Point><coordinates> { start.lon },{ start.lat },0</coordinates></Point>
+</Placemark>");
 
             kmlString.AppendLine("<Placemark>");
             kmlString.AppendLine("<name>Destination</name>");

@@ -241,7 +241,7 @@ namespace Akichko.libGis
 
     }
 
-    class PackData64
+    public class PackData64
     {
         public UInt64 rawData;
 
@@ -362,7 +362,7 @@ namespace Akichko.libGis
     }
 
 
-    class PackData32
+    public class PackData32
     {
         public UInt32 rawData;
 

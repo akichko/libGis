@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "d:\\Git\\akichko\\libGis\\libGis\\libGis.csproj": {}
+    "D:\\Git\\akichko\\libGis\\libGis\\libGIS.csproj": {}
   },
   "projects": {
-    "d:\\Git\\akichko\\libGis\\libGis\\libGis.csproj": {
+    "D:\\Git\\akichko\\libGis\\libGis\\libGIS.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\Git\\akichko\\libGis\\libGis\\libGis.csproj",
+        "projectUniqueName": "D:\\Git\\akichko\\libGis\\libGis\\libGIS.csproj",
         "projectName": "libGis",
-        "projectPath": "d:\\Git\\akichko\\libGis\\libGis\\libGis.csproj",
+        "projectPath": "D:\\Git\\akichko\\libGis\\libGis\\libGIS.csproj",
         "packagesPath": "C:\\Users\\A\\.nuget\\packages\\",
-        "outputPath": "d:\\Git\\akichko\\libGis\\libGis\\obj\\",
+        "outputPath": "D:\\Git\\akichko\\libGis\\libGis\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\A\\AppData\\Roaming\\NuGet\\NuGet.Config",

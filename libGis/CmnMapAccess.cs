@@ -30,6 +30,11 @@ namespace Akichko.libGis
             throw new NotImplementedException();
         }
 
+        public TimeStampRange GetTimeStampRange()
+        {
+            throw new NotImplementedException();
+        }
+
         public IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue)
         {
             throw new NotImplementedException();

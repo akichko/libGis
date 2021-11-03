@@ -463,6 +463,8 @@ namespace Akichko.libGis
 
         public abstract UInt32 Type { get; } //ビットフラグ形式(廃止予定)
 
+        public virtual GeometryType GeoType => GeometryType.Line;
+        
         /* 仮想プロパティ =====================================================*/
 
         public virtual UInt16 SubType => 0xffff; //値が小さいほど重要。データ切り捨ての閾値に利用
@@ -542,6 +544,9 @@ namespace Akichko.libGis
         {
             List<AttrItemInfo> listItem = new List<AttrItemInfo>();
 
+            if(Geometry == null)
+                return listItem;
+
             //形状詳細表示
             if (detail)
             {
@@ -586,6 +591,15 @@ namespace Akichko.libGis
             throw new NotImplementedException();
         }
     }
+
+    public enum GeometryType
+    {
+        None,
+        Point,
+        Line,
+        Polygon
+    }
+
 
     delegate bool Judge<T>(T obj);
 
@@ -635,7 +649,7 @@ namespace Akichko.libGis
 
         public abstract CmnObj GetObj(UInt16 objIndex);
 
-        public virtual CmnObj GetObj(UInt64 objId, long timeStamp = long.MaxValue) //全走査。２分木探索等したい場合はオーバーライド
+        public virtual CmnObj GetObj(UInt64 objId, long timeStamp = -1) //全走査。２分木探索等したい場合はオーバーライド
         {
             //TimeStamp:
             //全部 -1
@@ -1016,12 +1030,12 @@ namespace Akichko.libGis
         //    return GetObjGroup(objType)?.GetObj(objIndex);
         //}
 
-        public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt64 objId)
+        public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt64 objId, long timeStamp = -1)
         {
             return GetObjGroup(objType)?.GetObj(objId)?.ToCmnObjHandle(this);
         }
 
-        public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt16 objIndex)
+        public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt16 objIndex, long timeStamp = -1)
         {
             return GetObjGroup(objType)?.GetObj(objIndex)?.ToCmnObjHandle(this);
         }
@@ -1080,6 +1094,15 @@ namespace Akichko.libGis
                 .FirstOrDefault();
 
             return ret;
+        }
+
+
+
+        public virtual CmnObjHandle GetRandomObj(UInt32 objType)
+        {
+            CmnObj[] objArray = GetObjGroup(objType).ObjArray;
+            Random rnd = new Random();
+            return objArray[rnd.Next(0, objArray.Length - 1)].ToCmnObjHandle(this);
         }
 
         //描画用

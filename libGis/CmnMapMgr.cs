@@ -436,29 +436,30 @@ namespace Akichko.libGis
 
         /* オブジェクト検索メソッド ************************************************/
 
-        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt64 objId)
+        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt64 objId, long timeStamp = -1)
         {
-            return SearchTile(tileId)?.GetObjHandle(objType, objId);
+            return SearchTile(tileId)?.GetObjHandle(objType, objId, timeStamp);
         }
 
-        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt16 objIndex)
+        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, UInt16 objIndex, long timeStamp = -1)
         {
-            return SearchTile(tileId)?.GetObjHandle(objType, objIndex);
+            return SearchTile(tileId)?.GetObjHandle(objType, objIndex, timeStamp);
         }
 
 
         public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange, long timeStamp = -1)
         {
-            return SearchTiles(latlon, searchRange)
+            var ret = SearchTiles(latlon, searchRange)
                 .Select(x => x.GetNearestObj(latlon, filter, timeStamp))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
                 .FirstOrDefault()
                 ?.objHdl;
+            return ret;
         }
 
         //曖昧検索
-        public CmnObjHandle SearchObj(CmnSearchKey cmnSearchKey)
+        public CmnObjHandle SearchObj(CmnSearchKey cmnSearchKey, long timeStamp = -1)
         {
             if (cmnSearchKey == null)
                 return null;
@@ -482,7 +483,7 @@ namespace Akichko.libGis
                 return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objIndex)?.SetDirection(cmnSearchKey.objDirection);
             //ID検索
             else if (cmnSearchKey.objId != 0xffffffffffffffff)
-                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId)?.SetDirection(cmnSearchKey.objDirection);
+                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId, timeStamp)?.SetDirection(cmnSearchKey.objDirection);
             else if (cmnSearchKey.matchFunc != null)
                 return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.matchFunc)?.SetDirection(cmnSearchKey.objDirection);
             else
@@ -494,6 +495,20 @@ namespace Akichko.libGis
         public CmnObjHandle SearchObj(uint tileId, UInt32 objType, Func<CmnObj, bool> selector)
         {
             return SearchTile(tileId)?.GetObjHandle(objType, selector);
+        }
+
+        //ランダム
+        public CmnObjHandle SearchRandomObj(uint tileId, UInt32 objType)
+        {
+            return SearchTile(tileId)?.GetRandomObj(objType);
+        }
+
+        public uint GetRandomTileId()
+        {
+            List<uint> allTileList = GetMapTileIdList();
+            Random rnd = new Random();
+            uint ret = allTileList[rnd.Next(0, allTileList.Count - 1)];
+            return ret;
         }
 
 
@@ -624,6 +639,17 @@ namespace Akichko.libGis
         public virtual RoutingMapType RoutingMapType => null;
 
 
+        public virtual string[] GetMapContentTypeNames() => null;
+        //{
+        //    var ret = ((MapContentType[])Enum.GetValues(typeof(MapContentType)))
+        //        .Select(x => Enum.GetName(typeof(MapContentType), x)).ToArray();
+        //    return ret;
+        //}
+
+        public virtual uint GetMapContentTypeValue(string objTypeName) => 0;
+            //(uint)Enum.Parse(typeof(MapContentType), objTypeName);
+
+
         /* 経路計算 *************************************************************/
 
         public virtual CmnRouteMgr CreateRouteMgr()
@@ -675,7 +701,10 @@ namespace Akichko.libGis
 
         }
 
-
+        public TimeStampRange GetTimeStampRange()
+        {
+            return mapAccess.GetTimeStampRange();
+        }
     }
 
 
@@ -692,8 +721,21 @@ namespace Akichko.libGis
         IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
 
         Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
+        public TimeStampRange GetTimeStampRange();
+
     }
 
+    public class TimeStampRange
+    {
+        public long minTime;
+        public long maxTime;
+
+        public TimeStampRange(long minTime, long maxTime)
+        {
+            this.minTime = minTime;
+            this.maxTime = maxTime;
+        }
+    }
 
     public interface ICmnMapMgr { }
 
