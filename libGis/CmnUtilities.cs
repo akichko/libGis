@@ -58,6 +58,25 @@ namespace Akichko.libGis
 
     }
 
+    public class LowPassFilter<TKey> : Filter<TKey> where TKey : IComparable
+    {
+        TKey max;
+        public TKey SubTypeRangeMax => max;
+
+        public LowPassFilter(TKey max)
+        {
+            this.max = max;
+        }
+
+        public override bool CheckPass(TKey target)
+        {
+            if (target.CompareTo(max) <= 0)
+                return true;
+            else
+                return false;
+        }
+
+    }
 
     //public override RangeFilter<ushort> GetFilter(uint number)
     //{
@@ -225,6 +244,10 @@ namespace Akichko.libGis
                 return ushort.MaxValue;
         }
 
+        public IEnumerable<ObjReqType> ToObjReqType()
+        {
+            return dic.Select(x => new ObjReqType(x.Key, SubTypeRangeMax(x.Key)));
+        }
     }
 
 

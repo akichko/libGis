@@ -293,13 +293,21 @@ namespace Akichko.libGis
                 tileMng.AddTile(tmpTile);
             }
 
+#if true
+            //ObjGroup読み込み
+            IEnumerable<ObjReqType> reqTypes = (filter?.ToObjReqType() ?? mapAccess.GetMapContentTypeList().Select(x => new ObjReqType(x)))
+                .Where(reqType => !tmpTile.IsContentsLoaded(reqType.type, reqType.maxSubType));
+
+            var tmp = await mapAccess.LoadObjGroupAsync(tileId, reqTypes);
+            List<CmnObjGroup> tmpObjGrList = tmp.ToList();
+#else            
             //ObjGroup読み込み
             var task = (filter?.GetTypeList() ?? mapAccess.GetMapContentTypeList())
                 .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
                 .Select(type => mapAccess.LoadObjGroupAsync(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue));
-
             var tmp2 = await Task.WhenAll(task).ConfigureAwait(false);
             List<CmnObjGroup> tmpObjGrList = tmp2.Where(x=>x!=null).SelectMany(x=>x).ToList();
+#endif
 
             //インデックス付与（仮）
             //tmpObjGrList.ForEach(x => x.SetIndex());
@@ -484,15 +492,16 @@ namespace Akichko.libGis
             //ID検索
             else if (cmnSearchKey.objId != 0xffffffffffffffff)
                 return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId, timeStamp)?.SetDirection(cmnSearchKey.objDirection);
-            else if (cmnSearchKey.matchFunc != null)
-                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.matchFunc)?.SetDirection(cmnSearchKey.objDirection);
+            //カスタム検索
+            else if (cmnSearchKey.selector != null)
+                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.selector)?.Select(x=>x.SetDirection(cmnSearchKey.objDirection)).FirstOrDefault();
             else
                 return null;
 
         }
 
 
-        public CmnObjHandle SearchObj(uint tileId, UInt32 objType, Func<CmnObj, bool> selector)
+        public IEnumerable<CmnObjHandle> SearchObj(uint tileId, UInt32 objType, Func<CmnObj, bool> selector)
         {
             return SearchTile(tileId)?.GetObjHandle(objType, selector);
         }
@@ -721,7 +730,10 @@ namespace Akichko.libGis
         IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
 
         Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
-        public TimeStampRange GetTimeStampRange();
+
+        Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, IEnumerable<ObjReqType> reqType);
+
+        TimeStampRange GetTimeStampRange();
 
     }
 
@@ -743,5 +755,17 @@ namespace Akichko.libGis
     public interface ICmnRoutePlanner { }
 
 
+    public class ObjReqType
+    {
+        public uint type;
+        public ushort maxSubType = ushort.MaxValue;
+
+        public ObjReqType(uint objType, ushort maxSubType = ushort.MaxValue)
+        {
+            this.type = objType;
+            this.maxSubType = maxSubType;
+        }
+
+    }
 
 }

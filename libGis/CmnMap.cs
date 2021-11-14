@@ -647,7 +647,7 @@ namespace Akichko.libGis
 
         //抽象メソッド
 
-        public abstract CmnObj GetObj(UInt16 objIndex);
+        public abstract CmnObj GetObj(UInt16 objIndex, long timeStamp = -1);
 
         public virtual CmnObj GetObj(UInt64 objId, long timeStamp = -1) //全走査。２分木探索等したい場合はオーバーライド
         {
@@ -669,15 +669,16 @@ namespace Akichko.libGis
 
         public IEnumerable<CmnObj> GetObjs(Func<CmnObj, bool> selector)
         {
-            List<CmnObj> retList = new List<CmnObj>();
+            //List<CmnObj> retList = new List<CmnObj>();
             foreach(var obj in Objs)
             {
                 if (selector(obj))
                 {
-                    retList.Add(obj);
+                    yield return obj;
+                    //retList.Add(obj);
                 }
             }
-            return retList;
+            //return retList;
         }
 
 
@@ -753,7 +754,7 @@ namespace Akichko.libGis
 
         //}
 
-        public virtual CmnObjDistance GetNearestObj(LatLon latlon, Filter<ushort> subTypeFilter, long timeStamp)
+        public virtual CmnObjDistance GetNearestObj(LatLon latlon, Filter<ushort> subTypeFilter, long timeStamp = -1)
         {
             if (!isGeoSearchable)
                 return null;
@@ -805,7 +806,7 @@ namespace Akichko.libGis
 
         public override IEnumerable<CmnObj> Objs => objArray;
         
-        public override CmnObj GetObj(UInt16 objIndex)
+        public override CmnObj GetObj(UInt16 objIndex, long timeStamp = -1)
         {
             if (objArray == null || objIndex >= objArray.Length)
                 return null;
@@ -870,7 +871,7 @@ namespace Akichko.libGis
         public override CmnObj[] ObjArray => objList?.ToArray();
         public override IEnumerable<CmnObj> Objs => objList;
 
-        public override CmnObj GetObj(UInt16 objIndex)
+        public override CmnObj GetObj(UInt16 objIndex, long timeStamp = -1)
         {
             if (objList == null || objIndex >= objList.Count)
                 return null;
@@ -1032,17 +1033,17 @@ namespace Akichko.libGis
 
         public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt64 objId, long timeStamp = -1)
         {
-            return GetObjGroup(objType)?.GetObj(objId)?.ToCmnObjHandle(this);
+            return GetObjGroup(objType)?.GetObj(objId, timeStamp)?.ToCmnObjHandle(this);
         }
 
         public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt16 objIndex, long timeStamp = -1)
         {
-            return GetObjGroup(objType)?.GetObj(objIndex)?.ToCmnObjHandle(this);
+            return GetObjGroup(objType)?.GetObj(objIndex, timeStamp)?.ToCmnObjHandle(this);
         }
 
-        public virtual CmnObjHandle GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
+        public virtual IEnumerable<CmnObjHandle> GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
         {
-            return GetObjGroup(objType)?.GetObjs(selector).FirstOrDefault()?.ToCmnObjHandle(this);
+            return GetObjGroup(objType)?.GetObjs(selector).Select(x=>x.ToCmnObjHandle(this));
         }
 
         public virtual IEnumerable<CmnObjHandle> GetObjHandles(UInt32 objType, Func<CmnObj, bool> selector)
@@ -1350,13 +1351,13 @@ namespace Akichko.libGis
         public UInt32 objType;
         public CmnTile tile;
         public uint tileId = 0xffffffff;
-        public TileXY tileOFfset; //未対応
+        public TileXY tileOffset; //未対応
         public CmnObj obj;
         public UInt64 objId = 0xffffffffffffffff;
         public UInt16 objIndex = 0xffff;
         public DirectionCode objDirection = DirectionCode.None;
         public UInt16 subType = 0xffff;
-        public Func<CmnObj, bool> matchFunc;
+        public Func<CmnObj, bool> selector;
 
         public CmnSearchKey(UInt32 objType)
         {
@@ -1446,7 +1447,7 @@ namespace Akichko.libGis
 
     public enum DirectionCode : byte
     {
-        //0と1の値が重要
+        //0と1の値が重要(配列インデックスに利用)
         Negative = 0, //逆方向。終点⇒始点
         Positive = 1, //順方向。始点⇒終点
         None = 0xff   //方向なし

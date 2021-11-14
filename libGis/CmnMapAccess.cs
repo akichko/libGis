@@ -8,45 +8,36 @@ namespace Akichko.libGis
 {
     public abstract class CmnMapAccess : ICmnMapAccess
     {
-        public bool IsConnected => throw new NotImplementedException();
+        public abstract bool IsConnected { get; }
 
-        public int ConnectMap(string connectStr)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract int ConnectMap(string connectStr);
 
-        public int DisconnectMap()
-        {
-            throw new NotImplementedException();
-        }
+        public abstract int DisconnectMap();
 
-        public List<uint> GetMapContentTypeList()
-        {
-            throw new NotImplementedException();
-        }
+        public abstract List<uint> GetMapContentTypeList();
 
-        public List<uint> GetMapTileIdList()
-        {
-            throw new NotImplementedException();
-        }
+        public abstract List<uint> GetMapTileIdList();
 
-        public TimeStampRange GetTimeStampRange()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual TimeStampRange GetTimeStampRange() => null;
 
-        public IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue);
 
+        public abstract List<CmnObjGroup> LoadObjGroup(uint tileId, IEnumerable<ObjReqType> reqTypes);
 
-        public async Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF)
+        public virtual async Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF)
         {
             Task<IEnumerable<CmnObjGroup>> taskRet = Task.Run(() => LoadObjGroup(tileId, type, subType));
             IEnumerable<CmnObjGroup> ret = await taskRet.ConfigureAwait(false);
             return ret;
         }
 
+        public virtual async Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, IEnumerable<ObjReqType> reqTypes)
+        {
+            var tasks = reqTypes.Select(reqType => Task.Run(() => LoadObjGroup(tileId, reqType.type, reqType.maxSubType)));
+            var tmp = await Task.WhenAll(tasks).ConfigureAwait(false);
+            List<CmnObjGroup> ret = tmp.Where(x => x != null).SelectMany(x => x).ToList();
+
+            return ret;
+        }
     }
 }
