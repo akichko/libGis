@@ -1041,9 +1041,9 @@ namespace Akichko.libGis
             return GetObjGroup(objType)?.GetObj(objIndex, timeStamp)?.ToCmnObjHandle(this);
         }
 
-        public virtual IEnumerable<CmnObjHandle> GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
+        public virtual CmnObjHandle GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
         {
-            return GetObjGroup(objType)?.GetObjs(selector).Select(x=>x.ToCmnObjHandle(this));
+            return GetObjGroup(objType)?.GetObjs(selector).FirstOrDefault()?.ToCmnObjHandle(this);
         }
 
         public virtual IEnumerable<CmnObjHandle> GetObjHandles(UInt32 objType, Func<CmnObj, bool> selector)

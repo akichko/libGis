@@ -494,16 +494,16 @@ namespace Akichko.libGis
                 return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.objId, timeStamp)?.SetDirection(cmnSearchKey.objDirection);
             //カスタム検索
             else if (cmnSearchKey.selector != null)
-                return tile.GetObjHandle(cmnSearchKey.objType, cmnSearchKey.selector)?.Select(x=>x.SetDirection(cmnSearchKey.objDirection)).FirstOrDefault();
+                return tile.GetObjHandles(cmnSearchKey.objType, cmnSearchKey.selector)?.Select(x=>x.SetDirection(cmnSearchKey.objDirection)).FirstOrDefault();
             else
                 return null;
 
         }
 
 
-        public IEnumerable<CmnObjHandle> SearchObj(uint tileId, UInt32 objType, Func<CmnObj, bool> selector)
+        public IEnumerable<CmnObjHandle> SearchObjs(uint tileId, UInt32 objType, Func<CmnObj, bool> selector)
         {
-            return SearchTile(tileId)?.GetObjHandle(objType, selector);
+            return SearchTile(tileId)?.GetObjHandles(objType, selector);
         }
 
         //ランダム
