@@ -236,6 +236,33 @@ namespace Akichko.libGis
             return offset;
         }
 
+        public static LatLon CalcOffsetLatLonAlongPolyline(LatLon[] polyline, double offset)
+        {
+            double length = CalcLength(polyline);
+
+            if (length == double.MaxValue || offset < 0 || offset > length)
+            {
+                return null;
+            }
+
+            double remain = offset;
+            double tmp;
+
+            for (int i = 0; i < polyline.Length-1; i++)
+            {
+                tmp = CalcDistanceBetween(polyline[i], polyline[i + 1]);
+                if(remain > tmp)
+                {
+                    remain =- tmp;
+                }
+                else
+                {
+                    return CalcOffsetLatLon(polyline[i], polyline[i + 1], remain);
+                }
+            }
+            return polyline[polyline.Length -1];
+        }
+
         public static LatLon Parse(string s)
         {
             if (s == null)

@@ -661,9 +661,9 @@ namespace Akichko.libGis
 
         /* 経路計算 *************************************************************/
 
-        public virtual CmnRouteMgr CreateRouteMgr()
+        public virtual CmnRouteMgr CreateRouteMgr(DykstraSetting setting = null)
         {
-            return new CmnRouteMgr(this);
+            return new CmnRouteMgr(this, setting);
         }
 
         public LatLon[] CalcRouteGeometry(LatLon orgLatLon, LatLon dstLatLon)

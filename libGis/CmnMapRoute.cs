@@ -455,6 +455,17 @@ namespace Akichko.libGis
         }
     }
 
+    public class DykstraSetting
+    {
+        public byte rankDownRestrictSubType;
+        public double rankDownAllowedDistance;
+
+        public DykstraSetting(byte rankDownRestrictSubType, double rankDownAllowedDistance)
+        {
+            this.rankDownRestrictSubType = rankDownRestrictSubType;
+            this.rankDownAllowedDistance = rankDownAllowedDistance;
+        }
+    }
 
     public class Dykstra
     {
@@ -471,8 +482,8 @@ namespace Akichko.libGis
         public RoutingMapType routingMapType;
 
         //探索初期の制限
-        public byte rankDownRestrictSubType = 6;
-        public double rankDownRestrictDistance = 8000;
+        public ushort rankDownRestrictSubType;
+        public double rankDownRestrictDistance;
 
         //性能測定用
        // public int[] logTickCountList;
@@ -481,7 +492,7 @@ namespace Akichko.libGis
         public int logCalcCount = 0;
         public int numTileLoad = 0;
 
-        public Dykstra(CmnMapMgr mapMgr)
+        public Dykstra(CmnMapMgr mapMgr, DykstraSetting setting)
         {
             this.mapMgr = mapMgr;
             dicTileCostInfo = new Dictionary<uint, TileCostInfo>();
@@ -493,13 +504,12 @@ namespace Akichko.libGis
 
             routingMapType = mapMgr.RoutingMapType;
 
-            //roadNwObjType = mapMgr.GetMapObjType(ECmnMapContentType.Link) | mapMgr.GetMapObjType(ECmnMapContentType.Node);
-            //roadGeometryObjType = mapMgr.GetMapObjType(ECmnMapContentType.LinkGeometry);
-            //linkObjType = mapMgr.GetMapObjType(ECmnMapContentType.Link);
-            //nextLinkRefType = mapMgr.GetMapRefType(ECmnMapRefType.NextLink);
-            //backLinkRefType = mapMgr.GetMapRefType(ECmnMapRefType.BackLink);
 
-
+            rankDownRestrictSubType = setting?.rankDownRestrictSubType ?? ushort.MaxValue;
+            rankDownRestrictDistance = setting?.rankDownAllowedDistance ?? double.MaxValue;
+            
+            //rankDownRestrictSubType = 6;
+            //rankDownRestrictDistance = 8000;
 
         }
 
@@ -726,7 +736,7 @@ namespace Akichko.libGis
                 }
 
                 //探索除外
-                if (IsCalcSkip(currentCostInfo, nextLinkRef))
+                if (IsCalcSkip(currentCostInfo, nextLinkRef, isStartSide))
                     continue;
 
 
@@ -802,7 +812,7 @@ namespace Akichko.libGis
             return ResultCode.Continue;
         }
 
-        public virtual bool IsCalcSkip(CostRecord currentCostInfo, CmnObjHandle nextLinkRef)
+        public virtual bool IsCalcSkip(CostRecord currentCostInfo, CmnObjHandle nextLinkRef, bool isStartSide)
         {
             CmnObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
 
@@ -818,10 +828,18 @@ namespace Akichko.libGis
             if (nextLinkRef.IsOneway && nextLinkRef.Oneway != nextLinkRef.direction)
                 return true;
 
-            //スタート付近で道路種別が下がる移動
-            if (nextLinkRef.SubType >= rankDownRestrictSubType
+            //順方向探索時、スタート付近（目的地付近以外）で道路種別が下がる移動
+            if (isStartSide
+                && nextLinkRef.SubType >= rankDownRestrictSubType
                 && currentDLinkHdl.SubType < nextLinkRef.SubType
                 && currentCostInfo.tileCostInfo.DistFromDestTile > rankDownRestrictDistance)
+                return true;
+
+            //逆方向探索時、目的地付近（スタート付近以外）で道路種別が下がる移動
+            if (!isStartSide
+                && nextLinkRef.SubType >= rankDownRestrictSubType
+                && currentDLinkHdl.SubType < nextLinkRef.SubType
+                && currentCostInfo.tileCostInfo.DistFromStartTile > rankDownRestrictDistance)
                 return true;
 
             return false;
@@ -989,6 +1007,7 @@ namespace Akichko.libGis
     {
 
         protected CmnMapMgr mapMgr;
+        protected DykstraSetting setting;
 
         public LatLon orgLatLon;
         public LatLon dstLatLon;
@@ -1004,15 +1023,16 @@ namespace Akichko.libGis
 
         public CmnRouteMgr() { }
 
-        public CmnRouteMgr(CmnMapMgr mapMgr)
+        public CmnRouteMgr(CmnMapMgr mapMgr, DykstraSetting setting)
         {
-            dykstra = new Dykstra(mapMgr);
+            this.setting = setting;
+            dykstra = new Dykstra(mapMgr, setting);
             this.mapMgr = mapMgr;
         }
 
         public void SetMapMgr(CmnMapMgr mapMgr)
         {
-            dykstra = new Dykstra(mapMgr);
+            dykstra = new Dykstra(mapMgr, this.setting);
             this.mapMgr = mapMgr;
         }
 
