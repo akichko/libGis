@@ -695,23 +695,13 @@ namespace Akichko.libGis
             //接続リンク取得
             while (true)
             {
-                //if (isStartSide)
-                //{
-                //    //接続リンク。向きは自動判別
-                //    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, routingMapType.nextLinkRefType);
-                //}
-                //else
-                //{
-                //    objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, routingMapType.backLinkRefType);
-                //}
-
                 //接続リンク。向きは自動判別
                 objHdlRefList = mapMgr.SearchRefObject(currentDLinkHdl, isStartSide ? routingMapType.nextLinkRefType : routingMapType.backLinkRefType);
 
                 //初期設定の読み込み可能範囲内タイル
                 List<uint> noDataTileIdList = objHdlRefList
-                    .Select(x => (x.objHdl?.tile?.TileId ?? x.nextRef?.key?.tileId) ?? 0xffffffff)
-                    .Where(x => x != 0xffffffff && dicTileCostInfo.ContainsKey(x) && !dicTileCostInfo[x].isLoaded)
+                    .Select(x => (x.objHdl?.tile?.TileId ?? x.nextRef?.key?.tileId) ?? uint.MaxValue)
+                    .Where(x => x != uint.MaxValue && dicTileCostInfo.ContainsKey(x) && !dicTileCostInfo[x].isLoaded)
                     .ToList();
 
                 //不足タイルがあれば読み込み

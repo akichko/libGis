@@ -6,9 +6,11 @@
 
   <ItemGroup>
     <Compile Include="..\libGis\CmnMap.cs" Link="CmnMap.cs" />
+    <Compile Include="..\libGis\CmnMapAccess.cs" Link="CmnMapAccess.cs" />
     <Compile Include="..\libGis\CmnMapMgr.cs" Link="CmnMapMgr.cs" />
     <Compile Include="..\libGis\CmnMapRoute.cs" Link="CmnMapRoute.cs" />
     <Compile Include="..\libGis\CmnMapView.cs" Link="CmnMapView.cs" />
+    <Compile Include="..\libGis\CmnUtilities.cs" Link="CmnUtilities.cs" />
     <Compile Include="..\libGis\GisMap.cs" Link="GisMap.cs" />
     <Compile Include="..\libGis\LatLon.cs" Link="LatLon.cs" />
   </ItemGroup>

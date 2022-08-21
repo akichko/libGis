@@ -56,9 +56,14 @@ namespace Akichko.libGis
 
         public (double meterToEast, double meterToNorth) GetOffsetXY(LatLon toLatLon) => CalcOffsetXY(this, toLatLon);
 
-        public new string ToString()
+        public override string ToString()
         {
             return $"{lon:F7}_{lat:F7}";
+        }
+
+        public string ToString(string startChr = "", string separateChr = "_", string endChr = "")
+        {
+            return $"{startChr}{lon:F7}{separateChr}{lat:F7}{endChr}";
         }
 
 
@@ -100,18 +105,18 @@ namespace Akichko.libGis
             if (polyline == null || polyline.Length == 0)
                 return double.MaxValue;
 
-            else if (polyline.Length == 1)
+            if (polyline.Length == 1)
                 return CalcDistanceBetween(polyline[0], latLon);
 
             double minDistance = Double.MaxValue;
-            double tmp;
+            double tmpDistance;
 
             for (int i = 0; i < polyline.Length - 1; i++)
             {
-                tmp = latLon.GetDistanceToLine(polyline[i], polyline[i + 1]);
-                if (tmp < minDistance)
+                tmpDistance = CalcDistanceOfPointAndLine(latLon, polyline[i], polyline[i + 1]);
+                if (tmpDistance < minDistance)
                 {
-                    minDistance = tmp;
+                    minDistance = tmpDistance;
                 }
             }
 

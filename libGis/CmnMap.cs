@@ -475,7 +475,7 @@ namespace Akichko.libGis
 
         public virtual UInt16 Index { get; set; }　//現状はメモリを消費する実装
 
-        public virtual double Length => Geometry != null ? LatLon.CalcLength(Geometry) : 0;
+        public virtual double Length => LatLon.CalcLength(Geometry);
 
         public virtual bool Enable => true; //論理削除など
 
@@ -565,11 +565,11 @@ namespace Akichko.libGis
             return listItem;
         }
 
-        public virtual int ExeCallbackFunc(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
-        {
-            //Graphic, ViewParam が課題           
-            return cbGetObjFuncForDraw(this.ToCmnObjHandle(tile));
-        }
+        //public virtual int ExeCallbackFunc(CmnTile tile, CbGetObjFunc cbGetObjFuncForDraw)
+        //{
+        //    //Graphic, ViewParam が課題           
+        //    return cbGetObjFuncForDraw(this.ToCmnObjHandle(tile));
+        //}
 
 
         public virtual LatLon[] GetGeometry(DirectionCode direction)
@@ -669,16 +669,14 @@ namespace Akichko.libGis
 
         public IEnumerable<CmnObj> GetObjs(Func<CmnObj, bool> selector)
         {
-            //List<CmnObj> retList = new List<CmnObj>();
-            foreach(var obj in Objs)
-            {
-                if (selector(obj))
-                {
-                    yield return obj;
-                    //retList.Add(obj);
-                }
-            }
-            //return retList;
+            return Objs.Where(x => selector(x));
+            //foreach(var obj in Objs)
+            //{
+            //    if (selector(obj))
+            //    {
+            //        yield return obj;
+            //    }
+            //}
         }
 
 
@@ -688,22 +686,24 @@ namespace Akichko.libGis
         }
 
 
-        public virtual IEnumerable<CmnObj> GetIEnumerableObjs(bool reverse = false)
+        public virtual IEnumerable<CmnObj> GetObjs(bool reverse = false)
         {
+            //return reverse ? Objs.Reverse() : Objs;
+
             if (reverse)
                 return Objs.Reverse();
-
-            return Objs;
+            else
+                return Objs;
         }
 
         /* メソッド */
 
-        public virtual IEnumerable<CmnObj> GetIEnumerableDrawObjs(Filter<ushort> subTypeFilter)
+        public virtual IEnumerable<CmnObj> GetDrawObjs(Filter<ushort> subTypeFilter)
         {
             if (!isDrawable)
                 return null;
 
-            return GetIEnumerableObjs(isDrawReverse)
+            return GetObjs(isDrawReverse)
                 ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true);
         }
 
@@ -759,8 +759,8 @@ namespace Akichko.libGis
             if (!isGeoSearchable)
                 return null;
 
-            CmnObjDistance nearestObjDistance = GetIEnumerableObjs()
-                ?.Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+            CmnObjDistance nearestObjDistance = Objs
+                .Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
                 .Where(x => x.CheckTimeStamp(timeStamp))
                 .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
                 .OrderBy(x => x.distance)
@@ -804,7 +804,7 @@ namespace Akichko.libGis
 
         public override CmnObj[] ObjArray => objArray;
 
-        public override IEnumerable<CmnObj> Objs => objArray;
+        public override IEnumerable<CmnObj> Objs => objArray ?? Enumerable.Empty<CmnObj>();
         
         public override CmnObj GetObj(UInt16 objIndex, long timeStamp = -1)
         {
@@ -869,7 +869,7 @@ namespace Akichko.libGis
         }
 
         public override CmnObj[] ObjArray => objList?.ToArray();
-        public override IEnumerable<CmnObj> Objs => objList;
+        public override IEnumerable<CmnObj> Objs => objList ?? Enumerable.Empty<CmnObj>();
 
         public override CmnObj GetObj(UInt16 objIndex, long timeStamp = -1)
         {
@@ -965,11 +965,9 @@ namespace Akichko.libGis
 
 
         //必要に応じてオーバーライド
-        public virtual int UpdateObjGroup(CmnObjGroup objGroup) /* abstract ?? */
+        public virtual int UpdateObjGroup(CmnObjGroup objGroup)
         {
-            UInt32 objType = objGroup.Type;
-            //上書き
-            objGroupDic[objType] = objGroup;
+            objGroupDic[objGroup.Type] = objGroup;
 
             return 0;
         }
@@ -995,21 +993,19 @@ namespace Akichko.libGis
                 return null;
         }
 
-        private IEnumerable<CmnObjGroup> GetObjGroupList()
+        private IEnumerable<CmnObjGroup> GetObjGroups()
         {
             return objGroupDic
                 .Select(x => x.Value)
                 .Where(x => x != null);
-                    //.ToList();
         }
 
-        public IEnumerable<CmnObjGroup> GetObjGroupList(Filter<uint> objTypefilter = null)
+        public IEnumerable<CmnObjGroup> GetObjGroups(Filter<uint> objTypefilter = null)
         {
             return objGroupDic
                 .Where(x => objTypefilter?.CheckPass(x.Key) ?? true)
                 .Select(x => x.Value)
                 .Where(x => x != null);
-                //.ToList();
         }
 
 
@@ -1041,10 +1037,10 @@ namespace Akichko.libGis
             return GetObjGroup(objType)?.GetObj(objIndex, timeStamp)?.ToCmnObjHandle(this);
         }
 
-        public virtual CmnObjHandle GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
-        {
-            return GetObjGroup(objType)?.GetObjs(selector).FirstOrDefault()?.ToCmnObjHandle(this);
-        }
+        //public virtual CmnObjHandle GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
+        //{
+        //    return GetObjGroup(objType)?.GetObjs(selector).FirstOrDefault()?.ToCmnObjHandle(this);
+        //}
 
         public virtual IEnumerable<CmnObjHandle> GetObjHandles(UInt32 objType, Func<CmnObj, bool> selector)
         {
@@ -1087,8 +1083,7 @@ namespace Akichko.libGis
 
         public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, CmnObjFilter filter, long timeStamp)
         {
-
-            var ret = GetObjGroupList(filter)
+            var ret = GetObjGroups(filter)
                 .Select(x => x.GetNearestObj(latlon, filter?.GetSubFilter(x.Type), timeStamp)?.ToCmnObjHdlDistance(this))
                 .Where(x => x != null)
                 .OrderBy(x => x.distance)
@@ -1147,13 +1142,13 @@ namespace Akichko.libGis
         }
 
         //削除予定
-        public static bool CheckObjTypeMatch(UInt32 objType, UInt32 objTypeBits)
-        {
-            if ((objTypeBits & objType) != 0)
-                return true;
-            else
-                return false;
-        }
+        //public static bool CheckObjTypeMatch(UInt32 objType, UInt32 objTypeBits)
+        //{
+        //    if ((objTypeBits & objType) != 0)
+        //        return true;
+        //    else
+        //        return false;
+        //}
 
         public bool IsContentsLoaded(UInt32 objType, ushort subType) =>
             GetObjGroup(objType)?.IsContentsLoaded(subType) ?? false;
@@ -1223,7 +1218,7 @@ namespace Akichko.libGis
         public virtual LatLon GetCenterLatLon() => obj.GetCenterLatLon();
         public virtual CmnObjHandle ToCmnObjHandle(CmnTile tile) => obj.ToCmnObjHandle(tile);
         public virtual List<AttrItemInfo> GetAttributeListItem() => obj.GetAttributeListItem(tile);
-        public virtual int ExeCallbackFunc(CbGetObjFunc cbGetObjFuncForDraw) => obj.ExeCallbackFunc(tile, cbGetObjFuncForDraw);
+        //public virtual int ExeCallbackFunc(CbGetObjFunc cbGetObjFuncForDraw) => obj.ExeCallbackFunc(tile, cbGetObjFuncForDraw);
         public virtual LatLon[] GetGeometry(DirectionCode direction) => obj.GetGeometry(direction);
 
     }
@@ -1344,20 +1339,29 @@ namespace Akichko.libGis
             this.final = final;
             this.key = new CmnSearchKey(objType);
         }
+
+        public CmnObjRef(int refType, UInt32 objType, Func<CmnObj, bool> selector, bool final = true)
+        {
+            this.refType = refType;
+            this.final = final;
+            this.key = new CmnSearchKey(objType);
+            this.key.selector = selector;
+        }
     }
 
     public class CmnSearchKey
     {
         public UInt32 objType;
         public CmnTile tile;
-        public uint tileId = 0xffffffff;
+        public uint tileId = uint.MaxValue;
         public TileXY tileOffset; //未対応
         public CmnObj obj;
-        public UInt64 objId = 0xffffffffffffffff;
-        public UInt16 objIndex = 0xffff;
+        public UInt64 objId = ulong.MaxValue;
+        public UInt16 objIndex = ushort.MaxValue;
         public DirectionCode objDirection = DirectionCode.None;
-        public UInt16 subType = 0xffff;
+        public UInt16 subType = ushort.MaxValue;
         public Func<CmnObj, bool> selector;
+        public Int64 timeStamp = -1;
 
         public CmnSearchKey(UInt32 objType)
         {
@@ -1371,42 +1375,42 @@ namespace Akichko.libGis
         }
     }
 
-    public struct TileObjId
-    {
-        public uint tileId;
-        public UInt64 id;
+    //public struct TileObjId
+    //{
+    //    public uint tileId;
+    //    public UInt64 id;
 
-        public TileObjId(uint tileId, UInt64 id)
-        {
-            this.tileId = tileId;
-            this.id = id;
-        }
+    //    public TileObjId(uint tileId, UInt64 id)
+    //    {
+    //        this.tileId = tileId;
+    //        this.id = id;
+    //    }
 
-        override public string ToString()
-        {
-            return $"{tileId}-{id}";
-        }
-    }
+    //    override public string ToString()
+    //    {
+    //        return $"{tileId}-{id}";
+    //    }
+    //}
 
-    public struct TileObjIndex
-    {
-        public uint tileId;
-        public short index;
+    //public struct TileObjIndex
+    //{
+    //    public uint tileId;
+    //    public short index;
 
-        public TileObjIndex(uint tileId, short index)
-        {
-            this.tileId = tileId;
-            this.index = index;
-        }
-    }
+    //    public TileObjIndex(uint tileId, short index)
+    //    {
+    //        this.tileId = tileId;
+    //        this.index = index;
+    //    }
+    //}
 
 
 
     /* 描画用 ****************************************************************/
 
-    public delegate int CbGetObjFunc(CmnObjHandle objHdl);
+    //public delegate int CbGetObjFunc(CmnObjHandle objHdl);
 
-    public delegate void CbDrawFunc(Object g, Object viewParam, CmnObj cmnObj);
+    //public delegate void CbDrawFunc(Object g, Object viewParam, CmnObj cmnObj);
 
 
     public interface IViewObj
