@@ -20,23 +20,25 @@ namespace Akichko.libGis
 
         public virtual TimeStampRange GetTimeStampRange() => null;
 
-        public abstract IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue);
+        public abstract CmnObjGroup LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue);
 
-        public abstract List<CmnObjGroup> LoadObjGroup(uint tileId, IEnumerable<ObjReqType> reqTypes);
+        public abstract IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, List<ObjReqType> reqTypes);
 
-        public virtual async Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF)
+        public virtual async Task<CmnObjGroup> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF)
         {
-            Task<IEnumerable<CmnObjGroup>> taskRet = Task.Run(() => LoadObjGroup(tileId, type, subType));
-            IEnumerable<CmnObjGroup> ret = await taskRet.ConfigureAwait(false);
+            Task<CmnObjGroup> taskRet = Task.Run(() => LoadObjGroup(tileId, type, subType));
+            CmnObjGroup ret = await taskRet.ConfigureAwait(false);
             return ret;
         }
 
-        public virtual async Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, IEnumerable<ObjReqType> reqTypes)
+        public virtual async Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, List<ObjReqType> reqTypes)
         {
-            var tasks = reqTypes.Select(reqType => Task.Run(() => LoadObjGroup(tileId, reqType.type, reqType.maxSubType)));
-            var tmp = await Task.WhenAll(tasks).ConfigureAwait(false);
-            List<CmnObjGroup> ret = tmp.Where(x => x != null).SelectMany(x => x).ToList();
+            //var tasks = reqTypes.Select(reqType => Task.Run(() => LoadObjGroup(tileId, reqType.type, reqType.maxSubType)));
+            //var tmp = await Task.WhenAll(tasks).ConfigureAwait(false);
+            //List<CmnObjGroup> ret = tmp.Where(x => x != null).SelectMany(x => x).ToList();
 
+            Task<IEnumerable<CmnObjGroup>> taskRet = Task.Run(() => LoadObjGroup(tileId, reqTypes));
+            IEnumerable<CmnObjGroup> ret = await taskRet.ConfigureAwait(false);
             return ret;
         }
     }

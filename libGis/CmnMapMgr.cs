@@ -132,20 +132,23 @@ namespace Akichko.libGis
     //}
 
 
-    public abstract class CmnMapMgr
+    public abstract class CmnMapMgr : CmnMapAccess
     {
         public ICmnTileCodeApi tileApi;
         protected TileMng tileMng;
-        protected ICmnMapAccess mapAccess;
+        protected CmnMapAccess mapAccess;
+
+        protected bool isConnected = false;
 
         SemaphoreSlim semaphore = new SemaphoreSlim(0, 1);
 
         //抽象メソッド
         //現状なし。MAL側
 
-        public CmnMapMgr(ICmnTileCodeApi tileCodeApi)
+        public CmnMapMgr(ICmnTileCodeApi tileCodeApi, CmnMapAccess mapAccess = null)
         {
             this.tileApi = tileCodeApi;
+            this.mapAccess = mapAccess;
             tileMng = new TileMng();
         }
 
@@ -155,7 +158,10 @@ namespace Akichko.libGis
         {
             int ret = mapAccess.ConnectMap(connectStr);
             if (ret == 0)
+            {
                 Console.WriteLine("Connected");
+                isConnected = true;
+            }
             else
                 Console.WriteLine("Connect Error!");
 
@@ -164,6 +170,7 @@ namespace Akichko.libGis
 
         public int Disconnect()
         {
+            isConnected = false;
             int ret = mapAccess.DisconnectMap();
 
             Console.WriteLine("disconnected");
@@ -171,7 +178,7 @@ namespace Akichko.libGis
 
         }
 
-        public bool IsConnected => mapAccess.IsConnected;
+        public override bool IsConnected => mapAccess.IsConnected && isConnected;
 
 
         /* データ操作メソッド ******************************************************/
@@ -253,7 +260,7 @@ namespace Akichko.libGis
                 .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
                 .Select(type => mapAccess.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
                 //.Where(x=>x!=null)
-                .SelectMany(x=>x)
+                //.SelectMany(x=>x)
                 .ToList();
 
             //インデックス付与（仮）
@@ -282,8 +289,9 @@ namespace Akichko.libGis
 
 #if true //一括読み込み
             //ObjGroup読み込み
-            IEnumerable<ObjReqType> reqTypes = (filter?.ToObjReqType() ?? mapAccess.GetMapContentTypeList().Select(x => new ObjReqType(x)))
-                .Where(reqType => !tmpTile.IsContentsLoaded(reqType.type, reqType.maxSubType));
+            List<ObjReqType> reqTypes = (filter?.ToObjReqType() ?? mapAccess.GetMapContentTypeList().Select(x => new ObjReqType(x)))
+                .Where(reqType => !tmpTile.IsContentsLoaded(reqType.type, reqType.maxSubType))
+                .ToList();
 
             var objGroups = await mapAccess.LoadObjGroupAsync(tileId, reqTypes).ConfigureAwait(false);
             List<CmnObjGroup> tmpObjGrList = objGroups.ToList();
@@ -416,7 +424,7 @@ namespace Akichko.libGis
         public IEnumerable<CmnTile> GetLoadedTileList() => tileMng.GetTileList();
 
 
-        public List<uint> GetMapTileIdList()
+        public override List<uint> GetMapTileIdList()
         {
             if (!IsConnected)
                 return null;
@@ -714,6 +722,56 @@ namespace Akichko.libGis
         {
             return mapAccess.GetTimeStampRange();
         }
+
+
+        /* MapMgr多段接続 *************************************************************/
+
+        public override int ConnectMap(string connectStr)
+        {
+            if (mapAccess.IsConnected)
+            {
+                Console.WriteLine("Connected");
+                isConnected = true;
+                return 0;
+            }
+            else
+            {
+                Console.WriteLine("Connect Error!");
+                return -1;
+            }
+        }
+
+        public override int DisconnectMap()
+        {
+            isConnected = false;
+            return 0;
+        }
+
+        public override List<uint> GetMapContentTypeList() => mapAccess.GetMapContentTypeList();
+
+        public override CmnObjGroup LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue)
+        {
+
+            var objGrp = SearchTile(tileId)?.GetObjGroup(type);
+            if (objGrp != null)
+            {
+                if (subType == ushort.MaxValue && objGrp.loadedSubType == ushort.MaxValue)
+                    return objGrp;
+                
+                if (subType <= objGrp.loadedSubType)
+                {
+                    //フィルタ未対応
+                    return objGrp;
+                }
+            }
+            return mapAccess.LoadObjGroup(tileId, type, subType);
+        }
+
+        public override IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, List<ObjReqType> reqTypes)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 
 
@@ -724,14 +782,14 @@ namespace Akichko.libGis
         int DisconnectMap();
         List<UInt32> GetMapContentTypeList();
         List<uint> GetMapTileIdList();
-        //CmnTile CreateTile(uint tileId);                
-        //List<CmnObjGroup> LoadObjGroupList(uint tileId, UInt32 type = 0xFFFFFFFF, UInt16 subType = 0xFFFF);        
 
-        IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
+        CmnObjGroup LoadObjGroup(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
 
-        Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
+        IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, List<ObjReqType> reqTypes);
 
-        Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, IEnumerable<ObjReqType> reqType);
+        Task<CmnObjGroup> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF);
+
+        Task<IEnumerable<CmnObjGroup>> LoadObjGroupAsync(uint tileId, List<ObjReqType> reqType);
 
         TimeStampRange GetTimeStampRange();
 
