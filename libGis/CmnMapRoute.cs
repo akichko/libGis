@@ -345,7 +345,7 @@ namespace Akichko.libGis
         public int logCalcCount = 0;
         public int numTileLoad = 0;
 
-        public Dykstra(CmnMapMgr mapMgr, DykstraSetting setting)
+        public Dykstra(CmnMapMgr mapMgr, DykstraSetting setting, RoutingMapType routingMapType)
         {
             this.mapMgr = mapMgr;
             dicTileCostInfo = new Dictionary<uint, TileCostInfo>();
@@ -355,7 +355,7 @@ namespace Akichko.libGis
             logUnprocessedCount = new int[1000000];
             //logTickCountList = new int[1000000];
 
-            routingMapType = mapMgr.RoutingMapType;
+            this.routingMapType = routingMapType;
 
 
             rankDownRestrictSubType = setting?.rankDownRestrictSubType ?? ushort.MaxValue;
@@ -856,7 +856,7 @@ namespace Akichko.libGis
     /****** 経路計算マネージャ ******************************************************************************/
 
 
-    public class CmnRouteMgr
+    public abstract class CmnRouteMgr
     {
 
         protected CmnMapMgr mapMgr;
@@ -874,20 +874,23 @@ namespace Akichko.libGis
         //結果格納
         public List<CmnObjHandle> routeHdlList;
 
+        public abstract RoutingMapType RoutingMapType { get; }
+
         public CmnRouteMgr() { }
 
         public CmnRouteMgr(CmnMapMgr mapMgr, DykstraSetting setting)
         {
             this.setting = setting;
-            dykstra = new Dykstra(mapMgr, setting);
+            dykstra = new Dykstra(mapMgr, setting, RoutingMapType);
             this.mapMgr = mapMgr;
         }
 
         public void SetMapMgr(CmnMapMgr mapMgr)
         {
-            dykstra = new Dykstra(mapMgr, this.setting);
+            dykstra = new Dykstra(mapMgr, this.setting, RoutingMapType);
             this.mapMgr = mapMgr;
         }
+
 
         //public int SetOrgin(CmnDirObjHandle handle)
         //{
@@ -915,18 +918,18 @@ namespace Akichko.libGis
 
             //始点終点ハンドル取得
 
-            RoutingMapType routingMapType = mapMgr.RoutingMapType;
+            //RoutingMapType routingMapType = mapMgr.RoutingMapType;
 
             uint startTileId = mapMgr.tileApi.CalcTileId(orgLatLon);
             IEnumerable<uint> tileIdListS = mapMgr.tileApi.CalcTileIdAround(orgLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListS.ForEach(x => mapMgr.LoadTile(x, null));
-            orgHdl = mapMgr.SearchObj(orgLatLon, routingMapType.roadNwObjFilter, 1, -1);
+            orgHdl = mapMgr.SearchObj(orgLatLon, RoutingMapType.roadNwObjFilter, 1, -1);
             PolyLinePos orgLinkPos = LatLon.CalcNearestPoint(orgLatLon, orgHdl.Geometry);
             
             uint destTileId = mapMgr.tileApi.CalcTileId(dstLatLon);
             IEnumerable<uint> tileIdListD = mapMgr.tileApi.CalcTileIdAround(dstLatLon, 1000, mapMgr.tileApi.DefaultLevel);
             tileIdListD.ForEach(x => mapMgr.LoadTile(x, null));        
-            dstHdl = mapMgr.SearchObj(dstLatLon, routingMapType.roadNwObjFilter, 1, -1);
+            dstHdl = mapMgr.SearchObj(dstLatLon, RoutingMapType.roadNwObjFilter, 1, -1);
             PolyLinePos dstLinkPos = LatLon.CalcNearestPoint(dstLatLon, dstHdl.Geometry);
 
             if (orgHdl == null || dstHdl == null)

@@ -653,7 +653,6 @@ namespace Akichko.libGis
         //    }
         //}
 
-        public virtual RoutingMapType RoutingMapType => null;
 
 
         public virtual string[] GetMapContentTypeNames() => null;
@@ -664,15 +663,12 @@ namespace Akichko.libGis
         //}
 
         public virtual uint GetMapContentTypeValue(string objTypeName) => 0;
-            //(uint)Enum.Parse(typeof(MapContentType), objTypeName);
+        //(uint)Enum.Parse(typeof(MapContentType), objTypeName);
 
 
         /* 経路計算 *************************************************************/
 
-        public virtual CmnRouteMgr CreateRouteMgr(DykstraSetting setting = null)
-        {
-            return new CmnRouteMgr(this, setting);
-        }
+        public abstract CmnRouteMgr CreateRouteMgr(DykstraSetting setting = null);
 
         public LatLon[] CalcRouteGeometry(LatLon orgLatLon, LatLon dstLatLon)
         {
