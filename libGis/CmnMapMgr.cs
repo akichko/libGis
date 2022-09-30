@@ -668,51 +668,51 @@ namespace Akichko.libGis
 
         /* 経路計算 *************************************************************/
 
-        public abstract CmnRouteMgr CreateRouteMgr(DykstraSetting setting = null);
+        //public abstract CmnRouteMgr CreateRouteMgr(DykstraSetting setting = null);
 
-        public LatLon[] CalcRouteGeometry(LatLon orgLatLon, LatLon dstLatLon)
-        {
-            CmnRouteMgr routeMgr = CreateRouteMgr();
+        //public LatLon[] CalcRouteGeometry(LatLon orgLatLon, LatLon dstLatLon)
+        //{
+        //    CmnRouteMgr routeMgr = CreateRouteMgr();
 
-            routeMgr.orgLatLon = orgLatLon;
-            routeMgr.dstLatLon = dstLatLon;
+        //    routeMgr.orgLatLon = orgLatLon;
+        //    routeMgr.dstLatLon = dstLatLon;
 
-            routeMgr.Prepare(false);
+        //    routeMgr.Prepare(false);
 
-            routeMgr.CalcRoute();
+        //    routeMgr.CalcRoute();
 
-            //道路NWメモリ解放？
-            routeMgr.dykstra.dicTileCostInfo = null;
+        //    //道路NWメモリ解放？
+        //    routeMgr.dykstra.dicTileCostInfo = null;
 
-            CmnMapView mapView = new CmnMapView();
-            //List<CmnObjHandle> routeHdlList = routeMgr.GetRouteHdlList();
-            LatLon[] routeGeometry = routeMgr.GetResult();
-
-
-            Console.WriteLine($"maxQueue = {routeMgr.dykstra.logMaxQueue} (average = {routeMgr.dykstra.logUnprocessedCount.Take(routeMgr.dykstra.logCalcCount).Average():F2})");
+        //    CmnMapView mapView = new CmnMapView();
+        //    //List<CmnObjHandle> routeHdlList = routeMgr.GetRouteHdlList();
+        //    LatLon[] routeGeometry = routeMgr.GetResult();
 
 
-            return routeGeometry;
-        }
+        //    Console.WriteLine($"maxQueue = {routeMgr.dykstra.logMaxQueue} (average = {routeMgr.dykstra.logUnprocessedCount.Take(routeMgr.dykstra.logCalcCount).Average():F2})");
 
-        public List<CmnObjHandle> CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
-        {
-            CmnRouteMgr routeMgr = CreateRouteMgr();
 
-            routeMgr.orgLatLon = orgLatLon;
-            routeMgr.dstLatLon = dstLatLon;
+        //    return routeGeometry;
+        //}
 
-            routeMgr.Prepare(false);
+        //public List<CmnObjHandle> CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+        //{
+        //    CmnRouteMgr routeMgr = CreateRouteMgr();
 
-            routeMgr.CalcRoute();
+        //    routeMgr.orgLatLon = orgLatLon;
+        //    routeMgr.dstLatLon = dstLatLon;
 
-            //道路NWメモリ解放？
-            routeMgr.dykstra.dicTileCostInfo = null;
+        //    routeMgr.Prepare(false);
 
-            CmnMapView mapView = new CmnMapView();
-            return routeMgr.GetRouteHdlList();
+        //    routeMgr.CalcRoute();
 
-        }
+        //    //道路NWメモリ解放？
+        //    routeMgr.dykstra.dicTileCostInfo = null;
+
+        //    CmnMapView mapView = new CmnMapView();
+        //    return routeMgr.GetRouteHdlList();
+
+        //}
 
         public TimeStampRange GetTimeStampRange()
         {

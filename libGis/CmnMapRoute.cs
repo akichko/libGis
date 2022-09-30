@@ -1123,7 +1123,49 @@ namespace Akichko.libGis
 
 
 
+        public LatLon[] CalcRouteGeometry(LatLon orgLatLon, LatLon dstLatLon)
+        {
+            //CmnRouteMgr routeMgr = CreateRouteMgr();
 
+            this.orgLatLon = orgLatLon;
+            this.dstLatLon = dstLatLon;
+
+            Prepare(false);
+
+            CalcRoute();
+
+            //道路NWメモリ解放？
+            dykstra.dicTileCostInfo = null;
+
+            CmnMapView mapView = new CmnMapView();
+            //List<CmnObjHandle> routeHdlList = GetRouteHdlList();
+            LatLon[] routeGeometry = GetResult();
+
+
+            Console.WriteLine($"maxQueue = {dykstra.logMaxQueue} (average = {dykstra.logUnprocessedCount.Take(dykstra.logCalcCount).Average():F2})");
+
+
+            return routeGeometry;
+        }
+
+        public List<CmnObjHandle> CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+        {
+            //CmnRouteMgr routeMgr = CreateRouteMgr();
+
+            this.orgLatLon = orgLatLon;
+            this.dstLatLon = dstLatLon;
+
+            Prepare(false);
+
+            CalcRoute();
+
+            //道路NWメモリ解放？
+            dykstra.dicTileCostInfo = null;
+
+            CmnMapView mapView = new CmnMapView();
+            return GetRouteHdlList();
+
+        }
     }
 
 }
