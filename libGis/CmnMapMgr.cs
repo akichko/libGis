@@ -367,6 +367,11 @@ namespace Akichko.libGis
 
         /* タイル検索メソッド ******************************************************/
 
+        public bool IsTileLoaded(uint tileId)
+        {
+            return tileMng.ContainsTile(tileId);
+        }
+
         public CmnTile SearchTile(uint tileId) => tileMng.GetTile(tileId);
 
 
@@ -522,24 +527,12 @@ namespace Akichko.libGis
         public virtual List<CmnObjHdlRef> SearchRefObject(CmnObjHandle objHdl, int refType)
         {
             var ret = objHdl.GetObjRefHdlList(refType, objHdl.direction)
+                .Where(x => x!=null)
                 .Select(x => new CmnObjHdlRef(null, x.nextRef))
                 .SelectMany(x => SearchObjHandleRef(x.nextRef))
                 .ToList();
 
             return ret;
-
-            //List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
-
-            //List<CmnObjHdlRef> tmpRefHdlList = objHdl.GetObjRefHdlList(refType, objHdl.direction); //Objの参照先一覧
-
-            //foreach (var tmpRefHdl in tmpRefHdlList ?? new List<CmnObjHdlRef>())
-            //{
-            //    CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpRefHdl.nextRef);
-
-            //    retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));
-            //}
-
-            //return retList;
         }
 
 
@@ -553,21 +546,6 @@ namespace Akichko.libGis
 
             return ret;
 
-            //if (objHdl == null)
-            //    return null;
-
-            //List<CmnObjHdlRef> retList = new List<CmnObjHdlRef>();
-
-            //List<CmnObjRef> tmpObjRefList = objHdl.GetObjAllRefList(); //Objの参照先一覧
-
-            //foreach (var tmpObjRef in tmpObjRefList ?? new List<CmnObjRef>())
-            //{
-            //    CmnObjHdlRef objHdlRef = new CmnObjHdlRef(null, tmpObjRef);
-
-            //    retList.AddRange(SearchObjHandleRef(objHdlRef.nextRef));
-            //}
-
-            //return retList;
         }
 
 
