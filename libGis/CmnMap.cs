@@ -773,6 +773,20 @@ namespace Akichko.libGis
 
         }
 
+        public virtual IEnumerable<CmnObjDistance> GetObjsAround(LatLon latlon, Filter<ushort> subTypeFilter, long timeStamp = -1)
+        {
+            if (!isGeoSearchable)
+                return null;
+
+            IEnumerable<CmnObjDistance> aroundObjDistance = Objs
+                .Where(x => subTypeFilter?.CheckPass(x.SubType) ?? true)
+                .Where(x => x.CheckTimeStamp(timeStamp))
+                .Select(x => new CmnObjDistance(x, x.GetDistance(latlon)))
+                .Where(x => x.distance != double.MaxValue);
+
+            return aroundObjDistance;
+        }
+
         //不要ならoverrideで無効化
         public virtual void SetIndex() { }
 
@@ -1015,17 +1029,6 @@ namespace Akichko.libGis
             return GetObjGroup(objType)?.ObjArray;
         }
 
-        //非推奨。GetObjHandle推奨
-        //public CmnObj GetObj(UInt32 objType, UInt64 objId)
-        //{
-        //    return GetObjGroup(objType)?.GetObj(objId);
-        //}
-
-        ////非推奨。GetObjHandle推奨
-        //public CmnObj GetObj(UInt32 objType, UInt16 objIndex)
-        //{
-        //    return GetObjGroup(objType)?.GetObj(objIndex);
-        //}
 
         public virtual CmnObjHandle GetObjHandle(UInt32 objType, UInt64 objId, long timeStamp = -1)
         {
@@ -1036,29 +1039,13 @@ namespace Akichko.libGis
         {
             return GetObjGroup(objType)?.GetObj(objIndex, timeStamp)?.ToCmnObjHandle(this);
         }
-
-        //public virtual CmnObjHandle GetObjHandle(UInt32 objType, Func<CmnObj, bool> selector)
-        //{
-        //    return GetObjGroup(objType)?.GetObjs(selector).FirstOrDefault()?.ToCmnObjHandle(this);
-        //}
-
+               
         public virtual IEnumerable<CmnObjHandle> GetObjHandles(UInt32 objType, Func<CmnObj, bool> selector)
         {
             return GetObjGroup(objType)?.GetObjs(selector).Select(x=>x.ToCmnObjHandle(this));
         }
 
-        //public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, UInt32 objType = 0xFFFFFFFF, UInt16 maxSubType = 0xFFFF)
-        //{
-        //    //?必要か要精査
-        //    var ret = GetObjGroupList(objType)
-        //        ?.Select(x => x?.GetNearestObj(latlon, maxSubType)?.ToCmnObjHdlDistance(this))
-        //        .Where(x => x != null)
-        //        .OrderBy(x => x.distance)
-        //        .FirstOrDefault();
-
-        //    return ret;
-        //}
-
+      
         //public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, ReqType reqType)
         //{
         //    return GetObjGroup(reqType.type)?.GetNearestObj(latlon, reqType)?.ToCmnObjHdlDistance(this);
@@ -1076,12 +1063,12 @@ namespace Akichko.libGis
         //    return ret;
         //}
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, uint objType, Filter<ushort> subTypeFilter, long timeStamp)
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, uint objType, Filter<ushort> subTypeFilter, long timeStamp = -1)
         {
             return GetObjGroup(objType)?.GetNearestObj(latlon, subTypeFilter, timeStamp)?.ToCmnObjHdlDistance(this);
         }
 
-        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, CmnObjFilter filter, long timeStamp)
+        public virtual CmnObjHdlDistance GetNearestObj(LatLon latlon, CmnObjFilter filter, long timeStamp = -1)
         {
             var ret = GetObjGroups(filter)
                 .Select(x => x.GetNearestObj(latlon, filter?.GetSubFilter(x.Type), timeStamp)?.ToCmnObjHdlDistance(this))
@@ -1092,6 +1079,16 @@ namespace Akichko.libGis
             return ret;
         }
 
+
+        public virtual IEnumerable<CmnObjHdlDistance> GetObjsAround(LatLon latlon, CmnObjFilter filter, long timeStamp = -1)
+        {
+            var ret = GetObjGroups(filter)
+                .SelectMany(x => x.GetObjsAround(latlon, filter?.GetSubFilter(x.Type), timeStamp))
+                .Select(x => x.ToCmnObjHdlDistance(this))
+                .Where(x => x != null);
+
+            return ret;
+        }
 
 
         public virtual CmnObjHandle GetRandomObj(UInt32 objType)

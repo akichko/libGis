@@ -69,7 +69,7 @@ namespace Akichko.libGis
 
                 //不足タイルがあれば読み込み
                 if (noDataTileIdList.Count > 0)
-                    noDataTileIdList.ForEach(x => mapMgr.LoadTile(x, routingMapType.roadNwObjTypeList));
+                    noDataTileIdList.ForEach(x => mapMgr.LoadTile(x, routingMapType.roadNwObjFilter));
                 else
                     break;
             }
@@ -94,6 +94,8 @@ namespace Akichko.libGis
                 //一方通行逆走
                 if (nextLinkRef.IsOneway && nextLinkRef.Oneway != nextLinkRef.direction)
                     continue;
+
+                //行き止まり
 
                 return nextLinkRef;
             }
@@ -138,7 +140,7 @@ namespace Akichko.libGis
 
     public class RoutingMapType
     {
-        public UInt32 roadNwObjType; //探索に必要な地図コンテンツ。リンクだけとは限らない
+        //public UInt32 roadNwObjType; //探索に必要な地図コンテンツ。リンクだけとは限らない
         public List<UInt32> roadNwObjTypeList; //探索に必要な地図コンテンツ。リンクだけとは限らない
 
         //public ReqType[] roadNwObjReqType;

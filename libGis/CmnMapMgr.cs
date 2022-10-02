@@ -467,6 +467,15 @@ namespace Akichko.libGis
             return ret;
         }
 
+        public IEnumerable<CmnObjHdlDistance> SearchObjsAround(LatLon latlon, CmnObjFilter filter, int searchRange, long timeStamp = -1)
+        {
+            var ret = SearchTiles(latlon, searchRange)
+                .SelectMany(x => x.GetObjsAround(latlon, filter, timeStamp))
+                .Where(x => x != null);
+
+            return ret;
+        }
+
         //曖昧検索
         public CmnObjHandle SearchObj(CmnSearchKey cmnSearchKey, long timeStamp = -1)
         {

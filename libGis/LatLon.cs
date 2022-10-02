@@ -253,7 +253,7 @@ namespace Akichko.libGis
                 tmp = CalcDistanceBetween(polyline[i], polyline[i + 1]);
                 if(remain > tmp)
                 {
-                    remain =- tmp;
+                    remain -= tmp;
                 }
                 else
                 {
@@ -263,13 +263,20 @@ namespace Akichko.libGis
             return polyline[polyline.Length -1];
         }
 
-        public static LatLon Parse(string s)
+        public static PolyLinePos CalcOffsetLinkePosAlongPolyline(LatLon[] polyline, double offset)
+        {
+            //若干処理に無駄あり
+            LatLon latlon = CalcOffsetLatLonAlongPolyline(polyline, offset);
+            return CalcNearestPoint(latlon, polyline);
+        }
+
+        public static LatLon Parse(string s, string separator = "_")
         {
             if (s == null)
                 return null;
 
             //エラー処理いつか作る
-            string[] latlonStr = s.Split('_');
+            string[] latlonStr = s.Split(separator);
             return new LatLon(double.Parse(latlonStr[1]), double.Parse(latlonStr[0]));
 
         }
@@ -427,6 +434,32 @@ namespace Akichko.libGis
             return new LatLon(a.lat / b, a.lon / b);
         }
 
+        public static bool operator ==(LatLon a, LatLon b)
+        {
+            if ((a?.lat == b?.lat) && (a?.lon == b?.lon))
+                return true;
+            else
+                return false;
+        }
+      
+        public static bool operator !=(LatLon a, LatLon b)
+        {
+            return !(a == b);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is LatLon))
+                return false;
+
+            return (this == (LatLon)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            //Equalsがtrueを返すときに同じ値を返す
+            return (int)(lat.GetHashCode() & 0xffff0000) + (int)(lon.GetHashCode() & 0x0000ffff);
+        }
     }
 
 

@@ -321,7 +321,7 @@ namespace Akichko.libGis
     }
 
 
-    public class Dykstra : RouteGenerator
+    public class Dykstra //: RouteGenerator
     {
         public Dictionary<uint, TileCostInfo> dicTileCostInfo;
         CostRecordManageOD unprocessed;
@@ -330,10 +330,10 @@ namespace Akichko.libGis
         CostRecord finalRecord; //双方向ダイクストラの終了ポイント
         public List<CostRecord> routeResult;
 
-        //CmnMapMgr mapMgr;
+        CmnMapMgr mapMgr;
 
-        ////汎用種別
-        //public RoutingMapType routingMapType;
+        //汎用種別
+        public RoutingMapType routingMapType;
 
         //探索初期の制限
         public ushort rankDownRestrictSubType;
