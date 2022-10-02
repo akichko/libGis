@@ -48,6 +48,9 @@
     <Compile Include="..\libGis\CmnMapAccess.cs">
       <Link>CmnMapAccess.cs</Link>
     </Compile>
+    <Compile Include="..\libGis\CmnMapLocator.cs">
+      <Link>CmnMapLocator.cs</Link>
+    </Compile>
     <Compile Include="..\libGis\CmnMapMgr.cs">
       <Link>CmnMapMgr.cs</Link>
     </Compile>
@@ -59,6 +62,9 @@
     </Compile>
     <Compile Include="..\libGis\CmnUtilities.cs">
       <Link>CmnUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\libGis\Dykstra.cs">
+      <Link>Dykstra.cs</Link>
     </Compile>
     <Compile Include="..\libGis\GisMap.cs">
       <Link>GisMap.cs</Link>

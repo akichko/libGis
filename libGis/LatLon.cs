@@ -270,7 +270,7 @@ namespace Akichko.libGis
             return CalcNearestPoint(latlon, polyline);
         }
 
-        public static LatLon Parse(string s, string separator = "_")
+        public static LatLon Parse(string s, char separator = '_')
         {
             if (s == null)
                 return null;
