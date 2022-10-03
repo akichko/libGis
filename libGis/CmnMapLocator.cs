@@ -267,8 +267,8 @@ namespace Akichko.libGis
     {
         CmnLocator locator;
         Timer timer;
-        int count;
         public int calcInterval = 1000; //[ms]
+        bool isPlaying = false;
 
         public LocatorExe(CmnLocator locator, int calcInterval)
         {
@@ -282,14 +282,23 @@ namespace Akichko.libGis
         {
             // タイマーをすぐに1秒間隔で開始
             timer.Change(0, calcInterval);
-
+            isPlaying = true;
             return 0;
         }
 
         public int LoopStop()
         {
-            // タイマーを停止
-            timer.Change(Timeout.Infinite, Timeout.Infinite);
+            if (isPlaying)
+            {
+                // タイマーを停止
+                timer.Change(Timeout.Infinite, Timeout.Infinite);
+                isPlaying = false;
+            }
+            else
+            {
+                timer.Change(0, calcInterval);
+                isPlaying = true;
+            }
 
             return 0;
         }
@@ -297,12 +306,7 @@ namespace Akichko.libGis
         //コールバック
         public void ThreadingTimerCallback(object args)
         {
-            count++;
-            Console.WriteLine("{count}");
-
-            //locator.CalcMapPositionOnRoute(1000);
             locator.UpdateCurrentLoc(calcInterval);
-
         }
     }
 

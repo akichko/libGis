@@ -22,7 +22,11 @@ namespace Akichko.libGis
 
         public abstract CmnObjGroup LoadObjGroup(uint tileId, uint type, ushort subType = ushort.MaxValue);
 
-        public abstract IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, List<ObjReqType> reqTypes);
+        public virtual IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, List<ObjReqType> reqTypes)
+        {
+            var ret = reqTypes.Select(x => LoadObjGroup(tileId, x.type, x.maxSubType)).ToList();
+            return ret;
+        }
 
         public virtual async Task<CmnObjGroup> LoadObjGroupAsync(uint tileId, UInt32 type, UInt16 subType = 0xFFFF)
         {

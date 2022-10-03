@@ -670,13 +670,6 @@ namespace Akichko.libGis
         public IEnumerable<CmnObj> GetObjs(Func<CmnObj, bool> selector)
         {
             return Objs.Where(x => selector(x));
-            //foreach(var obj in Objs)
-            //{
-            //    if (selector(obj))
-            //    {
-            //        yield return obj;
-            //    }
-            //}
         }
 
 
@@ -787,8 +780,7 @@ namespace Akichko.libGis
             return aroundObjDistance;
         }
 
-        //不要ならoverrideで無効化
-        public virtual void SetIndex() { }
+        public abstract void SetIndex();
 
 
         public virtual void AddObj(CmnObj obj)

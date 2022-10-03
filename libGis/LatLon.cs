@@ -240,10 +240,11 @@ namespace Akichko.libGis
         {
             double length = CalcLength(polyline);
 
-            if (length == double.MaxValue || offset < 0 || offset > length)
-            {
+            if (length == double.MaxValue || offset < 0)
                 return null;
-            }
+
+            if (offset >= length)
+                return polyline[polyline.Length - 1];
 
             double remain = offset;
             double tmp;

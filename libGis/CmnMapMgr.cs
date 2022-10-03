@@ -56,7 +56,7 @@ namespace Akichko.libGis
 
         public bool RemoveTile(uint tileId) => tileDic.Remove(tileId);
 
-        public IEnumerable<CmnTile> GetTileList() => tileDic.Select(x => x.Value);
+        public List<CmnTile> GetTileList() => tileDic.Select(x => x.Value).ToList();
     }
 
     //いずれ切替？
@@ -140,7 +140,7 @@ namespace Akichko.libGis
 
         protected bool isConnected = false;
 
-        SemaphoreSlim semaphore = new SemaphoreSlim(0, 1);
+        SemaphoreSlim semaphoreMgr = new SemaphoreSlim(1, 1);
 
         //抽象メソッド
         //現状なし。MAL側
@@ -185,61 +185,6 @@ namespace Akichko.libGis
 
         public abstract CmnTile CreateTile(uint tileId);
 
-        //削除予定？
-        //public virtual int LoadTile(uint tileId, UInt32 reqType, UInt16 reqMaxSubType = 0xFFFF)
-        //{
-        //    if (!IsConnected) return -1;
-
-        //    bool isNew = false;
-
-        //    CmnTile tmpTile = tileMng.GetTile(tileId);
-        //    //if (tileDic.ContainsKey(tileId))
-        //    if (tmpTile != null)
-        //    {
-        //        //tmpTile = tileDic[tileId];
-
-        //        //更新必要有無チェック
-
-        //        //未読み込み（NULL）のObgGroupがあるか
-        //        int numObjGrToBeRead = mapAccess.GetMapContentTypeList()
-        //            .Where(x => (reqType & x) == x)
-        //            .Select(x => tmpTile.GetObjGroup(x))
-        //            //.Where(x => x == null)
-        //            .Count(x => x == null || x.loadedSubType < reqMaxSubType);
-
-
-        //        if (numObjGrToBeRead == 0)
-        //            return 0; //更新不要
-
-        //    }
-        //    //タイルがなければ作成
-        //    else
-        //    {
-        //        tmpTile = CreateTile(tileId);
-        //        isNew = true;
-        //    }
-
-
-        //    //必要となった場合
-
-
-        //    //データ読み込み
-        //    List<CmnObjGroup> tmpObjGrList = mapAccess.LoadObjGroupList(tileId, reqType, reqMaxSubType);
-
-        //    //インデックス付与（仮）
-        //    tmpObjGrList.ForEach(x => x.SetIndex());
-
-        //    //タイル更新
-        //    tmpTile.UpdateObjGroupList(tmpObjGrList);
-
-
-        //    if (isNew)
-        //        tileMng.AddTile(tmpTile);
-        //    //tileDic.Add(tileId, tmpTile);
-
-        //    return 0;
-
-        //}
 
         public virtual int LoadTile(uint tileId, CmnObjFilter filter = null)
         {
@@ -287,6 +232,8 @@ namespace Akichko.libGis
                 tileMng.AddTile(tmpTile);
             }
 
+            semaphoreMgr.Wait();
+
 #if true //一括読み込み
             //ObjGroup読み込み
             List<ObjReqType> reqTypes = (filter?.ToObjReqType() ?? mapAccess.GetMapContentTypeList().Select(x => new ObjReqType(x)))
@@ -311,6 +258,8 @@ namespace Akichko.libGis
             //タイル更新
             tmpTile.UpdateObjGroupList(tmpObjGrList);
 
+            semaphoreMgr.Release();
+
             return 0;
         }
 
@@ -320,35 +269,6 @@ namespace Akichko.libGis
             return LoadTile(tileId, new CmnObjFilter(reqTypeList, reqMaxSubType));
         }
 
-        //削除予定
-        //public virtual int LoadTileOld(uint tileId, List<uint> reqTypeList, UInt16 reqMaxSubType = 0xFFFF)
-        //{
-        //    if (!IsConnected)
-        //        return -1;
-
-        //    //タイル読み込み
-        //    CmnTile tmpTile = tileMng.GetTile(tileId);
-        //    if (tmpTile == null)
-        //    {
-        //        //タイルがなければ作成
-        //        tmpTile = CreateTile(tileId);
-        //        tileMng.AddTile(tmpTile);
-        //    }
-
-        //    //ObjGroup読み込み
-        //    List<CmnObjGroup> tmpObjGrList = reqTypeList
-        //        .Where(type => !tmpTile.IsContentsLoaded(type, reqMaxSubType))
-        //        .SelectMany(type => mapAccess.LoadObjGroup(tileId, type, reqMaxSubType))
-        //        .ToList<CmnObjGroup>();
-
-        //    //インデックス付与（仮）
-        //    tmpObjGrList.ForEach(x => x.SetIndex());
-
-        //    //タイル更新
-        //    tmpTile.UpdateObjGroupList(tmpObjGrList);
-
-        //    return 0;
-        //}
 
         public bool UnloadTile(uint tileId) => tileMng.RemoveTile(tileId);
 
@@ -652,54 +572,6 @@ namespace Akichko.libGis
         public virtual uint GetMapContentTypeValue(string objTypeName) => 0;
         //(uint)Enum.Parse(typeof(MapContentType), objTypeName);
 
-
-        /* 経路計算 *************************************************************/
-
-        //public abstract CmnRouteMgr CreateRouteMgr(DykstraSetting setting = null);
-
-        //public LatLon[] CalcRouteGeometry(LatLon orgLatLon, LatLon dstLatLon)
-        //{
-        //    CmnRouteMgr routeMgr = CreateRouteMgr();
-
-        //    routeMgr.orgLatLon = orgLatLon;
-        //    routeMgr.dstLatLon = dstLatLon;
-
-        //    routeMgr.Prepare(false);
-
-        //    routeMgr.CalcRoute();
-
-        //    //道路NWメモリ解放？
-        //    routeMgr.dykstra.dicTileCostInfo = null;
-
-        //    CmnMapView mapView = new CmnMapView();
-        //    //List<CmnObjHandle> routeHdlList = routeMgr.GetRouteHdlList();
-        //    LatLon[] routeGeometry = routeMgr.GetResult();
-
-
-        //    Console.WriteLine($"maxQueue = {routeMgr.dykstra.logMaxQueue} (average = {routeMgr.dykstra.logUnprocessedCount.Take(routeMgr.dykstra.logCalcCount).Average():F2})");
-
-
-        //    return routeGeometry;
-        //}
-
-        //public List<CmnObjHandle> CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
-        //{
-        //    CmnRouteMgr routeMgr = CreateRouteMgr();
-
-        //    routeMgr.orgLatLon = orgLatLon;
-        //    routeMgr.dstLatLon = dstLatLon;
-
-        //    routeMgr.Prepare(false);
-
-        //    routeMgr.CalcRoute();
-
-        //    //道路NWメモリ解放？
-        //    routeMgr.dykstra.dicTileCostInfo = null;
-
-        //    CmnMapView mapView = new CmnMapView();
-        //    return routeMgr.GetRouteHdlList();
-
-        //}
 
         public TimeStampRange GetTimeStampRange()
         {
