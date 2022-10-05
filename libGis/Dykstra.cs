@@ -668,6 +668,10 @@ namespace Akichko.libGis
         {
             CmnObjHandle currentDLinkHdl = currentCostInfo.DLinkHdl;
 
+            //無効リンク
+            if (!nextLinkRef.obj.Enable)
+                return true;
+
             //Uターンリンク
             if (nextLinkRef.IsEqualTo(currentDLinkHdl))
                 return true;
