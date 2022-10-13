@@ -69,7 +69,7 @@ namespace Akichko.libGis
 
                 //不足タイルがあれば読み込み
                 if (noDataTileIdList.Count > 0)
-                    noDataTileIdList.ForEach(x => mapMgr.LoadTile(x, routingMapType.roadNwObjFilter));
+                    noDataTileIdList.ForEach(x => mapMgr.LoadTile(x, routingMapType.roadNwObjFilter.ToObjReqType().ToList()));
                 else
                     break;
             }
@@ -146,6 +146,7 @@ namespace Akichko.libGis
         //public ReqType[] roadNwObjReqType;
         public CmnObjFilter roadNwObjFilter;
         public UInt32 roadGeometryObjType; //結果表示用
+        public CmnObjFilter roadGeometryFilter;
         public UInt32 linkObjType; //リンク（コスト・方向あり）
 
         public Int32 nextLinkRefType; //次リンクの参照タイプ
@@ -476,7 +477,8 @@ namespace Akichko.libGis
         {
             foreach (var x in routeLinks.Select(x=>x.TileId).Distinct())
             {
-                mapMgr.LoadTile(x, new List<uint> { RoutingMapType.roadGeometryObjType });
+                mapMgr.LoadTile(x, new List<ObjReqType> { new ObjReqType(RoutingMapType.roadGeometryObjType) });
+                //mapMgr.LoadTile(x, new List<uint> { RoutingMapType.roadGeometryObjType });
             }
 
             List<LatLon> retList = new List<LatLon>();

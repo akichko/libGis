@@ -186,7 +186,41 @@ namespace Akichko.libGis
         public abstract CmnTile CreateTile(uint tileId);
 
 
-        public virtual int LoadTile(uint tileId, CmnObjFilter filter = null)
+        //public virtual int LoadTile(uint tileId, CmnObjFilter filter = null)
+        //{
+        //    if (!IsConnected)
+        //        return -1;
+
+        //    //タイル読み込み
+        //    CmnTile tmpTile = tileMng.GetTile(tileId);
+        //    if (tmpTile == null)
+        //    {
+        //        //タイルがなければ作成
+        //        tmpTile = CreateTile(tileId);
+        //        tileMng.AddTile(tmpTile);
+        //    }
+
+        //    //ObjGroup読み込み
+        //    List<CmnObjGroup> tmpObjGrList = (filter?.GetTypeList() ?? mapAccess.GetMapContentTypeList())
+        //        .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
+        //        .Select(type => mapAccess.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
+        //        //.Where(x=>x!=null)
+        //        //.SelectMany(x=>x)
+        //        .ToList();
+
+        //    //インデックス付与（仮）
+        //    tmpObjGrList.ForEach(x => x.SetIndex());
+
+        //    //タイル更新
+        //    tmpTile.UpdateObjGroupList(tmpObjGrList);
+
+        //    return 0;
+        //}
+        
+        public virtual int LoadTile(uint tileId, uint type, ushort subType = ushort.MaxValue) =>
+            LoadTile(tileId, new List<ObjReqType> { new ObjReqType(type, subType) });
+
+        public virtual int LoadTile(uint tileId, List<ObjReqType> reqTypes = null)
         {
             if (!IsConnected)
                 return -1;
@@ -200,19 +234,17 @@ namespace Akichko.libGis
                 tileMng.AddTile(tmpTile);
             }
 
+            var newReqTypes = reqTypes?.Where(x => !tmpTile.IsContentsLoaded(x.type, x.maxSubType)).ToList()
+                ?? mapAccess.GetMapContentTypeList().Select(x=>new ObjReqType(x)).ToList();
+
             //ObjGroup読み込み
-            List<CmnObjGroup> tmpObjGrList = (filter?.GetTypeList() ?? mapAccess.GetMapContentTypeList())
-                .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
-                .Select(type => mapAccess.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
-                //.Where(x=>x!=null)
-                //.SelectMany(x=>x)
-                .ToList();
+            IEnumerable<CmnObjGroup> tmpObjGrList = mapAccess.LoadObjGroup(tileId, newReqTypes);
 
             //インデックス付与（仮）
             tmpObjGrList.ForEach(x => x.SetIndex());
 
             //タイル更新
-            tmpTile.UpdateObjGroupList(tmpObjGrList);
+            tmpTile.UpdateObjGroupList(tmpObjGrList.ToList());
 
             return 0;
         }
@@ -264,10 +296,10 @@ namespace Akichko.libGis
         }
 
 
-        public virtual int LoadTile(uint tileId, IEnumerable<uint> reqTypeList, UInt16 reqMaxSubType = 0xFFFF)
-        {
-            return LoadTile(tileId, new CmnObjFilter(reqTypeList, reqMaxSubType));
-        }
+        //public virtual int LoadTile(uint tileId, IEnumerable<uint> reqTypeList, UInt16 reqMaxSubType = 0xFFFF)
+        //{
+        //    return LoadTile(tileId, new CmnObjFilter(reqTypeList, reqMaxSubType));
+        //}
 
 
         public bool UnloadTile(uint tileId) => tileMng.RemoveTile(tileId);
@@ -624,7 +656,8 @@ namespace Akichko.libGis
 
         public override IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, List<ObjReqType> reqTypes)
         {
-            throw new NotImplementedException();
+            var ret = reqTypes.Select(x => LoadObjGroup(tileId, x.type, x.maxSubType));
+            return ret;
         }
 
     }

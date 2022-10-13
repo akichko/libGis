@@ -472,7 +472,8 @@ namespace Akichko.libGis
             if (tmpTileCostInfo.tile != null)
                 return 0;
 
-            mapMgr.LoadTile(tileId, routingMapType.roadNwObjTypeList, tmpTileCostInfo.maxUsableRoadType);
+            var reqTypes = routingMapType.roadNwObjTypeList.Select(x => new ObjReqType(x, tmpTileCostInfo.maxUsableRoadType)).ToList();
+            mapMgr.LoadTile(tileId, reqTypes);
             CmnTile tmpTile = mapMgr.SearchTile(tileId);
 
             tmpTileCostInfo.SetTileCostInfo(tmpTile, routingMapType.linkObjType);
@@ -767,7 +768,7 @@ namespace Akichko.libGis
         {
             foreach (var x in routeResult.Distinct())
             {
-                mapMgr.LoadTile(x.tileCostInfo.tileId, new List<uint> { routingMapType.roadGeometryObjType }, x.tileCostInfo.maxUsableRoadType);
+                mapMgr.LoadTile(x.tileCostInfo.tileId, routingMapType.roadGeometryObjType, x.tileCostInfo.maxUsableRoadType);
             }
 
             //routeResult.ForEach(x =>

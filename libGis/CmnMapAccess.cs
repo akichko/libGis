@@ -24,7 +24,7 @@ namespace Akichko.libGis
 
         public virtual IEnumerable<CmnObjGroup> LoadObjGroup(uint tileId, List<ObjReqType> reqTypes)
         {
-            var ret = reqTypes.Select(x => LoadObjGroup(tileId, x.type, x.maxSubType)).ToList();
+            var ret = reqTypes.Select(x => LoadObjGroup(tileId, x.type, x.maxSubType));
             return ret;
         }
 
