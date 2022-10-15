@@ -185,38 +185,7 @@ namespace Akichko.libGis
 
         public abstract CmnTile CreateTile(uint tileId);
 
-
-        //public virtual int LoadTile(uint tileId, CmnObjFilter filter = null)
-        //{
-        //    if (!IsConnected)
-        //        return -1;
-
-        //    //タイル読み込み
-        //    CmnTile tmpTile = tileMng.GetTile(tileId);
-        //    if (tmpTile == null)
-        //    {
-        //        //タイルがなければ作成
-        //        tmpTile = CreateTile(tileId);
-        //        tileMng.AddTile(tmpTile);
-        //    }
-
-        //    //ObjGroup読み込み
-        //    List<CmnObjGroup> tmpObjGrList = (filter?.GetTypeList() ?? mapAccess.GetMapContentTypeList())
-        //        .Where(type => !tmpTile.IsContentsLoaded(type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
-        //        .Select(type => mapAccess.LoadObjGroup(tileId, type, filter?.SubTypeRangeMax(type) ?? ushort.MaxValue))
-        //        //.Where(x=>x!=null)
-        //        //.SelectMany(x=>x)
-        //        .ToList();
-
-        //    //インデックス付与（仮）
-        //    tmpObjGrList.ForEach(x => x.SetIndex());
-
-        //    //タイル更新
-        //    tmpTile.UpdateObjGroupList(tmpObjGrList);
-
-        //    return 0;
-        //}
-        
+                
         public virtual int LoadTile(uint tileId, uint type, ushort subType = ushort.MaxValue) =>
             LoadTile(tileId, new List<ObjReqType> { new ObjReqType(type, subType) });
 
