@@ -377,7 +377,7 @@ namespace Akichko.libGis
         }
 
 
-        public CmnObjHandle SearchObj(LatLon latlon, CmnObjFilter filter, int searchRange, long timeStamp = -1)
+        public CmnObjHandle SearchObj(LatLon latlon, int searchRange, CmnObjFilter filter,  Func<CmnObj, bool> selector, long timeStamp = -1)
         {
             var ret = SearchTiles(latlon, searchRange)
                 .Select(x => x.GetNearestObj(latlon, filter, timeStamp))
@@ -388,10 +388,10 @@ namespace Akichko.libGis
             return ret;
         }
 
-        public IEnumerable<CmnObjHdlDistance> SearchObjsAround(LatLon latlon, CmnObjFilter filter, int searchRange, long timeStamp = -1)
+        public IEnumerable<CmnObjHdlDistance> SearchObjsAround(LatLon latlon, int searchRange, CmnObjFilter filter, Func<CmnObjHandle, bool> selector, long timeStamp = -1)
         {
             var ret = SearchTiles(latlon, searchRange)
-                .SelectMany(x => x.GetObjsAround(latlon, filter, timeStamp))
+                .SelectMany(x => x.GetObjsAround(latlon, filter, selector, timeStamp))
                 .Where(x => x != null);
 
             return ret;

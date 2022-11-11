@@ -64,6 +64,7 @@ namespace Akichko.libGis
         }
     }
 
+
     public class CmnLocator : IObservable<Location>
     {   
         protected CmnMapMgr mapMgr;
@@ -74,6 +75,11 @@ namespace Akichko.libGis
 
         //CmnObjHandle[] routeLinkArray;
         public List<CmnObjHandle> routeLinks;
+
+        public LatLon[] routeGeometry;
+        public double routeLength;
+        public double distanceFromOrg = 0;
+        public LatLon latlonOnRoute;
 
         private List<IObserver<Location>> observers = new List<IObserver<Location>>();
 
@@ -100,13 +106,20 @@ namespace Akichko.libGis
 
         public int Connect()
         {
-
             return 0;
         }
 
         public int UnloadTile(LatLon latlon)
         {
             return -1;
+        }
+
+        /* 経路入力 */
+        public void SetRoute( LatLon[] routeGeometry, List<CmnObjHandle> route)
+        {
+            routeLinks = route;
+            this.routeGeometry = routeGeometry;
+            routeLength = LatLon.CalcLength(routeGeometry);
         }
 
         /* 位置計算 **********************************************************************/
@@ -124,7 +137,7 @@ namespace Akichko.libGis
 
             //Get around link
 
-            IEnumerable<CmnObjHdlDistance> objHdlDsts = mapMgr.SearchObjsAround(latlon, locateMapType.roadNwObjFilter, 20)
+            IEnumerable<CmnObjHdlDistance> objHdlDsts = mapMgr.SearchObjsAround(latlon, 20, locateMapType.roadNwObjFilter, null)
                 .OrderBy(x => x.distance);
 
             objHdlDsts.ForEach(x => { if (x.distance == 0) x.distance = 0.001; });
@@ -162,56 +175,74 @@ namespace Akichko.libGis
                 return null;
 
             //現在リンク
-            var link = routeLinks.Where(x => x.ObjId == CurrentLoc?.linkId).FirstOrDefault();
+            //var link = routeLinks.Where(x => x.ObjId == CurrentLoc?.linkId).FirstOrDefault();
 
-            //該当リンクなし⇒経路先頭
-            if (link == null)
-            {
-                MapPosition ret = new MapPosition(
-                    new PolyLinePos(routeLinks[0].DirGeometry[0], 0, 0),
-                    routeLinks[0],
-                    1.0);
+            ////該当リンクなし⇒経路先頭
+            //if (link == null)
+            //{
+            //    MapPosition ret = new MapPosition(
+            //        new PolyLinePos(routeLinks[0].DirGeometry[0], 0, 0),
+            //        routeLinks[0],
+            //        1.0);
 
-                return new List<MapPosition> { ret };
-            }
+            //    return new List<MapPosition> { ret };
+            //}
 
-            int index = routeLinks.IndexOf(link);
 
             //現在リンク始点からの移動距離計算
-            double moveLengthM = CurrentLoc.speedKpH * 1000 / 3600.0 * moveTimeMs / 1000.0
-                + CurrentLoc.mapPositions[0].linePos.shapeOffset;
+            //double moveLengthM = CurrentLoc.speedKpH * 1000 / 3600.0 * moveTimeMs / 1000.0
+            //    + CurrentLoc.mapPositions[0].linePos.shapeOffset;
 
-            //経路に沿って移動
-            while (moveLengthM > 0)
+
+            double moveLengthM = CurrentLoc?.speedKpH * 1000 / 3600.0 * moveTimeMs / 1000.0 ?? 0;
+            PolyLinePos routeLinePos;
+            distanceFromOrg += moveLengthM;
+            if (distanceFromOrg > routeLength)
             {
-                if(moveLengthM > routeLinks[index].Length)
-                {
-                    moveLengthM -= routeLinks[index].Length;
-
-                    //経路終点
-                    if(index == routeLinks.Count - 1)
-                    {
-                        int shapeNum = routeLinks[index].DirGeometry.Length;
-                        MapPosition ret = new MapPosition(
-                            new PolyLinePos(routeLinks[index].DirGeometry[shapeNum-1], shapeNum, routeLinks[index].Length),
-                            routeLinks[index],
-                            1.0);
-
-                        return new List<MapPosition> { ret };
-                    }
-                    index++;
-
-                }
-                else //リンク内位置計算
-                {
-                    PolyLinePos linePos = LatLon.CalcOffsetLinkePosAlongPolyline(routeLinks[index].DirGeometry, moveLengthM);
-                    MapPosition ret = new MapPosition(linePos, routeLinks[index], 1.0);
-
-                    return new List<MapPosition> { ret };
-                }
+                latlonOnRoute = routeGeometry[routeGeometry.Length - 1];
+                routeLinePos = new PolyLinePos(latlonOnRoute, 0, routeLength);
+            }
+            else
+            {
+                routeLinePos = LatLon.CalcOffsetLinkePosAlongPolyline(routeGeometry, distanceFromOrg);
             }
 
-            throw new NotImplementedException();
+            //経路に沿って移動
+            //int index = routeLinks.IndexOf(link);
+            //while (moveLengthM > 0)
+            //{
+            //    if (moveLengthM > routeLinks[index].Length)
+            //    {
+            //        moveLengthM -= routeLinks[index].Length;
+
+            //        //経路終点
+            //        if (index == routeLinks.Count - 1)
+            //        {
+            //            break;
+            //            //int shapeNum = routeLinks[index].DirGeometry.Length;
+            //            //MapPosition ret = new MapPosition(
+            //            //    new PolyLinePos(routeLinks[index].DirGeometry[shapeNum - 1], shapeNum, routeLinks[index].Length),
+            //            //    routeLinks[index],
+            //            //    1.0);
+
+            //            //return new List<MapPosition> { ret };
+            //        }
+            //        index++;
+
+            //    }
+            //    else //リンク内位置計算
+            //    {
+            //        break;
+            //        //PolyLinePos linePos = LatLon.CalcOffsetLinkePosAlongPolyline(routeLinks[index].DirGeometry, moveLengthM);
+            //        //MapPosition ret = new MapPosition(linePos, routeLinks[index], 1.0);
+
+            //        //return new List<MapPosition> { ret };
+            //    }
+            //}
+
+            MapPosition ret = new MapPosition(routeLinePos, routeLinks[0], 1.0);
+            return new List<MapPosition> { ret };
+
         }
 
         public void UpdateCurrentLoc(double moveTime)
@@ -263,11 +294,39 @@ namespace Akichko.libGis
 
     }
 
+
+    public abstract class CmnLocatorObserver : IObserver<Location>
+    {
+        private IDisposable cancellation;
+        public bool IsSubscribing { get; private set; } = false;
+
+        public virtual void Subscribe(IObservable<Location> provider)
+        {
+            cancellation = provider.Subscribe(this);
+            IsSubscribing = true;
+        }
+
+        public virtual void Unsubscribe()
+        {
+            if (!IsSubscribing)
+                return;
+            cancellation.Dispose();
+            IsSubscribing = false;
+        }
+
+        public abstract void OnCompleted();
+
+        public abstract void OnError(Exception error);
+
+        public abstract void OnNext(Location value);
+
+    }
+
     public class LocatorExe
     {
         CmnLocator locator;
         Timer timer;
-        public int calcInterval = 1000; //[ms]
+        public int calcInterval; //[ms]
         bool isPlaying = false;
 
         public LocatorExe(CmnLocator locator, int calcInterval)

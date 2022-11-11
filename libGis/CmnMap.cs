@@ -1072,7 +1072,7 @@ namespace Akichko.libGis
         }
 
 
-        public virtual IEnumerable<CmnObjHdlDistance> GetObjsAround(LatLon latlon, CmnObjFilter filter, long timeStamp = -1)
+        public virtual IEnumerable<CmnObjHdlDistance> GetObjsAround(LatLon latlon, CmnObjFilter filter, Func<CmnObjHandle, bool> selector, long timeStamp = -1)
         {
             var ret = GetObjGroups(filter)
                 .SelectMany(x => x.GetObjsAround(latlon, filter?.GetSubFilter(x.Type), timeStamp))
@@ -1090,33 +1090,6 @@ namespace Akichko.libGis
             return objArray[rnd.Next(0, objArray.Length - 1)].ToCmnObjHandle(this);
         }
 
-        //描画用
-
-        /* 削除予定 */
-        //public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, UInt32 objType = 0xFFFFFFFF, UInt16 subType = 0xFFFF)
-        //{
-        //    GetObjGroupList(objType).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, subType));
-        //    //cbDrawFunc(Type, SubType, getGeometry());
-        //}
-
-        //public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, Dictionary<uint, ushort> typeDic)
-        //{
-        //    foreach(var x in typeDic)
-        //    {
-        //        GetObjGroup(x.Key)?.ExeDrawFunc(this, cbDrawFunc, x.Value);
-        //    }
-        //}
-
-        //public virtual void ExeDrawFunc(CbGetObjFunc cbDrawFunc, CmnObjFilter filter)
-        //{
-        //    foreach (var x in GetObjGroupList(filter) ?? Enumerable.Empty<CmnObjGroup>())
-        //    {
-        //        x.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type));
-        //    }
-        //    //GetObjGroupList(filter).ForEach(x => x?.ExeDrawFunc(this, cbDrawFunc, filter?.GetSubFilter(x.Type)));
-
-        //    //cbDrawFunc(Type, SubType, getGeometry());
-        //}
 
 
         public virtual void AddObj(UInt32 objType, CmnObj obj)
@@ -1129,15 +1102,6 @@ namespace Akichko.libGis
             GetObjGroup(objType)?.DelObj(objId, endTimeStamp);
 
         }
-
-        //削除予定
-        //public static bool CheckObjTypeMatch(UInt32 objType, UInt32 objTypeBits)
-        //{
-        //    if ((objTypeBits & objType) != 0)
-        //        return true;
-        //    else
-        //        return false;
-        //}
 
         public bool IsContentsLoaded(UInt32 objType, ushort subType) =>
             GetObjGroup(objType)?.IsContentsLoaded(subType) ?? false;
