@@ -764,6 +764,7 @@ namespace Akichko.libGis
             return routeList;
         }
 
+        //削除
         public LatLon[] GetRouteGeometry()
         {
             foreach (var x in routeResult.Distinct())
