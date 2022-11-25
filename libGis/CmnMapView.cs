@@ -24,11 +24,13 @@ SOFTWARE.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Akichko.libGis
 {
+
     public class CmnMapView
     {
 
@@ -93,6 +95,47 @@ namespace Akichko.libGis
             return jsonString.ToString();
         }
 
+        public string MakeGeoJson(LatLon start, LatLon dest, LatLon[] route, CmnObjHandle[] handles = null)
+        {
+            routeProperty routeProperties = new routeProperty(handles.Select(x => new routeLinkInfo(x)).ToArray());
+
+            GjFeature gjOrg = new GjFeature(new GjPoint(start));
+            GjFeature gjDst = new GjFeature(new GjPoint(dest));
+            GjFeature gjRoute = new GjFeature(new GjLineString(route), routeProperties);
+
+            GjFeatureCollection rgjCollection = new GjFeatureCollection(new GjFeature[] { gjOrg, gjDst, gjRoute });
+
+            string ret = rgjCollection.Serialize();
+
+            return ret;
+
+        }
 
     }
+
+
+    public class routeProperty : Json
+    {
+        public routeLinkInfo[] routeLinkInfo { get; set; }
+
+        public routeProperty(routeLinkInfo[] routeLinkInfo)
+        {
+            this.routeLinkInfo = routeLinkInfo;
+        }
+    }
+
+    public class routeLinkInfo : Json
+    {
+        public ulong tileId { get; set; }
+        public ulong objId { get; set; }
+        public DirectionCode direction { get; set; }
+
+        public routeLinkInfo(CmnObjHandle handle)
+        {
+            this.tileId = handle.TileId;
+            this.objId = handle.ObjId;
+            this.direction = handle.direction;
+        }
+    }
+
 }
