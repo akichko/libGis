@@ -13,6 +13,7 @@
     <Compile Include="..\libGis\CmnMapView.cs" Link="CmnMapView.cs" />
     <Compile Include="..\libGis\CmnUtilities.cs" Link="CmnUtilities.cs" />
     <Compile Include="..\libGis\Dykstra.cs" Link="Dykstra.cs" />
+    <Compile Include="..\libGis\GeoJson.cs" Link="GeoJson.cs" />
     <Compile Include="..\libGis\GisMap.cs" Link="GisMap.cs" />
     <Compile Include="..\libGis\LatLon.cs" Link="LatLon.cs" />
   </ItemGroup>
