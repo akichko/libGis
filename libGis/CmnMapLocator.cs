@@ -65,13 +65,14 @@ namespace Akichko.libGis
     }
 
 
-    public class CmnLocator : IObservable<Location>
+    public class CmnLocator
     {   
         protected CmnMapMgr mapMgr;
         LocateMapType locateMapType;
         public double speedKpH = 30; //[km/h]
         public double direction = 10; //[km/h]
         LocatorMode mode;
+
 
         //CmnObjHandle[] routeLinkArray;
         public List<CmnObjHandle> routeLinks;
@@ -81,22 +82,10 @@ namespace Akichko.libGis
         public double distanceFromOrg = 0;
         public LatLon latlonOnRoute;
 
-        private List<IObserver<Location>> observers = new List<IObserver<Location>>();
+        public Location currentLoc;
+        public bool isFinishedRouteRun = false;
 
-        private Location _currentLoc;
-        public Location CurrentLoc
-        {
-            get { return _currentLoc; }
-            set
-            {
-                if (_currentLoc?.latlon != value?.latlon)
-                {
-                    _currentLoc = value;
-                    Publish();
-                }
-                _currentLoc = value;
-            }
-        }
+        public CmnLocator() { }
 
         public CmnLocator(CmnMapMgr mapMgr, LocateMapType locateMapType)
         {
@@ -115,11 +104,12 @@ namespace Akichko.libGis
         }
 
         /* 経路入力 */
-        public void SetRoute( LatLon[] routeGeometry, List<CmnObjHandle> route)
+        public void SetRoute( LatLon[] routeGeometry, List<CmnObjHandle> route = null)
         {
             routeLinks = route;
             this.routeGeometry = routeGeometry;
             routeLength = LatLon.CalcLength(routeGeometry);
+            distanceFromOrg = 0;
         }
 
         /* 位置計算 **********************************************************************/
@@ -154,26 +144,12 @@ namespace Akichko.libGis
             return ret;
         }
 
-        public List<MapPosition> CalcMapPositions(LatLon[] latlon)
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<MapPosition> CalcMapPositions(LatLon latlon)
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<MapPosition> CalcMapPositions(LatLon latlon, double moveTime)
-        {
-            throw new NotImplementedException();
-        }
 
         public List<MapPosition> CalcMapPositionOnRoute(double moveTimeMs)
         {
-            if (routeLinks == null)
+            if (routeLinks == null && routeGeometry == null)
                 return null;
-
+#if false
             //現在リンク
             //var link = routeLinks.Where(x => x.ObjId == CurrentLoc?.linkId).FirstOrDefault();
 
@@ -192,9 +168,9 @@ namespace Akichko.libGis
             //現在リンク始点からの移動距離計算
             //double moveLengthM = CurrentLoc.speedKpH * 1000 / 3600.0 * moveTimeMs / 1000.0
             //    + CurrentLoc.mapPositions[0].linePos.shapeOffset;
+#endif
 
-
-            double moveLengthM = CurrentLoc?.speedKpH * 1000 / 3600.0 * moveTimeMs / 1000.0 ?? 0;
+            double moveLengthM = currentLoc?.speedKpH * 1000 / 3600.0 * moveTimeMs / 1000.0 ?? 0;
             PolyLinePos routeLinePos;
             distanceFromOrg += moveLengthM;
             if (distanceFromOrg > routeLength)
@@ -206,7 +182,7 @@ namespace Akichko.libGis
             {
                 routeLinePos = LatLon.CalcOffsetLinkePosAlongPolyline(routeGeometry, distanceFromOrg);
             }
-
+#if false
             //経路に沿って移動
             //int index = routeLinks.IndexOf(link);
             //while (moveLengthM > 0)
@@ -239,57 +215,27 @@ namespace Akichko.libGis
             //        //return new List<MapPosition> { ret };
             //    }
             //}
-
-            MapPosition ret = new MapPosition(routeLinePos, routeLinks[0], 1.0);
+#endif
+            MapPosition ret = new MapPosition(routeLinePos, routeLinks?[0], 1.0);
             return new List<MapPosition> { ret };
 
         }
 
-        public void UpdateCurrentLoc(double moveTime)
+        public Location UpdateCurrentLoc(double moveTime)
         {
             List<MapPosition> mapPosList = CalcMapPositionOnRoute(moveTime);
-            CurrentLoc = new Location(mapPosList, mapPosList[0].linePos.latLon, speedKpH, direction);
+            currentLoc = new Location(mapPosList, mapPosList?[0].linePos.latLon, speedKpH, direction);
 
-        }
-
-        /* observer機能 **********************************************************************/
-        public IDisposable Subscribe(IObserver<Location> observer)
-        {
-            if (!observers.Contains(observer))
-                observers.Add(observer);
-
-            //購読解除用のクラスをIDisposableとして返す
-            return new Unsubscriber(observers, observer);
-        }
-
-        public void Publish()
-        {
-            foreach (var observer in observers)
+            if (routeGeometry != null && (routeGeometry[routeGeometry.Length - 1] == mapPosList?[0].linePos.latLon))
             {
-                observer.OnNext(CurrentLoc);
+                isFinishedRouteRun = true;
             }
-        } 
-        
-        //購読解除用内部クラス
-        private class Unsubscriber : IDisposable
-        {
-            //発行先リスト
-            private List<IObserver<Location>> observers;
-
-            //DisposeされたときにRemoveするIObserver<int>
-            private IObserver<Location> observer;
-
-            public Unsubscriber(List<IObserver<Location>> observers, IObserver<Location> observer)
+            else
             {
-                this.observers = observers;
-                this.observer = observer;
+                isFinishedRouteRun = false;
             }
 
-            public void Dispose()
-            {
-                //Disposeされたら発行先リストから対象の発行先を削除する
-                this.observers.Remove(observer);
-            }
+            return currentLoc;
         }
 
     }
@@ -319,24 +265,44 @@ namespace Akichko.libGis
         public abstract void OnError(Exception error);
 
         public abstract void OnNext(Location value);
-
     }
 
-    public class LocatorExe
+    public class LocatorTask : IObservable<Location>
     {
         CmnLocator locator;
-        Timer timer;
         public int calcInterval; //[ms]
-        bool isPlaying = false;
 
-        public LocatorExe(CmnLocator locator, int calcInterval)
+        Location location;
+
+        public LatLon Latlon => location?.latlon;
+        private LatLon[] routeGeometry;
+
+        private Timer timer;
+        private bool isPlaying = false;
+        private List<IObserver<Location>> observers = new List<IObserver<Location>>();
+        private SemaphoreSlim semaphore;
+
+        public LocatorTask(CmnLocator locator, int calcInterval)
         {
             this.locator = locator;
             this.calcInterval = calcInterval;
-            
-            timer = new Timer(new TimerCallback(ThreadingTimerCallback));
+
+            semaphore = new SemaphoreSlim(1);
+            timer = new Timer(new TimerCallback(CyclicTimerCallback));
         }
 
+        public void SetRoute(LatLon[] routeGeometry)
+        {
+            this.routeGeometry = routeGeometry;
+            locator.SetRoute(routeGeometry);
+        }
+
+        public void SetSpeedKpH(double speed)
+        {
+            locator.speedKpH = speed;
+        }
+
+        /* タイマー **********************************************************************/
         public int LoopStart()
         {
             // タイマーをすぐに1秒間隔で開始
@@ -345,7 +311,7 @@ namespace Akichko.libGis
             return 0;
         }
 
-        public int LoopStop()
+        public int LoopPause()
         {
             if (isPlaying)
             {
@@ -355,6 +321,7 @@ namespace Akichko.libGis
             }
             else
             {
+                // タイマー開始
                 timer.Change(0, calcInterval);
                 isPlaying = true;
             }
@@ -362,12 +329,95 @@ namespace Akichko.libGis
             return 0;
         }
 
-        //コールバック
-        public void ThreadingTimerCallback(object args)
+        public int LoopStop()
         {
-            locator.UpdateCurrentLoc(calcInterval);
+            // タイマーを停止
+            timer.Change(Timeout.Infinite, Timeout.Infinite);
+            isPlaying = false;
+
+            return 0;
         }
+
+        public void CyclicTimerCallback(object args)
+        {
+            semaphore.Wait();
+            try
+            {
+                Location newLoc = locator.UpdateCurrentLoc(calcInterval);
+
+                if (routeGeometry != null && locator.isFinishedRouteRun)
+                {
+                    Complete();
+                }
+
+                if (newLoc?.latlon != location?.latlon)
+                {
+                    Publish(newLoc);
+                }
+
+                location = newLoc;
+            }
+            catch(Exception e)
+            {
+                throw new NotImplementedException();
+                //LoopStop();
+            }
+            semaphore.Release();
+        }
+
+        /* observer機能 **********************************************************************/
+        public IDisposable Subscribe(IObserver<Location> observer)
+        {
+            if (!observers.Contains(observer))
+                observers.Add(observer);
+
+            //購読解除用のクラスをIDisposableとして返す
+            return new Unsubscriber(observers, observer);
+        }
+
+        public void Publish(Location location)
+        {
+            foreach (var observer in new List<IObserver<Location>>(observers))
+            {
+                observer.OnNext(location);
+            }
+        }
+
+        public void Complete()
+        {
+            foreach (var observer in new List<IObserver<Location>>(observers))
+            {
+                observer.OnCompleted();
+            }
+        }
+
+
+        //購読解除用内部クラス
+        private class Unsubscriber : IDisposable
+        {
+            //発行先リスト
+            private List<IObserver<Location>> observers;
+
+            //DisposeされたときにRemoveするIObserver<int>
+            private IObserver<Location> observer;
+
+            public Unsubscriber(List<IObserver<Location>> observers, IObserver<Location> observer)
+            {
+                this.observers = observers;
+                this.observer = observer;
+            }
+
+            public void Dispose()
+            {
+                //Disposeされたら発行先リストから対象の発行先を削除する
+                this.observers.Remove(observer);
+            }
+        }
+
     }
+
+
+
 
     public class LocateMapType
     {
