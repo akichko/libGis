@@ -13,7 +13,7 @@ namespace Akichko.libGis
 
         static Json()
         {
-            options = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+           // options = new () { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
         }
 
         public virtual string Serialize() => JsonSerializer.Serialize(this, this.GetType(), options);
