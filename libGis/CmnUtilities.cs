@@ -387,9 +387,13 @@ namespace Akichko.libGis
 
     public class PackData32
     {
-        public UInt32 rawData;
+        UInt32 rawData;
 
-        public PackData32() { }
+        public PackData32(uint rawData)
+        {
+            this.rawData = rawData;
+        }
+
         public PackData32(byte[] serialData)
         {
             rawData = BitConverter.ToUInt32(serialData, 0);

@@ -38,18 +38,34 @@ namespace Akichko.libGis
         //XYL -> ID
         public override uint CalcTileId(int x, int y, byte level = ConstDefaultLevel)
         {
-            return S_CalcTileId((UInt16)x, (UInt16)y, level);
+            if (x < MinTileX(level))
+                x = x % TileRangeX(level) + TileRangeX(level);
+            if (y < MinTileY(level))
+                y = y % TileRangeY(level) + TileRangeY(level);
+            if (x > MaxTileX(level))
+                x = x % TileRangeX(level);
+            if (y > MaxTileY(level))
+                y = y % TileRangeY(level);
+
+            uint ret =  S_CalcTileId((UInt16)x, (UInt16)y, level);
+            return ret;
         }
 
         // XYL -> LatLon
         public override double CalcTileLon(int tileX, byte tileLv)
         {
-            return (tileX << tileLv) / Math.Pow(2, 15) * 360.0;
+            double ret = (tileX << tileLv) / Math.Pow(2, 15) * 360.0;
+            if (ret > 180.0)
+                ret -= 360;
+            return ret;
         }
 
         public override double CalcTileLat(int tileY, byte tileLv)
         {
-            return (tileY << tileLv) / Math.Pow(2, 14) * 180.0;
+            double ret = (tileY << tileLv) / Math.Pow(2, 14) * 180.0;
+            if (ret > 90.0)
+                ret -= 180;
+            return ret;
         }
 
         // LatLon -> XYL
@@ -71,6 +87,11 @@ namespace Akichko.libGis
             return (int)y;
 
         }
+
+        public override int MaxTileX(byte level) => CalcTileX(360.0, level) - 1;
+        public override int MinTileX(byte level) => CalcTileX(0.0, level);
+        public override int MaxTileY(byte level) => CalcTileX(180.0, level) - 1;
+        public override int MinTileY(byte level) => CalcTileX(0.0, level);
 
 
 
@@ -265,6 +286,14 @@ namespace Akichko.libGis
         public override int CalcTileX(uint tileId) => 0;
 
         public override int CalcTileY(uint tileId) => 0;
+
+        public override int MaxTileX(byte level) => 0;
+
+        public override int MaxTileY(byte level) => 0;
+
+        public override int MinTileX(byte level) => 0;
+
+        public override int MinTileY(byte level) => 0;
 
         protected override int CalcTileX(double lon, byte level) => 0;
 

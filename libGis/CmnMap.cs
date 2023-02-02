@@ -152,17 +152,17 @@ namespace Akichko.libGis
 
             switch (tilePos)
             {
-                case RectPos.SouthWest: return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
+                case RectPos.SouthWest: return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLon(xyl.x, xyl.lv));
 
-                case RectPos.SouthEast: return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
+                case RectPos.SouthEast: return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLon(xyl.x, xyl.lv));
 
-                case RectPos.NorthWest: return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
+                case RectPos.NorthWest: return new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLon(xyl.x + 1, xyl.lv));
 
-                case RectPos.NorthEast: return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
+                case RectPos.NorthEast: return new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLon(xyl.x + 1, xyl.lv));
 
                 case RectPos.Center:
-                    LatLon tmpSW = new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLat(xyl.x, xyl.lv));
-                    LatLon tmpNE = new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLat(xyl.x + 1, xyl.lv));
+                    LatLon tmpSW = new LatLon(CalcTileLat(xyl.y, xyl.lv), CalcTileLon(xyl.x, xyl.lv));
+                    LatLon tmpNE = new LatLon(CalcTileLat(xyl.y + 1, xyl.lv), CalcTileLon(xyl.x + 1, xyl.lv));
                     return (tmpSW + tmpNE) / 2.0;
 
                 default: throw new NotImplementedException();
@@ -228,7 +228,11 @@ namespace Akichko.libGis
         /* タイル演算 */
         public virtual uint CalcOffsetTileId(uint baseTileId, int offsetX, int offsetY)
         {
-            return CalcTileId(CalcTileX(baseTileId) + offsetX, CalcTileY(baseTileId) + offsetY, CalcTileLv(baseTileId));
+            byte tileLv = CalcTileLv(baseTileId);
+            int tileX = NormalizeTileX(CalcTileX(baseTileId) + offsetX, tileLv);
+            int tileY = NormalizeTileY(CalcTileY(baseTileId) + offsetY, tileLv);
+
+            return CalcTileId(tileX, tileY, CalcTileLv(baseTileId));
         }
 
         public virtual double CalcTileLengthX(uint tileId)
@@ -290,10 +294,12 @@ namespace Akichko.libGis
             int tileX = CalcTileX(tileId);
             int tileY = CalcTileY(tileId);
 
-            for (int x = CalcTileX(tileId) - tileRangeX; x <= tileX + tileRangeX; x++)
+            for (int x = tileX - tileRangeX; x <= tileX + tileRangeX; x++)
             {
                 for (int y = tileY - tileRangeY; y <= tileY + tileRangeY; y++)
                 {
+                    //normalize
+
                     retList.Add(CalcTileId(x, y));
                 }
             }
@@ -331,7 +337,12 @@ namespace Akichko.libGis
         {
             int offsetX = Math.Abs(CalcTileX(tileIdA) - CalcTileX(tileIdB));
             int offsetY = Math.Abs(CalcTileY(tileIdA) - CalcTileY(tileIdB));
+            byte tileLv = CalcTileLv(tileIdA);
 
+            if (offsetX > TileRangeX(tileLv) / 2)
+                offsetX = TileRangeX(tileLv) - offsetX;
+            if (offsetY > TileRangeY(tileLv) / 2)
+                offsetY = TileRangeY(tileLv) - offsetY;
             return new TileXY(offsetX, offsetY);
         }
 
@@ -414,6 +425,43 @@ namespace Akichko.libGis
             return ret;
         }
 
+        //XY範囲
+        public abstract int MaxTileX(byte level);
+
+        public abstract int MaxTileY(byte level);
+
+        public abstract int MinTileX(byte level);
+
+        public abstract int MinTileY(byte level);
+
+
+        public int NormalizeTileX(int x, byte level)
+        {
+
+            if (x < MinTileX(level))
+                return x % TileRangeX(level) + TileRangeX(level);
+
+            if (X > MaxTileX(level))
+                return x % TileRangeX(level);
+
+            return x;
+
+        }
+
+        public int NormalizeTileY(int y, byte level)
+        {
+            if (y < MinTileY(level))
+                return Y % TileRangeY(level) + TileRangeY(level);
+
+            if (y > MaxTileY(level))
+                return y % TileRangeY(level);
+
+            return y;
+        }
+
+        public int TileRangeX(byte level) => MaxTileX(level) - MinTileX(level) + 1;
+
+        public int TileRangeY(byte level) => MaxTileY(level) - MinTileY(level) + 1;
     }
 
     //public struct CmnTileOffset
@@ -1270,6 +1318,34 @@ namespace Akichko.libGis
     }
 
 
+
+    public class CmnObjIdRef
+    {
+        uint objType;
+        uint tileId;
+        UInt64 objId;
+        public int objRefType;
+
+        public CmnObjIdRef(uint objType, uint tileId, ulong objId, int objRefType)
+        {
+            this.objType = objType;
+            this.tileId = tileId;
+            this.objId = objId;
+            this.objRefType = objRefType;
+        }
+
+        public bool IsEqualTo(CmnObjHandle objHdl)
+        {
+            if(tileId != 0xFFFFFFFF && tileId != objHdl.TileId)
+                return false;
+
+            if (objType != objHdl.Type || objId != objHdl.ObjId)
+                return false;
+
+            return true;
+        }
+    }
+
     /* オブジェクト検索用クラス **********************************************/
 
     public class CmnObjRef
@@ -1328,22 +1404,22 @@ namespace Akichko.libGis
         }
     }
 
-    //public struct TileObjId
-    //{
-    //    public uint tileId;
-    //    public UInt64 id;
+    public struct TileObjId
+    {
+        public uint tileId;
+        public UInt64 id;
 
-    //    public TileObjId(uint tileId, UInt64 id)
-    //    {
-    //        this.tileId = tileId;
-    //        this.id = id;
-    //    }
+        public TileObjId(uint tileId, UInt64 id)
+        {
+            this.tileId = tileId;
+            this.id = id;
+        }
 
-    //    override public string ToString()
-    //    {
-    //        return $"{tileId}-{id}";
-    //    }
-    //}
+        override public string ToString()
+        {
+            return $"{tileId}-{id}";
+        }
+    }
 
     //public struct TileObjIndex
     //{

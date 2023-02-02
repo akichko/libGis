@@ -129,7 +129,7 @@ namespace Akichko.libGis
             (double sX, double sY) = CalcOffsetXY(P, L1);
             (double eX, double eY) = CalcOffsetXY(P, L2);
 
-            return CalcDistanceOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
+            return _CalcDistanceOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
         }
 
         public static double CalcOffsetOfPointAndLine(LatLon P, LatLon L1, LatLon L2)
@@ -137,7 +137,7 @@ namespace Akichko.libGis
             (double sX, double sY) = CalcOffsetXY(P, L1);
             (double eX, double eY) = CalcOffsetXY(P, L2);
 
-            double ratio = CalcOffsetRatioOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
+            double ratio = _CalcOffsetRatioOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
             return CalcDistanceBetween(L1, L2) * ratio;
         }
 
@@ -146,7 +146,7 @@ namespace Akichko.libGis
             (double sX, double sY) = CalcOffsetXY(P, L1);
             (double eX, double eY) = CalcOffsetXY(P, L2);
 
-            double ratio = CalcOffsetRatioOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
+            double ratio = _CalcOffsetRatioOfPointAndLine(0.0, 0.0, sX, sY, eX, eY);
             return ratio;
         }
 
@@ -361,7 +361,7 @@ namespace Akichko.libGis
 
         //private静的メソッド
 
-        private static double CalcDistanceOfPointAndLine(double pX, double pY, double sX, double sY, double eX, double eY)
+        private static double _CalcDistanceOfPointAndLine(double pX, double pY, double sX, double sY, double eX, double eY)
         {
             //xP,yP が点
             double seX = eX - sX;
@@ -386,7 +386,7 @@ namespace Akichko.libGis
             }
         }
 
-        private static double CalcOffsetRatioOfPointAndLine(double pX, double pY, double sX, double sY, double eX, double eY)
+        private static double _CalcOffsetRatioOfPointAndLine(double pX, double pY, double sX, double sY, double eX, double eY)
         {
             //xP,yP が点
             double seX = eX - sX;
