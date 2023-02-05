@@ -40,12 +40,12 @@ namespace Akichko.libGis
         /* 抽象メソッド ********************************************************/
 
         //XYL => ID
-        uint CalcTileId(int x, int y, byte level = byte.MaxValue);
+        uint CalcTileId(int x, int y, byte level);
 
         //ID => XYL
         int CalcTileX(uint tileId);
         int CalcTileY(uint tileId);
-        //byte CalcTileLv(uint tileId);
+        byte CalcTileLv(uint tileId);
 
         //XYL => LatLon
         //public double CalcTileLon(int tileX, byte level);
@@ -66,16 +66,17 @@ namespace Akichko.libGis
         LatLon CalcLatLon(TileXYL xyl);
 
         //LatLon => ID
-        uint CalcTileId(LatLon latlon, byte level = byte.MaxValue);
+        uint CalcTileId(LatLon latlon, byte level);
 
+        //見直し予定（削除）
+        uint CalcTileId(LatLon latlon);
 
-        //uint CalcTileId(TileXYL xyl);
 
         //ID => XYL
         TileXYL CalcTileXYL(uint tileId);
 
         //LatLon => XYL
-        TileXYL CalcTileXYL(LatLon latlon, byte level = byte.MaxValue);
+        TileXYL CalcTileXYL(LatLon latlon, byte level);
 
 
         /* タイル演算 */
@@ -120,7 +121,7 @@ namespace Akichko.libGis
         public abstract byte MaxLevel { get; }
 
         //XYL => ID
-        public abstract uint CalcTileId(int x, int y, byte level = byte.MaxValue);
+        public abstract uint CalcTileId(int x, int y, byte level);
 
         //ID => XYL
         public abstract int CalcTileX(uint tileId);
@@ -128,12 +129,12 @@ namespace Akichko.libGis
         public abstract byte CalcTileLv(uint tileId);
 
         //XYL => LatLon
-        public abstract double CalcTileLon(int tileX, byte level = byte.MaxValue);
-        public abstract double CalcTileLat(int tileY, byte level = byte.MaxValue);
+        public abstract double CalcTileLon(int tileX, byte level);
+        public abstract double CalcTileLat(int tileY, byte level);
 
         //LatLon => XYL
-        protected abstract int CalcTileX(double lon, byte level = byte.MaxValue);
-        protected abstract int CalcTileY(double lat, byte level = byte.MaxValue);
+        protected abstract int CalcTileX(double lon, byte level);
+        protected abstract int CalcTileY(double lat, byte level);
 
         /* 通常メソッド **********************************************************/
 
@@ -171,11 +172,8 @@ namespace Akichko.libGis
         }
 
         //LatLon => ID
-        public virtual uint CalcTileId(LatLon latlon, byte level = byte.MaxValue)
+        public virtual uint CalcTileId(LatLon latlon, byte level)
         {
-            if (level == byte.MaxValue)
-                level = DefaultLevel;
-
             if (latlon.lon < -180.0 || latlon.lon > 180.0 || latlon.lat < -90.0 || latlon.lat > 90.0 || level > MaxLevel)
                 return 0xffffffff;
 
@@ -290,6 +288,7 @@ namespace Akichko.libGis
             List<uint> retList = new List<uint>();
             int tileX = CalcTileX(tileId);
             int tileY = CalcTileY(tileId);
+            byte tileLv = CalcTileLv(tileId);
 
             for (int x = tileX - tileRangeX; x <= tileX + tileRangeX; x++)
             {
@@ -297,7 +296,7 @@ namespace Akichko.libGis
                 {
                     //normalize
 
-                    retList.Add(CalcTileId(x, y));
+                    retList.Add(CalcTileId(x, y, tileLv));
                 }
             }
 

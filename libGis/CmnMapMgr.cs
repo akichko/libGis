@@ -306,6 +306,7 @@ namespace Akichko.libGis
         {
             int tileX = tileApi.CalcTileX(tileId);
             int tileY = tileApi.CalcTileY(tileId);
+            byte tileLv = tileApi.CalcTileLv(tileId);
             List<CmnTile> retTileList = new List<CmnTile>();
 
 
@@ -314,7 +315,7 @@ namespace Akichko.libGis
             {
                 for (int y = tileY - rangeY; y <= tileY + rangeY; y++)
                 {
-                    uint tmpTileId = tileApi.CalcTileId(x, y);
+                    uint tmpTileId = tileApi.CalcTileId(x, y, tileLv);
 
                     if (tileMng.ContainsTile(tmpTileId))
                         retTileList.Add(tileMng.GetTile(tmpTileId));
